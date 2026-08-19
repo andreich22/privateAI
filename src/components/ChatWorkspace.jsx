@@ -30,19 +30,18 @@ export default function ChatWorkspace({ fileName, onUnload }) {
     addMessageToHistory('user', userText);
     setMessages(prev => [...prev, { role: 'user', text: userText }]);
 
-    const fullAssistantText = useRef('');
-    fullAssistantText.current = '';
+    let fullAssistantText = '';
 
     try {
       // Try chat completion first
       await streamChat(getChatHistory(), (token) => {
-        fullAssistantText.current += token;
-        setCurrentTokens(fullAssistantText.current);
+        fullAssistantText += token;
+        setCurrentTokens(fullAssistantText);
       });
 
-      appendDebug('DONE: ' + fullAssistantText.current);
-      addMessageToHistory('assistant', fullAssistantText.current);
-      setMessages(prev => [...prev, { role: 'assistant', text: fullAssistantText.current }]);
+      appendDebug('DONE: ' + fullAssistantText);
+      addMessageToHistory('assistant', fullAssistantText);
+      setMessages(prev => [...prev, { role: 'assistant', text: fullAssistantText }]);
     } catch (err) {
       appendDebug('CHAT ERROR: ' + err.message);
       setMessages(prev => [...prev, { role: 'assistant', text: '[Ошибка чата: ' + err.message + ']' }]);
