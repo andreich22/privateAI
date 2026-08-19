@@ -1,0 +1,23 @@
+body { margin: 0; font-family: sans-serif; background: #1e1e2e; color: #cdd6f4; }
+.centered { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; text-align: center; padding: 20px; box-sizing: border-box; }
+.screen h1 { margin-bottom: 10px; color: #89b4fa; }
+.screen p { color: #a6adc8; margin-bottom: 25px; }
+.btn-main { background: #89b4fa; color: #11111b; border: none; padding: 12px 24px; font-size: 16px; border-radius: 8px; cursor: pointer; font-weight: bold; }
+.btn-sub { background: #313244; color: #cdd6f4; border: none; padding: 12px 24px; font-size: 16px; border-radius: 8px; cursor: pointer; margin-left: 10px; }
+.btn-danger { background: #f38ba8; color: #11111b; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-weight: bold; }
+.chat-container { display: flex; flex-direction: column; height: 100vh; max-width: 800px; margin: 0 auto; background: #181825; }
+header { display: flex; justify-content: space-between; align-items: center; padding: 15px; background: #11111b; border-bottom: 1px solid #313244; }
+.messages-box { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 15px; }
+.message { padding: 12px; border-radius: 8px; max-width: 80%; }
+.message.user { background: #313244; align-self: flex-end; color: #cdd6f4; }
+.message.assistant { background: #45475a; align-self: flex-start; color: #a6e3a1; }
+.sender { font-size: 12px; opacity: 0.6; margin-bottom: 5px; font-weight: bold; }
+.input-form { display: flex; padding: 15px; background: #11111b; gap: 10px; }
+.input-form input { flex: 1; padding: 12px; background: #313244; border: none; border-radius: 6px; color: #cdd6f4; font-size: 16px; }
+.input-form button { background: #a6e3a1; color: #11111b; border: none; padding: 12px 20px; border-radius: 6px; font-weight: bold; cursor: pointer; }
+.input-form button:disabled { opacity: 0.5; cursor: not-allowed; }
+.progress-bar-container { width: 300px; height: 10px; background: #313244; border-radius: 5px; overflow: hidden; margin-bottom: 10px; }
+.progress-bar-fill { height: 100%; background: #a6e3a1; transition: width 0.2s ease; }
+.progress-text { font-weight: bold; color: #a6e3a1; }
+.cursor { animation: blink 0.7s step-end infinite; }
+@keyframes blink { from, to { opacity: 1; } 50% { opacity: 0; } }
