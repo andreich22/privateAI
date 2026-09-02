@@ -87,10 +87,11 @@ describe('aiService - loadModelFromFile', () => {
 
     const { Wllama } = await import('@wllama/wllama');
     const mockInstance = Wllama.getFreshInstance();
-    expect(mockInstance.loadModel).toHaveBeenCalledWith([fileObj], {
+    expect(mockInstance.loadModel).toHaveBeenCalledWith([fileObj], expect.objectContaining({
       n_ctx: 4096,
       n_gpu_layers: 0,
-    });
+      signal: expect.any(Object),
+    }));
 
     await unloadModel();
   });
@@ -311,5 +312,116 @@ describe('aiService - chatHistory', () => {
 
     expect(history1).toStrictEqual(history2);
     expect(history1).not.toBe(history2);
+  });
+});
+
+describe('aiService - cancelLoad', () => {
+  beforeEach(() => {
+    vi.resetModules();
+  });
+
+  it('cancelLoad resets internal state', async () => {
+    const { cancelLoad, isLoadPending } = await resetModules();
+
+    expect(isLoadPending()).toBe(false);
+
+    cancelLoad();
+
+    expect(isLoadPending()).toBe(false);
+  });
+
+  it('isLoadPending returns false when no load is in progress', async () => {
+    const { isLoadPending } = await resetModules();
+
+    expect(isLoadPending()).toBe(false);
+  });
+});
+
+describe('aiService - loadModelFromFile abort', () => {
+  beforeEach(() => {
+    vi.resetModules();
+  });
+
+  it('passes signal to wllama.loadModel', async () => {
+    const { loadModelFromFile, unloadModel } = await resetModules();
+
+    const mockFileHandle = {
+      getFile: vi.fn().mockResolvedValue(
+        new File([new Uint8Array([0x47, 0x47, 0x55, 0x46, 0x00, 0x00, 0x00, 0x00])], 'model.gguf', { type: 'application/x-gguf' })
+      ),
+    };
+    const onProgress = vi.fn();
+
+    await loadModelFromFile(mockFileHandle, onProgress);
+
+    const { Wllama } = await import('@wllama/wllama');
+    const mockInstance = Wllama.getFreshInstance();
+    expect(mockInstance.loadModel).toHaveBeenCalledWith(
+      [expect.any(File)],
+      expect.objectContaining({ signal: expect.any(Object) })
+    );
+
+    await unloadModel();
+  });
+
+  it('isLoadPending returns true during load', async () => {
+    const { loadModelFromFile, isLoadPending, unloadModel } = await resetModules();
+    let pendingDuringLoad = false;
+
+    const mockFileHandle = {
+      getFile: vi.fn().mockResolvedValue(
+        new File([new Uint8Array([0x47, 0x47, 0x55, 0x46, 0x00, 0x00, 0x00, 0x00])], 'model.gguf', { type: 'application/x-gguf' })
+      ),
+    };
+
+    const loadPromise = loadModelFromFile(mockFileHandle, () => {
+      pendingDuringLoad = isLoadPending();
+    });
+
+    await loadPromise;
+
+    expect(pendingDuringLoad).toBe(true);
+    expect(isLoadPending()).toBe(false);
+
+    await unloadModel();
+  });
+});
+
+describe('aiService - loadModelFromHF abort', () => {
+  beforeEach(() => {
+    vi.resetModules();
+  });
+
+  it('passes signal to wllama.loadModelFromHF', async () => {
+    const { loadModelFromHF, unloadModel } = await resetModules();
+
+    const onProgress = vi.fn();
+
+    await loadModelFromHF(onProgress);
+
+    const { Wllama } = await import('@wllama/wllama');
+    const mockInstance = Wllama.getFreshInstance();
+    expect(mockInstance.loadModelFromHF).toHaveBeenCalledWith(
+      { repo: 'empero-ai/Qwen3.8-2B-GGUF', file: 'Qwen3.8-2B-Q4_K_M.gguf' },
+      expect.objectContaining({ signal: expect.any(Object) })
+    );
+
+    await unloadModel();
+  });
+
+  it('isLoadPending returns true during load', async () => {
+    const { loadModelFromHF, isLoadPending, unloadModel } = await resetModules();
+    let pendingDuringLoad = false;
+
+    const loadPromise = loadModelFromHF((p) => {
+      if (p === 5) pendingDuringLoad = isLoadPending();
+    });
+
+    await loadPromise;
+
+    expect(pendingDuringLoad).toBe(true);
+    expect(isLoadPending()).toBe(false);
+
+    await unloadModel();
   });
 });

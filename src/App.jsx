@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { getSavedFileHandle, verifyPermission, selectAndSaveFile } from './services/fileStorage';
-import { loadModelFromFile, loadModelFromHF, unloadModel } from './services/aiService';
+import { loadModelFromFile, loadModelFromHF, unloadModel, cancelLoad, isLoadPending } from './services/aiService';
 import WelcomeScreen from './components/WelcomeScreen';
 import AccessScreen from './components/AccessScreen';
 import LoadingScreen from './components/LoadingScreen';
@@ -13,6 +13,7 @@ export default function App() {
   const [progress, setProgress] = useState(0);
   const [error, setError] = useState('');
   const [envInfo, setEnvInfo] = useState({});
+  const [isCancelling, setIsCancelling] = useState(false);
 
   useEffect(() => {
     const gpu = !!navigator.gpu;
@@ -53,8 +54,14 @@ export default function App() {
       setStatus('chat');
       setFileName('Qwen3.8-2B (HuggingFace)');
     } catch (err) {
-      setError('HF ошибка: ' + err.message);
-      setStatus('welcome');
+      if (err.name === 'AbortError') {
+        setStatus('welcome');
+        setProgress(0);
+        setError('');
+      } else {
+        setError('HF ошибка: ' + err.message);
+        setStatus('welcome');
+      }
     }
   };
 
@@ -72,8 +79,14 @@ export default function App() {
       setStatus('chat');
     } catch (err) {
       console.error('[App] Error:', err);
-      setError('Ошибка: ' + err.message);
-      setStatus('welcome');
+      if (err.name === 'AbortError') {
+        setStatus('welcome');
+        setProgress(0);
+        setError('');
+      } else {
+        setError('Ошибка: ' + err.message);
+        setStatus('welcome');
+      }
     }
   };
 
@@ -81,6 +94,15 @@ export default function App() {
     await unloadModel();
     setStatus('welcome');
     setFileHandle(null);
+  };
+
+  const handleCancel = () => {
+    cancelLoad();
+    setIsCancelling(true);
+    setStatus('welcome');
+    setProgress(0);
+    setError('');
+    setTimeout(() => setIsCancelling(false), 300);
   };
 
   const envBanner = (
@@ -113,7 +135,7 @@ export default function App() {
   if (status === 'loading') return (
     <div>
       {envBanner}
-      <LoadingScreen progress={progress} fileName={fileName} error={error} />
+      <LoadingScreen progress={progress} fileName={fileName} error={error} onCancel={isCancelling ? undefined : handleCancel} />
     </div>
   );
   if (status === 'chat') return (
