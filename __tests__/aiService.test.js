@@ -388,12 +388,30 @@ describe('aiService - loadModelFromFile abort', () => {
 });
 
 describe('aiService - loadModelFromHF abort', () => {
-  beforeEach(() => {
-    vi.resetModules();
-  });
+  const mockGGUFChunk = new Uint8Array([0x47, 0x47, 0x55, 0x46, 0x01, 0x00, 0x00, 0x00]);
 
-  it('passes signal to wllama.loadModelFromHF', async () => {
-    const { loadModelFromHF, unloadModel } = await resetModules();
+  function setupFetchMock() {
+    return vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+      ok: true,
+      status: 200,
+      headers: { get: () => '1000' },
+      body: {
+        getReader: () => ({
+          _done: false,
+          read: async function() {
+            if (this._done) return { done: true, value: undefined };
+            this._done = true;
+            return { done: false, value: mockGGUFChunk };
+          }
+        })
+      }
+    });
+  }
+
+  it('fetches from HuggingFace and calls wllama.loadModel', async () => {
+    vi.resetModules();
+    const fetchMock = setupFetchMock();
+    const { loadModelFromHF, unloadModel } = await import('../src/services/aiService.js');
 
     const onProgress = vi.fn();
 
@@ -401,16 +419,22 @@ describe('aiService - loadModelFromHF abort', () => {
 
     const { Wllama } = await import('@wllama/wllama');
     const mockInstance = Wllama.getFreshInstance();
-    expect(mockInstance.loadModelFromHF).toHaveBeenCalledWith(
-      { repo: 'empero-ai/Qwen3.8-2B-GGUF', file: 'Qwen3.8-2B-Q4_K_M.gguf' },
-      expect.objectContaining({ signal: expect.any(Object) })
+    expect(mockInstance.loadModel).toHaveBeenCalledWith(
+      expect.any(Array),
+      expect.objectContaining({ n_ctx: 4096, signal: expect.any(Object) })
+    );
+    expect(fetchMock).toHaveBeenCalledWith(
+      expect.stringContaining('huggingface.co'),
+      expect.any(Object)
     );
 
     await unloadModel();
   });
 
   it('isLoadPending returns true during load', async () => {
-    const { loadModelFromHF, isLoadPending, unloadModel } = await resetModules();
+    vi.resetModules();
+    setupFetchMock();
+    const { loadModelFromHF, isLoadPending, unloadModel } = await import('../src/services/aiService.js');
     let pendingDuringLoad = false;
 
     const loadPromise = loadModelFromHF((p) => {
@@ -421,6 +445,57 @@ describe('aiService - loadModelFromHF abort', () => {
 
     expect(pendingDuringLoad).toBe(true);
     expect(isLoadPending()).toBe(false);
+
+    await unloadModel();
+  });
+
+  it('streams to file when fileHandle is provided', async () => {
+    vi.resetModules();
+    const fetchMock = setupFetchMock();
+    const mockWritable = {
+      write: vi.fn().mockResolvedValue(undefined),
+      close: vi.fn().mockResolvedValue(undefined),
+      abort: vi.fn().mockResolvedValue(undefined),
+      closed: Promise.resolve(),
+    };
+    const mockFileHandle = {
+      name: 'downloaded.gguf',
+      createWritable: vi.fn().mockResolvedValue(mockWritable),
+    };
+    const { loadModelFromHF, unloadModel } = await import('../src/services/aiService.js');
+
+    const onProgress = vi.fn();
+    const result = await loadModelFromHF(onProgress, mockFileHandle);
+
+    expect(mockFileHandle.createWritable).toHaveBeenCalled();
+    expect(mockWritable.write).toHaveBeenCalled();
+    expect(mockWritable.close).toHaveBeenCalled();
+    expect(result.fileHandle).toBe(mockFileHandle);
+
+    await unloadModel();
+  });
+
+  it('aborts writable on error', async () => {
+    vi.resetModules();
+    const fetchMock = setupFetchMock();
+    const mockWritable = {
+      write: vi.fn().mockRejectedValue(new Error('Write failed')),
+      close: vi.fn().mockResolvedValue(undefined),
+      abort: vi.fn().mockResolvedValue(undefined),
+      closed: Promise.resolve(),
+    };
+    const mockFileHandle = {
+      name: 'downloaded.gguf',
+      createWritable: vi.fn().mockResolvedValue(mockWritable),
+    };
+    const { loadModelFromHF, initWllama, unloadModel } = await import('../src/services/aiService.js');
+    await initWllama();
+
+    const onProgress = vi.fn();
+
+    await expect(loadModelFromHF(onProgress, mockFileHandle)).rejects.toThrow('Write failed');
+
+    expect(mockWritable.abort).toHaveBeenCalled();
 
     await unloadModel();
   });

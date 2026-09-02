@@ -43,3 +43,52 @@ export async function verifyPermission(fileHandle) {
   if ((await fileHandle.requestPermission(opts)) === 'granted') return true;
   return false;
 }
+
+export async function saveModelToDisk(file, saveName) {
+  try {
+    const handle = await window.showSaveFilePicker({
+      suggestedName: saveName || file.name,
+      types: [{
+        description: 'GGUF Model Files',
+        accept: { 'application/x-gguf': ['.gguf'] }
+      }],
+      excludeAcceptAllOption: true,
+    });
+
+    const writable = await handle.createWritable();
+    await writable.write(file);
+    await writable.close();
+
+    const db = await getDB();
+    await db.put(STORE_NAME, handle, KEY_NAME);
+
+    return handle;
+  } catch (e) {
+    if (e.name !== 'AbortError') {
+      console.error('Ошибка сохранения:', e);
+    }
+    return null;
+  }
+}
+
+export async function getFileBlob(fileHandle) {
+  const file = await fileHandle.getFile();
+  return await file.arrayBuffer();
+}
+
+export async function saveFilePicker(suggestedName) {
+  try {
+    const handle = await window.showSaveFilePicker({
+      suggestedName: suggestedName || 'model.gguf',
+      types: [{
+        description: 'GGUF Model Files',
+        accept: { 'application/x-gguf': ['.gguf'] }
+      }],
+      excludeAcceptAllOption: true,
+    });
+    return handle;
+  } catch (e) {
+    console.error('Выбор места сохранения отменен:', e);
+    return null;
+  }
+}

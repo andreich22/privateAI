@@ -1,0 +1,6 @@
+{
+  "$schema": "https://app.kilo.ai/config.json",
+  "commit_message": {
+    "prompt": "короткий и лаконичный на англиском, вот пример feat: add new feature {name} "
+  }
+}

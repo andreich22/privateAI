@@ -137,3 +137,55 @@ describe('fileStorage - selectAndSaveFile', () => {
     expect(result).toBeNull();
   });
 });
+
+describe('fileStorage - saveFilePicker', () => {
+  it('shows save file picker with suggested name', async () => {
+    const { saveFilePicker } = await import('../src/services/fileStorage.js');
+
+    await saveFilePicker('Qwen3.8-2B-Q4_K_M.gguf');
+
+    expect(window.showSaveFilePicker).toHaveBeenCalledWith({
+      suggestedName: 'Qwen3.8-2B-Q4_K_M.gguf',
+      types: [{
+        description: 'GGUF Model Files',
+        accept: { 'application/x-gguf': ['.gguf'] }
+      }],
+      excludeAcceptAllOption: true,
+    });
+  });
+
+  it('uses default name when none provided', async () => {
+    const { saveFilePicker } = await import('../src/services/fileStorage.js');
+
+    await saveFilePicker();
+
+    expect(window.showSaveFilePicker).toHaveBeenCalledWith({
+      suggestedName: 'model.gguf',
+      types: [{
+        description: 'GGUF Model Files',
+        accept: { 'application/x-gguf': ['.gguf'] }
+      }],
+      excludeAcceptAllOption: true,
+    });
+  });
+
+  it('returns the file handle', async () => {
+    const { saveFilePicker } = await import('../src/services/fileStorage.js');
+
+    const result = await saveFilePicker('test.gguf');
+
+    expect(result).toBeDefined();
+    expect(result.name).toBe('model.gguf');
+  });
+
+  it('returns null when save picker is cancelled', async () => {
+    const savePickerMock = window.showSaveFilePicker;
+    savePickerMock.mockRejectedValueOnce(new Error('Cancelled'));
+
+    const { saveFilePicker } = await import('../src/services/fileStorage.js');
+
+    const result = await saveFilePicker();
+
+    expect(result).toBeNull();
+  });
+});

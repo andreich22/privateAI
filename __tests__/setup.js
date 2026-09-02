@@ -56,6 +56,13 @@ vi.mock('idb', async () => ({
   openDB: vi.fn().mockResolvedValue(mockDB),
 }));
 
+const mockWritable = {
+  write: vi.fn().mockResolvedValue(undefined),
+  close: vi.fn().mockResolvedValue(undefined),
+  abort: vi.fn().mockResolvedValue(undefined),
+  closed: Promise.resolve(),
+};
+
 const mockFileHandle = {
   queryPermission: vi.fn().mockResolvedValue('granted'),
   requestPermission: vi.fn().mockResolvedValue('granted'),
@@ -64,10 +71,12 @@ const mockFileHandle = {
   ),
   name: 'model.gguf',
   isFile: true,
+  createWritable: vi.fn().mockResolvedValue(mockWritable),
 };
 
 if (typeof window !== 'undefined') {
   window.showOpenFilePicker = vi.fn().mockResolvedValue([mockFileHandle]);
+  window.showSaveFilePicker = vi.fn().mockResolvedValue(mockFileHandle);
 }
 
 globalThis.navigator = {
@@ -119,6 +128,28 @@ if (typeof document !== 'undefined') {
 vi.spyOn(console, 'log').mockImplementation(() => {});
 vi.spyOn(console, 'error').mockImplementation(() => {});
 
+const mockFetchResponse = {
+  ok: true,
+  status: 200,
+  headers: { get: (key) => key === 'content-length' ? '1000' : null },
+  body: {
+    getReader: () => {
+      let done = false;
+      return {
+        read: async () => {
+          if (done) return { done: true, value: undefined };
+          done = true;
+          return { done: false, value: new Uint8Array([0x47, 0x47, 0x55, 0x46, 0x01, 0x00, 0x00, 0x00]) };
+        }
+      };
+    }
+  }
+};
+
+if (typeof fetch !== 'undefined') {
+  vi.spyOn(globalThis, 'fetch').mockImplementation(async () => mockFetchResponse);
+}
+
 afterEach(() => {
   freshWllama = null;
   wllamaCallCount = 0;
@@ -131,10 +162,16 @@ afterEach(() => {
   mockFileHandle.queryPermission.mockClear();
   mockFileHandle.requestPermission.mockClear();
   mockFileHandle.getFile.mockClear();
+  mockFileHandle.createWritable.mockClear();
+  mockWritable.write.mockClear();
+  mockWritable.close.mockClear();
+  mockWritable.abort.mockClear();
 
   mockDB.get.mockResolvedValue(null);
 
   if (typeof window !== 'undefined') {
     window.showOpenFilePicker.mockClear();
   }
+
+  vi.clearAllMocks();
 });

@@ -75,7 +75,7 @@ export async function loadModelFromFile(fileHandle, onProgress) {
   }
 }
 
-export async function loadModelFromHF(onProgress) {
+export async function loadModelFromHF(onProgress, fileHandle) {
   console.log('[aiService] === LOAD MODEL FROM HF ===');
   loadAbortController = new AbortController();
   const signal = loadAbortController.signal;
@@ -87,26 +87,65 @@ export async function loadModelFromHF(onProgress) {
     throw new DOMException('Load cancelled', 'AbortError');
   }
 
-  const wllama = await initWllama();
-  if (onProgress) onProgress(10);
+  const repo = 'empero-ai/Qwen3.8-2B-GGUF';
+  const filename = 'Qwen3.8-2B-Q4_K_M.gguf';
+  const hfUrl = `https://huggingface.co/${repo}/resolve/main/${filename}`;
+
+  let blob = null;
+  let writable = null;
 
   try {
-    await wllama.loadModelFromHF(
-      { repo: 'empero-ai/Qwen3.8-2B-GGUF', file: 'Qwen3.8-2B-Q4_K_M.gguf' },
-      {
-        progressCallback: ({ loaded, total }) => {
-          if (signal.aborted) {
-            return;
-          }
-          if (onProgress) onProgress(Math.round((loaded / total) * 40) + 10);
-        },
-        signal,
-      }
-    );
+    const response = await fetch(hfUrl, { signal });
+    if (!response.ok) throw new Error(`HF HTTP ${response.status}`);
+    const total = response.headers.get('content-length');
+    const reader = response.body.getReader();
+    const chunks = [];
+    let loaded = 0;
 
-    const loaded = wllama.isModelLoaded();
-    console.log('[aiService] isModelLoaded:', loaded);
-    if (!loaded) throw new Error('Model not loaded');
+    if (fileHandle) {
+      writable = await fileHandle.createWritable();
+      console.log('[aiService] Streaming download to file:', fileHandle.name);
+    }
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      chunks.push(value);
+      loaded += value.byteLength;
+
+      if (fileHandle && writable) {
+        await writable.write(value);
+      }
+
+      if (onProgress && total) {
+        onProgress(Math.round((loaded / parseInt(total)) * 60) + 10);
+      }
+    }
+
+    if (fileHandle && writable) {
+      await writable.close();
+      console.log('[aiService] Download written to file:', fileHandle.name);
+    }
+
+    const blobSize = chunks.reduce((sum, c) => sum + c.byteLength, 0);
+    blob = new Blob(chunks, { type: 'application/x-gguf' });
+    console.log('[aiService] HF download complete, blob size:', blobSize);
+
+    if (signal.aborted) {
+      if (onProgress) onProgress(0);
+      throw new DOMException('Load cancelled', 'AbortError');
+    }
+
+    const wllama = await initWllama();
+    await wllama.loadModel([blob], {
+      n_ctx: 4096,
+      n_gpu_layers: 0,
+      signal,
+    });
+
+    const loadedFlag = wllama.isModelLoaded();
+    console.log('[aiService] isModelLoaded:', loadedFlag);
+    if (!loadedFlag) throw new Error('Model not loaded');
 
     const ctx = wllama.getLoadedContextInfo();
     console.log('[aiService] Context:', {
@@ -117,7 +156,14 @@ export async function loadModelFromHF(onProgress) {
 
     if (onProgress) onProgress(100);
     console.log('[aiService] === MODEL LOADED FROM HF ===');
+
+    return { blob, fileHandle };
   } catch (err) {
+    try {
+      if (writable) {
+        await writable.abort();
+      }
+    } catch (e) { /* ignore abort errors */ }
     console.error('[aiService] HF Load ERROR:', err);
     if (onProgress) onProgress(0);
     throw err;

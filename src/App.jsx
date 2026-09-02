@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { getSavedFileHandle, verifyPermission, selectAndSaveFile } from './services/fileStorage';
+import { getSavedFileHandle, verifyPermission, selectAndSaveFile, saveFilePicker } from './services/fileStorage';
 import { loadModelFromFile, loadModelFromHF, unloadModel, cancelLoad, isLoadPending } from './services/aiService';
 import WelcomeScreen from './components/WelcomeScreen';
 import AccessScreen from './components/AccessScreen';
@@ -14,6 +14,8 @@ export default function App() {
   const [error, setError] = useState('');
   const [envInfo, setEnvInfo] = useState({});
   const [isCancelling, setIsCancelling] = useState(false);
+  const [saveLocationHandle, setSaveLocationHandle] = useState(null);
+  const [isLoaded, setIsLoaded] = useState(false);
 
   useEffect(() => {
     const gpu = !!navigator.gpu;
@@ -45,28 +47,43 @@ export default function App() {
     }
   };
 
-  const handleLoadFromHF = async () => {
+  const handleSaveLocation = async () => {
     setError('');
-    setStatus('loading');
-    setProgress(0);
-    try {
-      await loadModelFromHF(setProgress);
-      setStatus('chat');
-      setFileName('Qwen3.8-2B (HuggingFace)');
-    } catch (err) {
-      if (err.name === 'AbortError') {
-        setStatus('welcome');
-        setProgress(0);
-        setError('');
-      } else {
-        setError('HF ошибка: ' + err.message);
-        setStatus('welcome');
+    const handle = await saveFilePicker('Qwen3.8-2B-Q4_K_M.gguf');
+    if (handle) {
+      setSaveLocationHandle(handle);
+      setStatus('loading');
+      setProgress(0);
+      setIsLoaded(false);
+      try {
+        const result = await loadModelFromHF(setProgress, handle);
+        if (result?.fileHandle) {
+          setFileHandle(result.fileHandle);
+          setFileName(result.fileHandle.name);
+        }
+        setStatus('chat');
+        setIsLoaded(true);
+      } catch (err) {
+        if (err.name === 'AbortError') {
+          setStatus('welcome');
+          setProgress(0);
+          setError('');
+        } else {
+          setError('HF ошибка: ' + err.message);
+          setStatus('welcome');
+        }
       }
     }
   };
 
+  const handleLoadFromHF = () => {
+    setError('');
+    handleSaveLocation();
+  };
+
   const handleStartModel = async (handle = fileHandle) => {
     setError('');
+    setIsLoaded(false);
     try {
       const hasPermission = await verifyPermission(handle);
       if (!hasPermission) {
