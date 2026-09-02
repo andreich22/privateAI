@@ -2,6 +2,7 @@ import { Wllama } from '@wllama/wllama';
 
 let wllamaInstance = null;
 let chatHistory = [];
+let loadAbortController = null;
 
 export async function initWllama() {
   if (wllamaInstance) return wllamaInstance;
@@ -20,7 +21,15 @@ export async function initWllama() {
 
 export async function loadModelFromFile(fileHandle, onProgress) {
   console.log('[aiService] === LOAD MODEL FROM FILE ===');
+  loadAbortController = new AbortController();
+  const signal = loadAbortController.signal;
+
   if (onProgress) onProgress(5);
+
+  if (signal.aborted) {
+    if (onProgress) onProgress(0);
+    throw new DOMException('Load cancelled', 'AbortError');
+  }
 
   const wllama = await initWllama();
   const file = await fileHandle.getFile();
@@ -30,6 +39,7 @@ export async function loadModelFromFile(fileHandle, onProgress) {
   const isGguf = header[0] === 0x47 && header[1] === 0x47 && header[2] === 0x55 && header[3] === 0x46;
   console.log('[aiService] Valid GGUF:', isGguf);
   if (!isGguf) {
+    loadAbortController = null;
     throw new Error('Invalid GGUF magic: ' + Array.from(header).join(' '));
   }
 
@@ -39,6 +49,7 @@ export async function loadModelFromFile(fileHandle, onProgress) {
     await wllama.loadModel([file], {
       n_ctx: 4096,
       n_gpu_layers: 0,
+      signal,
     });
     console.log('[aiService] loadModel resolved');
 
@@ -59,12 +70,22 @@ export async function loadModelFromFile(fileHandle, onProgress) {
     console.error('[aiService] Load ERROR:', err);
     if (onProgress) onProgress(0);
     throw err;
+  } finally {
+    loadAbortController = null;
   }
 }
 
 export async function loadModelFromHF(onProgress) {
   console.log('[aiService] === LOAD MODEL FROM HF ===');
+  loadAbortController = new AbortController();
+  const signal = loadAbortController.signal;
+
   if (onProgress) onProgress(5);
+
+  if (signal.aborted) {
+    if (onProgress) onProgress(0);
+    throw new DOMException('Load cancelled', 'AbortError');
+  }
 
   const wllama = await initWllama();
   if (onProgress) onProgress(10);
@@ -74,8 +95,12 @@ export async function loadModelFromHF(onProgress) {
       { repo: 'empero-ai/Qwen3.8-2B-GGUF', file: 'Qwen3.8-2B-Q4_K_M.gguf' },
       {
         progressCallback: ({ loaded, total }) => {
+          if (signal.aborted) {
+            return;
+          }
           if (onProgress) onProgress(Math.round((loaded / total) * 40) + 10);
-        }
+        },
+        signal,
       }
     );
 
@@ -96,6 +121,8 @@ export async function loadModelFromHF(onProgress) {
     console.error('[aiService] HF Load ERROR:', err);
     if (onProgress) onProgress(0);
     throw err;
+  } finally {
+    loadAbortController = null;
   }
 }
 
@@ -169,6 +196,18 @@ export async function unloadModel() {
     wllamaInstance = null;
     chatHistory = [];
   }
+}
+
+export function cancelLoad() {
+  console.log('[aiService] === CANCEL LOAD ===');
+  if (loadAbortController) {
+    loadAbortController.abort();
+    loadAbortController = null;
+  }
+}
+
+export function isLoadPending() {
+  return loadAbortController !== null && !loadAbortController.signal.aborted;
 }
 
 export function addMessageToHistory(role, content) {
