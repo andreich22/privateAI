@@ -53,11 +53,11 @@ test.describe('Chat Flow', () => {
     await expect(page.locator(selectors.messagesBox).locator(selectors.assistantMessage)).toHaveCount(2);
   });
 
-  test('unload model -> returns to welcome screen', async ({ page }) => {
+  test('unload model -> returns to access screen', async ({ page }) => {
     await page.locator('button.btn-danger').click();
 
     await page.waitForSelector('div.screen.centered', { timeout: 10000 });
-    await expect(page.locator('button.btn-main')).toContainText('Выбрать GGUF файл');
+    await expect(page.locator('button.btn-main')).toContainText('Запустить');
   });
 
   test('submit button disabled while generating', async ({ page }) => {
