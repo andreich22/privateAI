@@ -69,15 +69,11 @@ test.describe('Chat Flow', () => {
   });
 
   test('input placeholder shows generation state', async ({ page }) => {
-    // Use type() which properly simulates typing and triggers React events
-    await page.locator(selectors.chatInput).click();
-    await page.keyboard.type('test');
-    await page.keyboard.press('Enter');
+    await page.locator(selectors.chatInput).fill('test');
+    await page.locator(selectors.submitButton).click();
 
-    // Wait for streaming cursor to appear (confirms generation started)
-    await expect.poll(async () => {
-      return await page.locator('.cursor').count();
-    }, { intervals: [200], timeout: 15000 }).toBeGreaterThan(0);
+    await expect(page.locator(selectors.chatInput)).toHaveAttribute('placeholder', 'Генерация...');
+    await expect(page.locator(selectors.chatInput)).toBeDisabled();
   });
 
   test('chat header shows model filename', async ({ page }) => {
