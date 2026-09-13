@@ -6,6 +6,22 @@ export async function setupMocks(page, options = {}) {
     mockSavedHandleName = null,
   } = options;
 
+  await page.route('https://huggingface.co/**', async (route) => {
+    const modelBytes = new Uint8Array([
+      ...GGUF_MAGIC,
+      0x00, 0x00, 0x00, 0x00,
+    ]);
+
+    await route.fulfill({
+      status: 200,
+      headers: {
+        'content-type': 'application/octet-stream',
+        'content-length': String(modelBytes.byteLength),
+      },
+      body: Buffer.from(modelBytes),
+    });
+  });
+
   await page.addInitScript(
     ({ savedHandleName, chatResponse }) => {
       const GGUF_MAGIC = new Uint8Array([0x47, 0x47, 0x55, 0x46]); // "GGUF"
@@ -21,10 +37,40 @@ export async function setupMocks(page, options = {}) {
       let pendingHandle = null;
       let permissionGranted = true;
 
+      const createSaveHandle = (name) => {
+        let bytes = new Uint8Array();
+        return {
+          name,
+          createWritable: async () => ({
+            write: async (chunk) => {
+              const value = chunk instanceof Uint8Array ? chunk : new Uint8Array(chunk);
+              const next = new Uint8Array(bytes.length + value.length);
+              next.set(bytes);
+              next.set(value, bytes.length);
+              bytes = next;
+            },
+            close: async () => {},
+            abort: async () => { bytes = new Uint8Array(); },
+          }),
+          getFile: async () => ({
+            name,
+            size: bytes.length || 8,
+            slice: () => ({ arrayBuffer: async () => (bytes.length ? bytes.buffer : GGUF_MAGIC.buffer) }),
+            type: 'application/x-gguf',
+          }),
+          queryPermission: async () => 'granted',
+          requestPermission: async () => 'granted',
+        };
+      };
+
       window.showOpenFilePicker = async () => {
         if (!pendingHandle) throw new Error('No file selected');
         return [pendingHandle];
       };
+
+      window.showSaveFilePicker = async ({ suggestedName } = {}) => (
+        createSaveHandle(suggestedName || 'model.gguf')
+      );
 
       const MockWllama = class {
         constructor() {
