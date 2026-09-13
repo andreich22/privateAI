@@ -1,0 +1,18 @@
+# CODEOWNERS file for privateAI repository
+# This file defines code owners who must review changes to specific parts of the codebase
+
+# Default owners for everything in the repo (applies to all PRs unless overridden)
+* @andreich22
+
+# Specific directory owners
+/src/ @andreich22
+/public/ @andreich22
+/__tests__/ @andreich22
+/tests/ @andreich22
+/dist/ @andreich22
+
+# Configuration files
+*.json @andreich22
+*.js @andreich22
+*.md @andreich22
+.github/ @andreich22
