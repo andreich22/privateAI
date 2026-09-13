@@ -1,12 +1,13 @@
-import React, { useState, useEffect } from 'react';
-import { getSavedFileHandle, verifyPermission, selectAndSaveFile, saveFilePicker } from './services/fileStorage';
-import { loadModelFromFile, loadModelFromHF, unloadModel, cancelLoad, isLoadPending } from './services/aiService';
+import React, { useEffect, useRef, useState } from 'react';
+import { getSavedFileHandle, verifyPermission, selectAndSaveFile, saveFilePicker, saveFileHandle } from './services/fileStorage';
+import { AIRuntime } from './services/AIRuntime';
 import WelcomeScreen from './components/WelcomeScreen';
 import AccessScreen from './components/AccessScreen';
 import LoadingScreen from './components/LoadingScreen';
 import ChatWorkspace from './components/ChatWorkspace';
 
 export default function App() {
+  const runtimeRef = useRef(null);
   const [status, setStatus] = useState('checking');
   const [fileHandle, setFileHandle] = useState(null);
   const [fileName, setFileName] = useState('');
@@ -14,8 +15,9 @@ export default function App() {
   const [error, setError] = useState('');
   const [envInfo, setEnvInfo] = useState({});
   const [isCancelling, setIsCancelling] = useState(false);
-  const [saveLocationHandle, setSaveLocationHandle] = useState(null);
-  const [isLoaded, setIsLoaded] = useState(false);
+
+  if (!runtimeRef.current) runtimeRef.current = new AIRuntime();
+  const runtime = runtimeRef.current;
 
   useEffect(() => {
     const gpu = !!navigator.gpu;
@@ -24,8 +26,10 @@ export default function App() {
     const browser = isFirefox ? 'Firefox' : navigator.userAgent.includes('Chrome') ? 'Chrome' : 'Other';
     setEnvInfo({ gpu, coop, isFirefox, browser, cores: navigator.hardwareConcurrency });
 
-    async function checkExistingHandle() {
+    let cancelled = false;
+    (async () => {
       const handle = await getSavedFileHandle();
+      if (cancelled) return;
       if (handle) {
         setFileHandle(handle);
         setFileName(handle.name);
@@ -33,9 +37,13 @@ export default function App() {
       } else {
         setStatus('welcome');
       }
-    }
-    checkExistingHandle();
-  }, []);
+    })();
+
+    return () => {
+      cancelled = true;
+      runtime.unloadModel().catch(() => {});
+    };
+  }, [runtime]);
 
   const handleSelectFile = async () => {
     setError('');
@@ -43,47 +51,38 @@ export default function App() {
     if (handle) {
       setFileHandle(handle);
       setFileName(handle.name);
-      handleStartModel(handle);
+      await handleStartModel(handle);
     }
   };
 
-  const handleSaveLocation = async () => {
+  const handleLoadFromHF = async () => {
     setError('');
     const handle = await saveFilePicker('Qwen3.8-2B-Q4_K_M.gguf');
-    if (handle) {
-      setSaveLocationHandle(handle);
-      setStatus('loading');
-      setProgress(0);
-      setIsLoaded(false);
-      try {
-        const result = await loadModelFromHF(setProgress, handle);
-        if (result?.fileHandle) {
-          setFileHandle(result.fileHandle);
-          setFileName(result.fileHandle.name);
-        }
-        setStatus('chat');
-        setIsLoaded(true);
-      } catch (err) {
-        if (err.name === 'AbortError') {
-          setStatus('welcome');
-          setProgress(0);
-          setError('');
-        } else {
-          setError('HF ошибка: ' + err.message);
-          setStatus('welcome');
-        }
+    if (!handle) return;
+
+    setFileHandle(handle);
+    setFileName(handle.name);
+    setStatus('loading');
+    setProgress(0);
+    try {
+      const result = await runtime.loadModelFromHF(setProgress, handle);
+      if (result?.fileHandle) await saveFileHandle(result.fileHandle);
+      setStatus('chat');
+    } catch (err) {
+      if (err.name === 'AbortError') {
+        setStatus('welcome');
+        setProgress(0);
+        setError('');
+      } else {
+        setError('HF ошибка: ' + err.message);
+        setStatus('welcome');
       }
     }
   };
 
-  const handleLoadFromHF = () => {
-    setError('');
-    handleSaveLocation();
-  };
-
   const handleStartModel = async (handle = fileHandle) => {
     setError('');
-    setIsLoaded(false);
+    if (!handle) return;
     try {
       const hasPermission = await verifyPermission(handle);
       if (!hasPermission) {
@@ -92,33 +91,32 @@ export default function App() {
       }
       setStatus('loading');
       setProgress(0);
-      await loadModelFromFile(handle, setProgress);
+      await runtime.loadModelFromFile(handle, setProgress);
       setStatus('chat');
     } catch (err) {
-      console.error('[App] Error:', err);
       if (err.name === 'AbortError') {
-        setStatus('welcome');
+        setStatus('access');
         setProgress(0);
         setError('');
       } else {
         setError('Ошибка: ' + err.message);
-        setStatus('welcome');
+        setStatus('access');
       }
     }
   };
 
   const handleUnload = async () => {
-    await unloadModel();
-    setStatus('welcome');
-    setFileHandle(null);
+    await runtime.unloadModel();
+    // Unload releases RAM/GPU resources but keeps the saved file handle.
+    setStatus(fileHandle ? 'access' : 'welcome');
   };
 
   const handleCancel = () => {
-    cancelLoad();
+    runtime.cancelLoad();
     setIsCancelling(true);
-    setStatus('welcome');
     setProgress(0);
     setError('');
+    setStatus(fileHandle ? 'access' : 'welcome');
     setTimeout(() => setIsCancelling(false), 300);
   };
 
@@ -130,35 +128,16 @@ export default function App() {
       display: 'flex', gap: 16, justifyContent: 'center', flexWrap: 'wrap'
     }}>
       <span>B: {envInfo.browser}</span>
-      <span>GPU: {envInfo.gpu ? '✓' : '✗'}</span>
+      <span>WebGPU: {envInfo.gpu ? '✓ available' : '✗ unavailable'}</span>
       <span>COOP: {envInfo.coop ? '✓' : '✗'}</span>
       <span>Cores: {envInfo.cores}</span>
     </div>
   );
 
   if (status === 'checking') return <div className="centered">Проверка среды...</div>;
-  if (status === 'welcome') return (
-    <div>
-      {envBanner}
-      <WelcomeScreen onSelect={handleSelectFile} onHF={handleLoadFromHF} error={error} />
-    </div>
-  );
-  if (status === 'access') return (
-    <div>
-      {envBanner}
-      <AccessScreen fileName={fileName} onConfirm={() => handleStartModel()} onReset={handleSelectFile} onHF={handleLoadFromHF} error={error} />
-    </div>
-  );
-  if (status === 'loading') return (
-    <div>
-      {envBanner}
-      <LoadingScreen progress={progress} fileName={fileName} error={error} onCancel={isCancelling ? undefined : handleCancel} />
-    </div>
-  );
-  if (status === 'chat') return (
-    <div>
-      {envBanner}
-      <ChatWorkspace fileName={fileName} onUnload={handleUnload} />
-    </div>
-  );
+  if (status === 'welcome') return <div>{envBanner}<WelcomeScreen onSelect={handleSelectFile} onHF={handleLoadFromHF} error={error} /></div>;
+  if (status === 'access') return <div>{envBanner}<AccessScreen fileName={fileName} onConfirm={() => handleStartModel()} onReset={handleSelectFile} onHF={handleLoadFromHF} error={error} /></div>;
+  if (status === 'loading') return <div>{envBanner}<LoadingScreen progress={progress} fileName={fileName} error={error} onCancel={isCancelling ? undefined : handleCancel} /></div>;
+  if (status === 'chat') return <div>{envBanner}<ChatWorkspace runtime={runtime} fileName={fileName} onUnload={handleUnload} /></div>;
+  return null;
 }
