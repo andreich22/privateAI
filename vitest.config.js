@@ -9,5 +9,7 @@ export default defineConfig({
     globals: true,
     clearMocks: true,
     restoreMocks: true,
+    include: ['__tests__/**/*.{test,spec}.{js,jsx,ts,tsx}'],
+    exclude: ['node_modules', 'tests'],
   },
 });
