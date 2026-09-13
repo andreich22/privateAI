@@ -39,11 +39,18 @@ describe('AIRuntime', () => {
   });
 
   it('keeps loading state instance-local and cancellable', async () => {
-    const handle = createFileHandle();
-    const loadPromise = runtime.loadModelFromFile(handle);
+    await runtime.init();
+    const { Wllama } = await import('@wllama/wllama');
+    const instance = Wllama.getFreshInstance();
+    let resolveLoad;
+    instance.loadModel.mockImplementation(() => new Promise((resolve) => { resolveLoad = resolve; }));
+
+    const loadPromise = runtime.loadModelFromFile(createFileHandle());
     expect(runtime.isLoadPending()).toBe(true);
     runtime.cancelLoad();
-    await expect(loadPromise).rejects.toThrow();
+    resolveLoad();
+
+    await expect(loadPromise).rejects.toThrow('Load cancelled');
     expect(runtime.isLoadPending()).toBe(false);
   });
 
