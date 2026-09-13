@@ -10,6 +10,8 @@ export class AIRuntime {
   constructor() {
     this.wllama = null;
     this.loadAbortController = null;
+    this.generationAbortController = null;
+    this.generationPromise = null;
     this.modelLoaded = false;
   }
 
@@ -79,6 +81,9 @@ export class AIRuntime {
       } catch (error) {
         try { await reader.cancel(); } catch { /* ignore */ }
         if (writable) {
+          // FileSystemWritableFileStream#abort discards the in-progress write
+          // without replacing the existing file. The handle is persisted only
+          // after the model has loaded successfully.
           try { await writable.abort(); } catch { /* ignore */ }
         }
         throw error;
@@ -126,50 +131,94 @@ export class AIRuntime {
 
   async streamChat(messages, onToken) {
     this.#assertLoaded();
-    const response = await this.wllama.createChatCompletion({
-      messages,
-      stream: true,
-      max_tokens: 512,
-      temperature: 0.7,
-    });
-
-    let fullText = '';
-    for await (const chunk of response) {
-      const content = chunk.choices?.[0]?.delta?.content;
-      if (content) {
-        fullText += content;
-        onToken(content);
-      }
+    if (this.generationAbortController) {
+      throw new Error('Generation is already in progress');
     }
-    return fullText;
+
+    const controller = new AbortController();
+    this.generationAbortController = controller;
+    const operation = (async () => {
+      const response = await this.wllama.createChatCompletion({
+        messages,
+        stream: true,
+        max_tokens: 512,
+        temperature: 0.7,
+        abortSignal: controller.signal,
+      });
+
+      let fullText = '';
+      for await (const chunk of response) {
+        if (controller.signal.aborted) throw createAbortError();
+        const content = chunk.choices?.[0]?.delta?.content;
+        if (content) {
+          fullText += content;
+          onToken(content);
+        }
+      }
+      return fullText;
+    })();
+
+    this.generationPromise = operation;
+    try {
+      return await operation;
+    } finally {
+      if (this.generationPromise === operation) this.generationPromise = null;
+      if (this.generationAbortController === controller) this.generationAbortController = null;
+    }
   }
 
   async simpleCompletion(prompt, onToken) {
     this.#assertLoaded();
-    const response = await this.wllama.createCompletion({
-      prompt,
-      stream: true,
-      max_tokens: 64,
-      temperature: 0.7,
-    });
-
-    let fullText = '';
-    for await (const chunk of response) {
-      const text = chunk.choices?.[0]?.text;
-      if (text) {
-        fullText += text;
-        onToken(text);
-      }
+    if (this.generationAbortController) {
+      throw new Error('Generation is already in progress');
     }
-    return fullText;
+
+    const controller = new AbortController();
+    this.generationAbortController = controller;
+    const operation = (async () => {
+      const response = await this.wllama.createCompletion({
+        prompt,
+        stream: true,
+        max_tokens: 64,
+        temperature: 0.7,
+        abortSignal: controller.signal,
+      });
+
+      let fullText = '';
+      for await (const chunk of response) {
+        if (controller.signal.aborted) throw createAbortError();
+        const text = chunk.choices?.[0]?.text;
+        if (text) {
+          fullText += text;
+          onToken(text);
+        }
+      }
+      return fullText;
+    })();
+
+    this.generationPromise = operation;
+    try {
+      return await operation;
+    } finally {
+      if (this.generationPromise === operation) this.generationPromise = null;
+      if (this.generationAbortController === controller) this.generationAbortController = null;
+    }
   }
 
   cancelLoad() {
     this.loadAbortController?.abort();
   }
 
+  cancelGeneration() {
+    this.generationAbortController?.abort();
+  }
+
   isLoadPending() {
     return Boolean(this.loadAbortController && !this.loadAbortController.signal.aborted);
+  }
+
+  isGenerationPending() {
+    return Boolean(this.generationAbortController && !this.generationAbortController.signal.aborted);
   }
 
   isLoaded() {
@@ -182,6 +231,17 @@ export class AIRuntime {
 
   async unloadModel() {
     this.cancelLoad();
+    this.cancelGeneration();
+
+    const generation = this.generationPromise;
+    if (generation) {
+      try {
+        await generation;
+      } catch {
+        // Cancellation/errors are expected while shutting down the runtime.
+      }
+    }
+
     const instance = this.wllama;
     this.wllama = null;
     this.modelLoaded = false;
