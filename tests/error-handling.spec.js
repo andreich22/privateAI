@@ -28,8 +28,10 @@ test.describe('Error Handling', () => {
 
     await page.locator('button.btn-main').click();
 
+    await page.waitForSelector(selectors.errorText, { timeout: 10000 });
+
     await expect.poll(async () => {
-      const count = await page.locator('p[style*="color"]').count();
+      const count = await page.locator(selectors.errorText).count();
       return count;
     }, { intervals: [100], timeout: 5000 }).toBeGreaterThan(0);
 

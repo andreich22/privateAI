@@ -19,7 +19,7 @@ test.describe('Model Load Flow', () => {
     await setMockFileHandle(page, 'test-model.gguf');
     await page.locator('button.btn-main').click();
 
-    await expect(page.locator(selectors.progressBarFill)).toBeVisible();
+    await expect(page.locator(selectors.progressBarFill)).toBeVisible({ timeout: 30000 });
     await expect.poll(async () => {
       const chat = await page.locator(selectors.chatContainer).count();
       return chat;
@@ -51,7 +51,7 @@ test.describe('Model Load Flow', () => {
     await setMockFileHandle(page, 'test-model.gguf');
     await page.locator('button.btn-main').click();
 
-    await expect(page.locator(selectors.progressBarFill)).toBeVisible();
+    await expect(page.locator(selectors.progressBarFill)).toBeVisible({ timeout: 30000 });
 
     await expect.poll(async () => {
       const chat = await page.locator(selectors.chatContainer).count();

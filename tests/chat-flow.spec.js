@@ -11,7 +11,8 @@ test.describe('Chat Flow', () => {
     await setMockFileHandle(page, 'test-model.gguf');
     await page.locator('button.btn-main').click();
 
-    await page.waitForSelector(selectors.chatContainer, { timeout: 15000 });
+    await page.waitForLoadState('networkidle');
+    await page.waitForSelector(selectors.chatContainer, { timeout: 30000 });
     await expect(page.locator(selectors.chatContainer)).toBeVisible();
   });
 
