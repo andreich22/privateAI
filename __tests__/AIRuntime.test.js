@@ -46,7 +46,9 @@ describe('AIRuntime', () => {
     instance.loadModel.mockImplementation(() => new Promise((resolve) => { resolveLoad = resolve; }));
 
     const loadPromise = runtime.loadModelFromFile(createFileHandle());
+    await vi.waitFor(() => expect(instance.loadModel).toHaveBeenCalled());
     expect(runtime.isLoadPending()).toBe(true);
+
     runtime.cancelLoad();
     resolveLoad();
 
