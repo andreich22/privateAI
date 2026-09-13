@@ -28,13 +28,21 @@ export default function App() {
 
     let cancelled = false;
     (async () => {
-      const handle = await getSavedFileHandle();
-      if (cancelled) return;
-      if (handle) {
-        setFileHandle(handle);
-        setFileName(handle.name);
-        setStatus('access');
-      } else {
+      try {
+        const handle = await getSavedFileHandle();
+        if (cancelled) return;
+        if (handle) {
+          setFileHandle(handle);
+          setFileName(handle.name);
+          setStatus('access');
+        } else {
+          setStatus('welcome');
+        }
+      } catch (err) {
+        if (cancelled) return;
+        console.warn('Не удалось восстановить сохранённый файл:', err);
+        setFileHandle(null);
+        setFileName('');
         setStatus('welcome');
       }
     })();
@@ -107,7 +115,6 @@ export default function App() {
 
   const handleUnload = async () => {
     await runtime.unloadModel();
-    // Unload releases RAM/GPU resources but keeps the saved file handle.
     setStatus(fileHandle ? 'access' : 'welcome');
   };
 
