@@ -29,7 +29,7 @@ export default function ChatWorkspace({ runtime, fileName, onUnload }) {
     appendDebug(`USER: ${userText}`);
 
     const nextMessages = [...messages, { role: 'user', content: userText }];
-    setMessages(nextMessages.map(({ role, content }) => ({ role, text: content })));
+    setMessages(nextMessages);
 
     let fullAssistantText = '';
     try {
@@ -39,10 +39,10 @@ export default function ChatWorkspace({ runtime, fileName, onUnload }) {
       });
 
       appendDebug(`DONE: ${fullAssistantText}`);
-      setMessages((prev) => [...prev, { role: 'assistant', text: fullAssistantText }]);
+      setMessages((prev) => [...prev, { role: 'assistant', content: fullAssistantText }]);
     } catch (err) {
       appendDebug(`CHAT ERROR: ${err.message}`);
-      setMessages((prev) => [...prev, { role: 'assistant', text: `[Ошибка чата: ${err.message}]` }]);
+      setMessages((prev) => [...prev, { role: 'assistant', content: `[Ошибка чата: ${err.message}]` }]);
     } finally {
       generationRef.current = false;
       setIsGenerating(false);
@@ -65,7 +65,7 @@ export default function ChatWorkspace({ runtime, fileName, onUnload }) {
         {messages.map((msg, idx) => (
           <div key={`${msg.role}-${idx}`} className={`message ${msg.role}`}>
             <div className="sender">{msg.role === 'user' ? 'Вы' : 'ИИ'}</div>
-            <div className="text">{msg.text}</div>
+            <div className="text">{msg.content}</div>
           </div>
         ))}
         {currentTokens && (
