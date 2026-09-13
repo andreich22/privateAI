@@ -78,13 +78,15 @@ export default function App() {
       setStatus('chat');
     } catch (err) {
       if (err.name === 'AbortError') {
-        setStatus('welcome');
+        setStatus('access');
         setProgress(0);
         setError('');
       } else {
         setError('HF ошибка: ' + err.message);
-        setStatus('welcome');
+        setStatus('access');
       }
+    } finally {
+      setIsCancelling(false);
     }
   };
 
@@ -110,6 +112,8 @@ export default function App() {
         setError('Ошибка: ' + err.message);
         setStatus('access');
       }
+    } finally {
+      setIsCancelling(false);
     }
   };
 
@@ -123,8 +127,6 @@ export default function App() {
     setIsCancelling(true);
     setProgress(0);
     setError('');
-    setStatus(fileHandle ? 'access' : 'welcome');
-    setTimeout(() => setIsCancelling(false), 300);
   };
 
   const envBanner = (
