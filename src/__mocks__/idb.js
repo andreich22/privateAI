@@ -7,6 +7,9 @@ export async function openDB(name, version, { upgrade } = {}) {
     _name: name,
     _version: version,
     _stores: {},
+    objectStoreNames: {
+      contains: (store) => Boolean(mockData[name]?.stores?.[store]),
+    },
     put: async (store, value, key) => {
       if (!mockData[name]) mockData[name] = {};
       if (!mockData[name].stores) mockData[name].stores = {};
