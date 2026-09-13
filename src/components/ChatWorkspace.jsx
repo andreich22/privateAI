@@ -1,12 +1,12 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { streamChat, getChatHistory, simpleCompletion, addMessageToHistory } from '../services/aiService';
+import React, { useEffect, useRef, useState } from 'react';
 
-export default function ChatWorkspace({ fileName, onUnload }) {
+export default function ChatWorkspace({ runtime, fileName, onUnload }) {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [currentTokens, setCurrentTokens] = useState('');
   const [debugInfo, setDebugInfo] = useState('');
+  const generationRef = useRef(false);
   const chatEndRef = useRef(null);
 
   useEffect(() => {
@@ -14,74 +14,56 @@ export default function ChatWorkspace({ fileName, onUnload }) {
   }, [messages, currentTokens]);
 
   const appendDebug = (text) => {
-    setDebugInfo(prev => prev + '\n[' + new Date().toLocaleTimeString() + '] ' + text);
+    setDebugInfo((prev) => `${prev}\n[${new Date().toLocaleTimeString()}] ${text}`.slice(-8000));
   };
 
   const handleSend = async (e) => {
     e.preventDefault();
-    if (!input.trim() || isGenerating) return;
+    if (!input.trim() || generationRef.current || !runtime.isLoaded()) return;
 
     const userText = input.trim();
     setInput('');
     setIsGenerating(true);
+    generationRef.current = true;
     setCurrentTokens('');
-    appendDebug('USER: ' + userText);
+    appendDebug(`USER: ${userText}`);
 
-    addMessageToHistory('user', userText);
-    setMessages(prev => [...prev, { role: 'user', text: userText }]);
+    const nextMessages = [...messages, { role: 'user', content: userText }];
+    setMessages(nextMessages.map(({ role, content }) => ({ role, text: content })));
 
     let fullAssistantText = '';
-
     try {
-      // Try chat completion first
-      await streamChat(getChatHistory(), (token) => {
+      await runtime.streamChat(nextMessages, (token) => {
         fullAssistantText += token;
         setCurrentTokens(fullAssistantText);
       });
 
-      appendDebug('DONE: ' + fullAssistantText);
-      addMessageToHistory('assistant', fullAssistantText);
-      setMessages(prev => [...prev, { role: 'assistant', text: fullAssistantText }]);
+      appendDebug(`DONE: ${fullAssistantText}`);
+      setMessages((prev) => [...prev, { role: 'assistant', text: fullAssistantText }]);
     } catch (err) {
-      appendDebug('CHAT ERROR: ' + err.message);
-      setMessages(prev => [...prev, { role: 'assistant', text: '[Ошибка чата: ' + err.message + ']' }]);
-
-      // Try raw completion as fallback
-      try {
-        appendDebug('TRYING RAW COMPLETION...');
-        const rawText = await rawGenerate(userText);
-        appendDebug('RAW DONE: ' + rawText);
-        addMessageToHistory('assistant', rawText);
-        setMessages(prev => [...prev, { role: 'assistant', text: rawText }]);
-      } catch (err2) {
-        appendDebug('RAW ERROR: ' + err2.message);
-        setMessages(prev => [...prev, { role: 'assistant', text: '[Ошибка: ' + err2.message + ']' }]);
-      }
+      appendDebug(`CHAT ERROR: ${err.message}`);
+      setMessages((prev) => [...prev, { role: 'assistant', text: `[Ошибка чата: ${err.message}]` }]);
     } finally {
+      generationRef.current = false;
       setIsGenerating(false);
       setCurrentTokens('');
     }
   };
 
-  async function rawGenerate(prompt) {
-    let fullText = '';
-    await simpleCompletion(prompt, (token) => {
-      fullText += token;
-      setCurrentTokens(fullText);
-      appendDebug('RAW TOKEN: ' + token);
-    });
-    return fullText;
-  }
+  const handleUnload = async () => {
+    if (generationRef.current) return;
+    await onUnload();
+  };
 
   return (
     <div className="chat-container">
       <header>
         <span>Модель: <strong>{fileName.split('/').pop()}</strong></span>
-        <button onClick={onUnload} className="btn-danger">Выгрузить</button>
+        <button onClick={handleUnload} className="btn-danger" disabled={isGenerating}>Выгрузить</button>
       </header>
       <div className="messages-box">
         {messages.map((msg, idx) => (
-          <div key={idx} className={`message ${msg.role}`}>
+          <div key={`${msg.role}-${idx}`} className={`message ${msg.role}`}>
             <div className="sender">{msg.role === 'user' ? 'Вы' : 'ИИ'}</div>
             <div className="text">{msg.text}</div>
           </div>
@@ -98,10 +80,10 @@ export default function ChatWorkspace({ fileName, onUnload }) {
         {debugInfo}
       </div>
       <form onSubmit={handleSend} className="input-form">
-        <input 
-          value={input} 
-          onChange={e => setInput(e.target.value)} 
-          placeholder={isGenerating ? "Генерация..." : "1+1 = ?"} 
+        <input
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          placeholder={isGenerating ? 'Генерация...' : '1+1 = ?'}
           disabled={isGenerating}
         />
         <button type="submit" disabled={isGenerating || !input.trim()}>Отправить</button>
