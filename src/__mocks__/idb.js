@@ -65,6 +65,7 @@ export async function openDB(name, version, { upgrade } = {}) {
 
   if (upgrade) {
     const upgradeDb = {
+      objectStoreNames: db.objectStoreNames,
       createObjectStore: (storeName) => {
         if (!mockData[name]) mockData[name] = {};
         if (!mockData[name].stores) mockData[name].stores = {};
