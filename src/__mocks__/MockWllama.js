@@ -43,6 +43,7 @@ export class Wllama {
         [Symbol.asyncIterator]: () => ({
           next: async () => {
             if (i >= tokens.length) return { done: true, value: null };
+            await new Promise((r) => setTimeout(r, 50));
             return {
               done: false,
               value: { choices: [{ delta: { content: tokens[i++] } }] },
@@ -63,6 +64,7 @@ export class Wllama {
         [Symbol.asyncIterator]: () => ({
           next: async () => {
             if (i >= tokens.length) return { done: true, value: null };
+            await new Promise((r) => setTimeout(r, 50));
             return {
               done: false,
               value: { choices: [{ text: tokens[i++] }], stop: false },
