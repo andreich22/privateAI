@@ -15,10 +15,7 @@ export class AIRuntime {
 
   async init() {
     if (this.wllama) return this.wllama;
-
-    this.wllama = new Wllama({
-      default: '/wllama/wllama.wasm',
-    });
+    this.wllama = new Wllama({ default: '/wllama/wllama.wasm' });
     this.wllama.setCompat(null);
     return this.wllama;
   }
@@ -30,9 +27,7 @@ export class AIRuntime {
 
       const header = new Uint8Array(await file.slice(0, 4).arrayBuffer());
       const isGguf = header[0] === 0x47 && header[1] === 0x47 && header[2] === 0x55 && header[3] === 0x46;
-      if (!isGguf) {
-        throw new Error(`Invalid GGUF magic: ${Array.from(header).join(' ')}`);
-      }
+      if (!isGguf) throw new Error(`Invalid GGUF magic: ${Array.from(header).join(' ')}`);
 
       onProgress?.(20);
       await this.#loadWllama([file], signal);
@@ -52,7 +47,7 @@ export class AIRuntime {
       const reader = response.body.getReader();
       let loaded = 0;
       let writable = null;
-      const chunks = [];
+      const chunks = fileHandle ? null : [];
 
       try {
         if (fileHandle) writable = await fileHandle.createWritable();
@@ -62,10 +57,9 @@ export class AIRuntime {
           if (done) break;
           if (signal.aborted) throw createAbortError();
 
-          chunks.push(value);
-          loaded += value.byteLength;
+          if (chunks) chunks.push(value);
           if (writable) await writable.write(value);
-
+          loaded += value.byteLength;
           if (total) onProgress?.(10 + Math.round((loaded / total) * 60));
         }
 
@@ -74,8 +68,13 @@ export class AIRuntime {
           writable = null;
         }
 
-        const blob = new Blob(chunks, { type: 'application/x-gguf' });
-        await this.#loadWllama([blob], signal);
+        // When saving to disk, load the closed File directly instead of retaining
+        // every network chunk in memory alongside the model Blob.
+        const model = fileHandle
+          ? await fileHandle.getFile()
+          : new Blob(chunks, { type: 'application/x-gguf' });
+
+        await this.#loadWllama([model], signal);
         return { fileHandle };
       } catch (error) {
         try { await reader.cancel(); } catch { /* ignore */ }
@@ -88,9 +87,7 @@ export class AIRuntime {
   }
 
   async #loadModel(loadSource, onProgress) {
-    if (this.loadAbortController) {
-      throw new Error('Model loading is already in progress');
-    }
+    if (this.loadAbortController) throw new Error('Model loading is already in progress');
 
     const controller = new AbortController();
     this.loadAbortController = controller;
@@ -106,9 +103,7 @@ export class AIRuntime {
       onProgress?.(0);
       throw error;
     } finally {
-      if (this.loadAbortController === controller) {
-        this.loadAbortController = null;
-      }
+      if (this.loadAbortController === controller) this.loadAbortController = null;
     }
   }
 
@@ -116,16 +111,17 @@ export class AIRuntime {
     const wllama = await this.init();
     if (signal.aborted) throw createAbortError();
 
-    // Wllama v3 enables WebGPU automatically when it is available.
-    // Do not pass n_gpu_layers: 0 — that explicitly disables GPU offload.
-    await wllama.loadModel(files, {
-      n_ctx: MODEL_CONTEXT,
-      signal,
-    });
+    // Wllama v3 enables WebGPU automatically when available. n_gpu_layers: 0
+    // would explicitly disable GPU inference, so leave the option unset.
+    await wllama.loadModel(files, { n_ctx: MODEL_CONTEXT, signal });
+    if (!wllama.isModelLoaded()) throw new Error('Model not loaded');
+  }
 
-    if (!wllama.isModelLoaded()) {
-      throw new Error('Model not loaded');
-    }
+  getBackendInfo() {
+    return {
+      webgpuSupported: Boolean(this.wllama?.isSupportWebGPU?.() ?? navigator.gpu),
+      mode: 'auto',
+    };
   }
 
   async streamChat(messages, onToken) {
