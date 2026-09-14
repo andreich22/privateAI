@@ -1,0 +1,66 @@
+{
+  "id": "c4d8",
+  "title": "Ввести защищённый Git workflow для AI-агентов",
+  "status": "in_progress",
+  "createdAt": "2026-09-14T13:40:00Z",
+  "updatedAt": "2026-09-14T13:40:00Z",
+  "description": "Закрепить обязательный workflow разработки через task → feature branch → pull request → checks → human merge и подготовить универсальный Skill для разных AI-агентов.",
+  "requirements": [
+    "AI-агент не должен коммитить непосредственно в default branch.",
+    "AI-агент не должен push/force-push в default branch и не должен обходить branch protection.",
+    "Все изменения AI должны выполняться в task-specific branch и попадать в default branch только через Pull Request.",
+    "PR должен содержать Task ID и проходить автоматические проверки.",
+    "Workflow должен быть vendor-neutral и доступен разным AI-агентам через repository Skill.",
+    "Solo-разработка не должна требовать невозможного self-approval; финальное решение о merge остаётся за владельцем проекта."
+  ],
+  "definitionOfReady": [
+    "Текущий AGENTS.md и task-driven Skill изучены.",
+    "Текущий GitHub ruleset default branch изучен.",
+    "Определено, что bypass не должен использоваться AI-агентом.",
+    "Определён PR-based workflow для solo maintainer."
+  ],
+  "acceptanceCriteria": [
+    "В репозитории есть skills/git-workflow/SKILL.md.",
+    "AGENTS.md содержит обязательные правила Git workflow.",
+    "Есть GitHub Actions workflow для PR checks, включающий task validation и проектные проверки.",
+    "Есть автоматическая проверка PR на наличие Task ID и соответствующей задачи.",
+    "Есть отдельная AI-review интеграция без встраивания секретов в репозиторий; она не должна разрешать merge или bypass.",
+    "Все изменения этого task используют Task ID c4d8.",
+    "После изменений проходят tasks validator и доступные CI-проверки."
+  ],
+  "technicalApproach": [
+    "Добавить vendor-neutral skills/git-workflow/SKILL.md.",
+    "Расширить AGENTS.md разделом Protected Git workflow.",
+    "Добавить PR workflow, который валидирует task metadata и запускает npm run tasks:validate, test:run и build.",
+    "Добавить отдельный AI review workflow с явным секретом провайдера и безопасным режимом без прав на merge/bypass.",
+    "Не менять приложение и не добавлять runtime dependencies."
+  ],
+  "decisionLog": [],
+  "commits": [],
+  "definitionOfDone": [
+    "Skill добавлен и описывает branch/PR/merge policy.",
+    "AGENTS.md обновлён.",
+    "PR checks workflow добавлен.",
+    "AI review workflow подготовлен безопасно и документирован.",
+    "Task registry и relations обновлены.",
+    "Validator и проектные проверки проходят."
+  ],
+  "history": [
+    {
+      "date": "2026-09-14T13:40:00Z",
+      "status": "draft",
+      "action": "created"
+    },
+    {
+      "date": "2026-09-14T13:40:00Z",
+      "status": "ready",
+      "action": "requirements-defined"
+    },
+    {
+      "date": "2026-09-14T13:40:00Z",
+      "status": "in_progress",
+      "action": "implementation-started"
+    }
+  ],
+  "relations": []
+}
