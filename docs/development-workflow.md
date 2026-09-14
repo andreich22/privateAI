@@ -8,17 +8,37 @@ Agents that support repository Skills SHOULD load it before editing. It is inten
 
 The Skill is a procedure layer, not a replacement for repository policy. The durable source of truth is the combination of task JSON, relations, validator, Git history, and `AGENTS.md`.
 
-## Rule 1 — every code change has a task
+## Rule 1 — every code change starts with an Issue
 
-AI MUST NOT modify project code, configuration, tests, or documentation without an associated Task ID. If the requested work is not already represented by a task, AI creates one before editing.
+AI MUST NOT modify project code, configuration, tests, or documentation without an associated Task ID.
 
-A task lives in `tasks/<id>.json` and is indexed by `tasks/index.json`.
+For a new task, the first durable artifact is a GitHub Issue with a title such as:
 
-Task IDs are exactly four lowercase hexadecimal characters and must be unique across the repository.
+```text
+TASK-a1b2 Short task title
+```
 
-## Rule 2 — a task must be ready before implementation
+The Issue should contain the goal, requirements, Definition of Ready, acceptance criteria, technical approach, and Definition of Done.
 
-Before editing, the task must contain:
+## Rule 2 — Issue registration is a hard gate
+
+Creating the Issue is not enough to start implementation.
+
+The `Register task from Issue` GitHub Actions workflow automatically transforms a valid Task Issue into:
+
+- `tasks/<id>.json`;
+- an entry in `tasks/index.json`;
+- a registration Pull Request targeting `master`.
+
+The registration PR is intentionally separate from the implementation PR. **The registration PR MUST be merged before the AI agent creates the implementation branch or implementation PR.** This keeps the implementation PR's Task ID resolvable from the default branch and prevents the CI failure caused by an unregistered Task ID.
+
+The workflow is idempotent. Existing matching task metadata is not overwritten. Conflicts between the registry and task file fail loudly instead of being resolved silently.
+
+The workflow does not push directly to `master`; normal branch protection remains authoritative.
+
+## Rule 3 — a task must be ready before implementation
+
+After registration is merged, the task must contain:
 
 - `id`
 - `title`
@@ -31,7 +51,7 @@ Before editing, the task must contain:
 
 AI may start implementation only when the Definition of Ready is satisfied.
 
-## Rule 3 — commits are linked to tasks
+## Rule 4 — commits are linked to tasks
 
 Every commit related to a task MUST use:
 
@@ -50,7 +70,7 @@ docs: 7c2a | document AI workflow
 
 When a task requires multiple commits, every commit MUST contain the same Task ID. Do not mix unrelated tasks in one commit.
 
-## Rule 4 — task relationships
+## Rule 5 — task relationships
 
 Relationships are stored in `tasks/relations.json` so each edge exists only once.
 
@@ -68,11 +88,11 @@ Reverse views such as `blocks` or `child` are derived from the stored direction 
 
 AI MUST create a relation when a new task is caused by, depends on, replaces, duplicates, or otherwise materially relates to an existing task.
 
-## Rule 5 — no hidden scope expansion
+## Rule 6 — no hidden scope expansion
 
-If implementation reveals an unrelated change, AI creates a separate task and links it to the current task instead of silently including the change.
+If implementation reveals an unrelated change, AI creates a separate Issue and lets the registration workflow create its task metadata before implementation begins.
 
-## Rule 6 — finish only after verification
+## Rule 7 — finish only after verification
 
 A task may be marked `done` only after:
 
@@ -84,7 +104,7 @@ A task may be marked `done` only after:
 6. all related commits contain the Task ID;
 7. `npm run tasks:validate` passes.
 
-## Rule 7 — dependencies must be acyclic
+## Rule 8 — dependencies must be acyclic
 
 `depends_on` and `parent` relations form a dependency graph. Circular dependencies are invalid and must be rejected by the validator.
 
