@@ -90,6 +90,26 @@ Task relationships are stored in `tasks/relations.json`. Use `depends_on` and `p
 
 Before marking a task `done`, run `npm run tasks:validate` and the relevant tests/build.
 
+## Protected Git workflow for AI
+
+The repository default branch is `master`. AI agents MUST NOT commit directly to `master`, push directly to `master`, force-push it, rewrite its history, or bypass branch protection.
+
+All AI changes MUST follow:
+
+```text
+Task → task/<task-id>-<short-name> → commits → Pull Request → checks → human merge
+```
+
+The canonical vendor-neutral procedure is [`skills/git-workflow/SKILL.md`](skills/git-workflow/SKILL.md). Load it before Git changes when the runtime supports repository Skills.
+
+Every implementation commit MUST use `<type>: <task-id> | <description>`. Every PR MUST reference the Task ID and describe requirements, acceptance criteria, validation, and risks.
+
+If a tool exposes an administrative bypass, the AI MUST NOT use it. GitHub repository policy is authoritative over agent instructions.
+
+AI may create/update the task branch and PR and inspect checks. AI MUST NOT merge its own PR unless the user explicitly instructs it and repository policy permits it. For solo development, automated checks plus the PR boundary replace artificial self-approval; the human maintainer remains the final merge authority.
+
+AI review is an additional signal and MUST NOT grant merge or bypass privileges.
+
 ## Browser and model constraints
 
 The target environment is a modern Chromium browser with WebGPU support, especially Chrome/Edge.
@@ -212,23 +232,26 @@ When changing behavior, update or add tests where practical. Pay particular atte
 
 Before editing:
 
-1. Load `skills/task-driven-development/SKILL.md` when the runtime supports repository Skills.
+1. Load `skills/task-driven-development/SKILL.md` and `skills/git-workflow/SKILL.md` when the runtime supports repository Skills.
 2. Identify or create the associated task.
 3. Verify the task is `ready` and its Definition of Ready is satisfied.
-4. Inspect the relevant files and existing implementation.
-5. Search for existing patterns or utilities that solve the same problem.
-6. Identify lifecycle, state, persistence, and browser-API implications.
-7. Make the smallest reasonable change.
-8. Avoid unrelated refactors; create and link another task instead.
-9. Use the task ID in every commit.
-10. Run relevant tests and `npm run tasks:validate`.
-11. Run `npm run build` for changes that can affect production compilation/bundling.
-12. Update task history, commits, decisions, and final status.
-13. Review the diff for regressions, privacy issues, memory leaks, and unnecessary dependencies.
+4. Create/use a task-specific branch; never edit `master` directly.
+5. Inspect the relevant files and existing implementation.
+6. Search for existing patterns or utilities that solve the same problem.
+7. Identify lifecycle, state, persistence, and browser-API implications.
+8. Make the smallest reasonable change.
+9. Avoid unrelated refactors; create and link another task instead.
+10. Use the task ID in every commit.
+11. Run relevant tests and `npm run tasks:validate`.
+12. Run `npm run build` for changes that can affect production compilation/bundling.
+13. Open/update a Pull Request with the Task ID and validation summary.
+14. Update task history, commits, decisions, and final status.
+15. Review the diff for regressions, privacy issues, memory leaks, and unnecessary dependencies.
 
 After editing, report:
 
 - task ID and title;
+- branch and PR;
 - what changed;
 - which files changed;
 - tests/build/validator commands run;
