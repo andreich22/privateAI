@@ -7,6 +7,7 @@
     {"id": "0016", "title": "Настроить версионирование приложения", "status": "in_progress"},
     {"id": "9a7f", "title": "Автоматическая регистрация Task ID при создании Issue", "status": "in_progress"},
     {"id": "4e6c", "title": "Атомарная проверка task registry в registration workflow", "status": "in_progress"},
-    {"id": "5f21", "title": "Автоматическое создание GitHub Release и tag при merge PR с изменением версии", "status": "done"}
+    {"id": "5f21", "title": "Автоматическое создание GitHub Release и tag при merge PR с изменением версии", "status": "done"},
+    {"id": "a13c", "title": "История и управление локальными чатами", "status": "in_progress"}
   ]
 }
