@@ -1,0 +1,36 @@
+{
+  "id": "4e6c",
+  "title": "| Атомарная проверка task registry в registration workflow",
+  "status": "draft",
+  "createdAt": "2026-09-14T15:43:39.311Z",
+  "updatedAt": "2026-09-14T15:43:39.311Z",
+  "issue": {
+    "number": 12,
+    "url": "https://github.com/andreich22/privateAI/issues/12",
+    "title": "TASK-4e6c | Атомарная проверка task registry в registration workflow"
+  },
+  "description": "## Описание\nУсилить registration workflow так, чтобы `tasks/index.json` и `tasks/<id>.json` проверялись как единое согласованное состояние до и после регистрации задачи. Workflow не должен создавать registration PR, если состояние registry уже противоречиво или сгенерированная пара файлов не согласована.\n\n## Требования\n- Проверять согласованность `tasks/index.json` и `tasks/<id>.json` внутри registration script/workflow до записи.\n- Проверять, что ID, title и status в index и task file совпадают.\n- После генерации повторно проверять пару файлов как единое состояние.\n- При ошибке не создавать registration PR.\n- Сохранить идемпотентность существующей корректной регистрации.\n- Добавить тесты на рассинхрон index/task file и на успешную согласованную регистрацию.\n\n## Definition of Ready\n- [x] Есть уникальный Task ID.\n- [x] Требования и критерии проверки определены.\n- [x] Изменение ограничено registration workflow и его тестами.\n\n## Acceptance Criteria\n- [ ] Несогласованные `tasks/index.json` и `tasks/<id>.json` приводят к ошибке registration step.\n- [ ] При согласованном состоянии registration step успешно завершается и PR может быть создан.\n- [ ] После генерации task file и index проходят взаимную проверку.\n- [ ] Существующая корректная регистрация остаётся идемпотентной.\n\n## Definition of Done\n- [ ] Код и тесты изменены.\n- [ ] `npm run tasks:validate` проходит.\n- [ ] `npm run test:run` проходит.\n- [ ] Registration workflow описан как единая проверка состояния.\n- [ ] Изменения отправлены через implementation PR, связанный с этой задачей.",
+  "requirements": [
+    "See GitHub Issue #12 for the requirements definition."
+  ],
+  "definitionOfReady": [
+    "See GitHub Issue #12 for the definitionOfReady definition."
+  ],
+  "acceptanceCriteria": [
+    "See GitHub Issue #12 for the acceptanceCriteria definition."
+  ],
+  "technicalApproach": [],
+  "definitionOfDone": [
+    "See GitHub Issue #12 for the definitionOfDone definition."
+  ],
+  "history": [
+    {
+      "at": "2026-09-14T15:43:39.311Z",
+      "event": "created_from_issue",
+      "details": "Automatically registered from GitHub Issue #12."
+    }
+  ],
+  "commits": [],
+  "decisionLog": [],
+  "relations": []
+}
