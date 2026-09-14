@@ -15,6 +15,11 @@
       "id": "c4d8",
       "title": "Ввести защищённый Git workflow для AI-агентов",
       "status": "in_progress"
+    },
+    {
+      "id": "0016",
+      "title": "Настроить версионирование приложения",
+      "status": "in_progress"
     }
   ]
 }
