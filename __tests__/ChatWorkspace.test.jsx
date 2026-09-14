@@ -31,15 +31,20 @@ const makeConversation = (overrides = {}) => ({
   ...overrides,
 });
 
+const remainingConversation = makeConversation({ id: 'chat-3', title: 'Оставшийся чат' });
+
 describe('ChatWorkspace local chat history', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     getActiveConversationId.mockResolvedValue('chat-1');
-    getConversation.mockResolvedValue(makeConversation());
+    getConversation.mockImplementation(async (id) => {
+      if (id === 'chat-3') return remainingConversation;
+      return makeConversation();
+    });
     listConversations.mockResolvedValue([makeConversation()]);
     createConversation.mockResolvedValue(makeConversation({ id: 'chat-2', title: 'Новый чат' }));
     renameConversation.mockImplementation(async (id, title) => makeConversation({ id, title }));
-    deleteConversation.mockResolvedValue(makeConversation({ id: 'chat-3', title: 'Оставшийся чат' }));
+    deleteConversation.mockResolvedValue(remainingConversation);
     saveConversation.mockResolvedValue(undefined);
   });
 
@@ -52,14 +57,14 @@ describe('ChatWorkspace local chat history', () => {
     render(<ChatWorkspace runtime={{ isLoaded: () => true }} fileName="model.gguf" onUnload={vi.fn()} />);
 
     expect(await screen.findByText('Привет')).toBeInTheDocument();
-    expect(screen.getByText('Сохранённый чат')).toBeInTheDocument();
+    expect(screen.getAllByText('Сохранённый чат').length).toBeGreaterThan(0);
     expect(getActiveConversationId).toHaveBeenCalledOnce();
     expect(getConversation).toHaveBeenCalledWith('chat-1');
   });
 
   it('creates a new chat without reloading the page', async () => {
     render(<ChatWorkspace runtime={{ isLoaded: () => true }} fileName="model.gguf" onUnload={vi.fn()} />);
-    await screen.findByText('Сохранённый чат');
+    await waitFor(() => expect(screen.getAllByText('Сохранённый чат').length).toBeGreaterThan(0));
 
     fireEvent.click(screen.getByRole('button', { name: 'Новый чат' }));
 
@@ -68,9 +73,9 @@ describe('ChatWorkspace local chat history', () => {
   });
 
   it('renames the active chat', async () => {
-    vi.spyOn(window, 'prompt').mockReturnValue('Переименованный чат');
+    window.prompt = vi.fn().mockReturnValue('Переименованный чат');
     render(<ChatWorkspace runtime={{ isLoaded: () => true }} fileName="model.gguf" onUnload={vi.fn()} />);
-    await screen.findByText('Сохранённый чат');
+    await waitFor(() => expect(screen.getAllByText('Сохранённый чат').length).toBeGreaterThan(0));
 
     fireEvent.click(screen.getByRole('button', { name: 'Переименовать' }));
 
@@ -79,9 +84,9 @@ describe('ChatWorkspace local chat history', () => {
   });
 
   it('deletes the active chat and switches to another chat', async () => {
-    vi.spyOn(window, 'confirm').mockReturnValue(true);
+    window.confirm = vi.fn().mockReturnValue(true);
     render(<ChatWorkspace runtime={{ isLoaded: () => true }} fileName="model.gguf" onUnload={vi.fn()} />);
-    await screen.findByText('Сохранённый чат');
+    await waitFor(() => expect(screen.getAllByText('Сохранённый чат').length).toBeGreaterThan(0));
 
     fireEvent.click(screen.getByRole('button', { name: 'Удалить' }));
 
@@ -99,7 +104,7 @@ describe('ChatWorkspace local chat history', () => {
     };
 
     render(<ChatWorkspace runtime={runtime} fileName="model.gguf" onUnload={vi.fn()} />);
-    await screen.findByText('Сохранённый чат');
+    await waitFor(() => expect(screen.getAllByText('Сохранённый чат').length).toBeGreaterThan(0));
 
     const input = screen.getByPlaceholderText('1+1 = ?');
     fireEvent.change(input, { target: { value: 'Вопрос' } });
