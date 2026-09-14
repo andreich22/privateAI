@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "allowedTypes": [
+    "parent",
+    "depends_on",
+    "related",
+    "duplicates",
+    "derived_from",
+    "replaces",
+    "implements"
+  ],
+  "relations": []
+}

@@ -76,6 +76,18 @@ Prefer small, focused changes that follow existing project patterns. Do not rewr
 
 Inspect the repository and existing implementation before using an API, Wllama method, browser API, or project abstraction. If behavior is uncertain, verify it from the installed code/types or authoritative documentation instead of guessing.
 
+## Task-driven AI development
+
+All development work is governed by [`docs/development-workflow.md`](docs/development-workflow.md).
+
+**Mandatory rule:** AI MUST NOT modify project code, configuration, tests, or documentation without an associated Task ID. If a task does not exist, create it in `tasks/<id>.json` before editing.
+
+Task IDs are four lowercase hexadecimal characters. Every commit MUST use `<type>: <task-id> | <description>`. All commits for the same task use the same ID.
+
+Task relationships are stored in `tasks/relations.json`. Use `depends_on` and `parent` for dependency/structure; use `related`, `duplicates`, `derived_from`, `replaces`, and `implements` for other relationships. Do not duplicate reverse edges. Circular dependency graphs are invalid.
+
+Before marking a task `done`, run `npm run tasks:validate` and the relevant tests/build.
+
 ## Browser and model constraints
 
 The target environment is a modern Chromium browser with WebGPU support, especially Chrome/Edge.
@@ -178,6 +190,7 @@ npm run test:e2e
 npm run test:e2e:ui
 npm run test:e2e:debug
 npm run build
+npm run tasks:validate
 ```
 
 Use Vitest/Testing Library for unit and component behavior and Playwright for end-to-end flows.
@@ -197,20 +210,26 @@ When changing behavior, update or add tests where practical. Pay particular atte
 
 Before editing:
 
-1. Inspect the relevant files and existing implementation.
-2. Search for existing patterns or utilities that solve the same problem.
-3. Identify lifecycle, state, persistence, and browser-API implications.
-4. Make the smallest reasonable change.
-5. Avoid unrelated refactors.
-6. Run relevant tests.
-7. Run `npm run build` for changes that can affect production compilation/bundling.
-8. Review the diff for regressions, privacy issues, memory leaks, and unnecessary dependencies.
+1. Identify or create the associated task.
+2. Verify the task is `ready` and its Definition of Ready is satisfied.
+3. Inspect the relevant files and existing implementation.
+4. Search for existing patterns or utilities that solve the same problem.
+5. Identify lifecycle, state, persistence, and browser-API implications.
+6. Make the smallest reasonable change.
+7. Avoid unrelated refactors; create and link another task instead.
+8. Use the task ID in every commit.
+9. Run relevant tests and `npm run tasks:validate`.
+10. Run `npm run build` for changes that can affect production compilation/bundling.
+11. Update task history, commits, decisions, and final status.
+12. Review the diff for regressions, privacy issues, memory leaks, and unnecessary dependencies.
 
 After editing, report:
 
+- task ID and title;
 - what changed;
 - which files changed;
-- tests/build commands run;
+- tests/build/validator commands run;
+- task relationships created or affected;
 - any known limitations or remaining risks.
 
 ## Decision priority
