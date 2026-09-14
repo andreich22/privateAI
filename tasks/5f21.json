@@ -1,0 +1,56 @@
+{
+  "id": "5f21",
+  "title": "Автоматическое создание GitHub Release и tag при merge PR с изменением версии",
+  "status": "in_progress",
+  "createdAt": "2026-09-14T17:38:39Z",
+  "updatedAt": "2026-09-14T17:38:39Z",
+  "description": "Завершить цепочку Task → PR → version bump → merge → Release: после merge PR в master, если package.json содержит новую версию, автоматически создать Git tag vX.Y.Z и GitHub Release на merge-коммите.",
+  "requirements": [
+    "Запускать release workflow только после merge PR в master.",
+    "Определять текущую версию из package.json merge-коммита.",
+    "Сравнивать версию с package.json базового коммита PR.",
+    "Не создавать release, если версия не изменилась.",
+    "Создавать tag строго в формате vX.Y.Z.",
+    "Создавать GitHub Release для созданного tag.",
+    "Release должен указывать на merge-коммит PR.",
+    "Повторный запуск workflow не должен создавать дубликат release/tag.",
+    "Проверять SemVer и запрещать понижение версии.",
+    "Использовать минимальные необходимые GitHub Actions permissions.",
+    "Документировать release workflow."
+  ],
+  "definitionOfReady": [
+    "Определено событие pull_request.closed с merged=true и base master.",
+    "Определены текущая и предыдущая версии.",
+    "Определён формат tag vX.Y.Z.",
+    "Определено идемпотентное поведение."
+  ],
+  "acceptanceCriteria": [
+    "Merge PR без изменения версии не создаёт Release.",
+    "Merge PR с version bump создаёт vX.Y.Z.",
+    "Для tag создаётся GitHub Release.",
+    "Release указывает на merge commit.",
+    "Повторный запуск безопасен и не создаёт дубль.",
+    "Некорректный или пониженный SemVer отклоняется.",
+    "Workflow и документация проходят проверки проекта."
+  ],
+  "technicalApproach": [
+    "Использовать pull_request closed workflow вместо push, чтобы точно привязать release к merge PR.",
+    "Читать package.json из base.sha и merge_commit_sha через GitHub API.",
+    "Создавать release с tag_name v<version> и target_commitish merge_commit_sha.",
+    "Перед созданием release проверять существующий tag/release для идемпотентности."
+  ],
+  "definitionOfDone": [
+    "Task зарегистрирована в task registry.",
+    "Release workflow добавлен и документирован.",
+    "SemVer и monotonic version checks реализованы.",
+    "Создание tag и release автоматизировано после merge version bump PR."
+  ],
+  "history": [
+    {"date": "2026-09-14T17:38:39Z", "status": "draft", "action": "created", "details": "GitHub Issue #15"},
+    {"date": "2026-09-14T17:38:39Z", "status": "ready", "action": "requirements-defined"},
+    {"date": "2026-09-14T20:00:00Z", "status": "in_progress", "action": "implementation-started"}
+  ],
+  "relations": [
+    {"type": "derived_from", "to": "0016"}
+  ]
+}
