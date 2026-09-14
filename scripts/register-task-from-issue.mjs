@@ -42,8 +42,11 @@ const taskExists = fs.existsSync(taskPath);
 
 if (existingEntry && !taskExists) fail(`registry entry ${id} exists but ${taskPath} is missing`);
 if (taskExists && !existingEntry) fail(`task file ${taskPath} exists but registry entry ${id} is missing`);
+
 if (existingEntry && taskExists) {
-  console.log(`Task ${id} is already registered; no changes needed.`);
+  const existingTask = readJson(taskPath);
+  validateTaskPair(id, existingEntry, existingTask);
+  console.log(`Task ${id} is already registered and consistent; no changes needed.`);
   writeOutput('status', 'already-registered');
   writeOutput('task_id', id);
   writeOutput('task_title', taskTitle.trim());
@@ -89,19 +92,57 @@ for (const [name, value] of Object.entries({
   if (value.length === 0) task[name] = [`See GitHub Issue #${issue.number} for the ${name} definition.`];
 }
 
-fs.writeFileSync(taskPath, `${JSON.stringify(task, null, 2)}\n`);
-entries.push({ id, title: task.title, status: task.status });
-index.tasks = entries;
-fs.writeFileSync(indexPath, `${JSON.stringify(index, null, 2)}\n`);
+const nextEntries = [...entries, { id, title: task.title, status: task.status }];
+const nextIndex = { ...index, tasks: nextEntries };
+validateTaskPair(id, nextEntries.at(-1), task);
+writePairedState(taskPath, task, indexPath, nextIndex);
+
+const persistedIndex = readJson(indexPath);
+const persistedTask = readJson(taskPath);
+const persistedEntry = persistedIndex.tasks?.find((entry) => entry?.id === id);
+validateTaskPair(id, persistedEntry, persistedTask);
 
 console.log(`Registered task ${id} from Issue #${issue.number}.`);
 writeOutput('status', 'registered');
 writeOutput('task_id', id);
 writeOutput('task_title', task.title);
 
+function validateTaskPair(taskId, entry, taskFile) {
+  if (!entry) throw new Error(`task ${taskId} is missing from tasks/index.json`);
+  if (!taskFile || taskFile.id !== taskId) throw new Error(`task file ID mismatch for ${taskId}`);
+  if (entry.id !== taskFile.id) throw new Error(`task registry ID mismatch for ${taskId}`);
+  if (entry.title !== taskFile.title) throw new Error(`task registry title mismatch for ${taskId}`);
+  if (entry.status !== taskFile.status) throw new Error(`task registry status mismatch for ${taskId}`);
+}
+
+function readJson(filePath) {
+  return JSON.parse(fs.readFileSync(filePath, 'utf8'));
+}
+
+function writePairedState(taskFilePath, taskFile, registryFilePath, registryFile) {
+  const nonce = `${process.pid}-${Date.now()}`;
+  const taskTempPath = `${taskFilePath}.${nonce}.tmp`;
+  const registryTempPath = `${registryFilePath}.${nonce}.tmp`;
+  fs.writeFileSync(taskTempPath, `${JSON.stringify(taskFile, null, 2)}\n`);
+  fs.writeFileSync(registryTempPath, `${JSON.stringify(registryFile, null, 2)}\n`);
+
+  try {
+    fs.renameSync(taskTempPath, taskFilePath);
+    try {
+      fs.renameSync(registryTempPath, registryFilePath);
+    } catch (error) {
+      fs.rmSync(taskFilePath, { force: true });
+      throw error;
+    }
+  } finally {
+    fs.rmSync(taskTempPath, { force: true });
+    fs.rmSync(registryTempPath, { force: true });
+  }
+}
+
 function extractSection(markdown, ...names) {
   const heading = names.map(escapeRegExp).join('|');
-  const match = markdown.match(new RegExp(`^##\\s+(?:${heading})\\s*$([\\s\\S]*?)(?=^##\\s+|$)`, 'im')); 
+  const match = markdown.match(new RegExp(`^##\\s+(?:${heading})\\s*$([\\s\\S]*?)(?=^##\\s+|$)`, 'im'));
   if (!match) return [];
   return match[1]
     .split('\n')
