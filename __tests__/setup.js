@@ -21,7 +21,8 @@ function createWllamaMock() {
     ),
     createCompletion: vi.fn().mockResolvedValue(
       (async function* () {
-        yield { choices: [{ text: 'completion result' } }] };
+        yield { choices: [{ text: 'completion result' } ] 
+      };
       })()
     ),
     exit: vi.fn().mockResolvedValue(undefined),
