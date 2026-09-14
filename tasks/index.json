@@ -1,40 +1,12 @@
 {
   "version": 1,
   "tasks": [
-    {
-      "id": "7c2a",
-      "title": "Внедрить систему задач и связей для AI-разработки",
-      "status": "done"
-    },
-    {
-      "id": "b6e1",
-      "title": "Добавить универсальный Skill для task-driven AI development",
-      "status": "done"
-    },
-    {
-      "id": "c4d8",
-      "title": "Ввести защищённый Git workflow для AI-агентов",
-      "status": "in_progress"
-    },
-    {
-      "id": "0016",
-      "title": "Настроить версионирование приложения",
-      "status": "in_progress"
-    },
-    {
-      "id": "9a7f",
-      "title": "Автоматическая регистрация Task ID при создании Issue",
-      "status": "in_progress"
-    },
-    {
-      "id": "4e6c",
-      "title": "Атомарная проверка task registry в registration workflow",
-      "status": "in_progress"
-    },
-    {
-      "id": "5f21",
-      "title": "Автоматическое создание GitHub Release и tag при merge PR с изменением версии",
-      "status": "in_progress"
-    }
+    {"id": "7c2a", "title": "Внедрить систему задач и связей для AI-разработки", "status": "done"},
+    {"id": "b6e1", "title": "Добавить универсальный Skill для task-driven AI development", "status": "done"},
+    {"id": "c4d8", "title": "Ввести защищённый Git workflow для AI-агентов", "status": "in_progress"},
+    {"id": "0016", "title": "Настроить версионирование приложения", "status": "in_progress"},
+    {"id": "9a7f", "title": "Автоматическая регистрация Task ID при создании Issue", "status": "in_progress"},
+    {"id": "4e6c", "title": "Атомарная проверка task registry в registration workflow", "status": "in_progress"},
+    {"id": "5f21", "title": "Автоматическое создание GitHub Release и tag при merge PR с изменением версии", "status": "done"}
   ]
 }
