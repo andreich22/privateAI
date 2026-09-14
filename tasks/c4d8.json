@@ -3,7 +3,7 @@
   "title": "Ввести защищённый Git workflow для AI-агентов",
   "status": "in_progress",
   "createdAt": "2026-09-14T13:40:00Z",
-  "updatedAt": "2026-09-14T13:40:00Z",
+  "updatedAt": "2026-09-14T14:02:00Z",
   "description": "Закрепить обязательный workflow разработки через task → feature branch → pull request → checks → human merge и подготовить универсальный Skill для разных AI-агентов.",
   "requirements": [
     "AI-агент не должен коммитить непосредственно в default branch.",
@@ -32,11 +32,36 @@
     "Добавить vendor-neutral skills/git-workflow/SKILL.md.",
     "Расширить AGENTS.md разделом Protected Git workflow.",
     "Добавить PR workflow, который валидирует task metadata и запускает npm run tasks:validate, test:run и build.",
-    "Добавить отдельный AI review workflow с явным секретом провайдера и безопасным режимом без прав на merge/bypass.",
+    "Добавить GitHub Agentic Workflow source для AI review с read-only repository permissions и comment-only safe output.",
     "Не менять приложение и не добавлять runtime dependencies."
   ],
-  "decisionLog": [],
-  "commits": [],
+  "decisionLog": [
+    {
+      "date": "2026-09-14T14:02:00Z",
+      "decision": "Для solo-maintainer workflow не делать self-approval обязательным; контроль переносится на PR boundary, CI и финальное решение владельца.",
+      "reason": "GitHub CODEOWNER не может сам себя одобрить, а искусственный bypass ослабляет защиту default branch."
+    },
+    {
+      "date": "2026-09-14T14:02:00Z",
+      "decision": "AI review получает только read permissions и право добавить PR comment; merge, push и bypass запрещены.",
+      "reason": "AI review должен быть независимым сигналом качества, а не механизмом обхода контроля."
+    },
+    {
+      "date": "2026-09-14T14:02:00Z",
+      "decision": "GitHub Agentic Workflow хранится как Markdown source и требует отдельной компиляции gh aw compile в .lock.yml.",
+      "reason": "GitHub документирует Agentic Workflows как source + hardened lock workflow; это безопаснее, чем самодельный privileged AI runner."
+    }
+  ],
+  "commits": [
+    {"sha": "b68ef39e4120a09d1eb557200ee393fe20c8c2b5", "message": "feat: c4d8 | add protected Git workflow task"},
+    {"sha": "9534b906523983197ebc6ed04f0743b665be38cb", "message": "feat: c4d8 | add protected Git workflow skill"},
+    {"sha": "7a03e72c49423c956ab073c518102f487256e2cd", "message": "feat: c4d8 | document Git workflow skill"},
+    {"sha": "90240c7521d7db18853953fcd486976deeedbec1", "message": "feat: c4d8 | enforce protected Git workflow in agent rules"},
+    {"sha": "5ca75444ec522ca08d5aa11cc6c47fffcc46beaf", "message": "feat: c4d8 | validate task metadata in pull requests"},
+    {"sha": "6476a8e8f286087e96e681a4bd0e79a871efabb5", "message": "feat: c4d8 | enforce PR task checks and build in CI"},
+    {"sha": "cc10790b6f2363aa85c637edd01a5d185193efa8", "message": "feat: c4d8 | add AI pull request review workflow"},
+    {"sha": "4efb2917e1b380cd238f936705fa13c4476eb79a", "message": "feat: c4d8 | register protected Git workflow task"}
+  ],
   "definitionOfDone": [
     "Skill добавлен и описывает branch/PR/merge policy.",
     "AGENTS.md обновлён.",
@@ -46,21 +71,10 @@
     "Validator и проектные проверки проходят."
   ],
   "history": [
-    {
-      "date": "2026-09-14T13:40:00Z",
-      "status": "draft",
-      "action": "created"
-    },
-    {
-      "date": "2026-09-14T13:40:00Z",
-      "status": "ready",
-      "action": "requirements-defined"
-    },
-    {
-      "date": "2026-09-14T13:40:00Z",
-      "status": "in_progress",
-      "action": "implementation-started"
-    }
+    {"date": "2026-09-14T13:40:00Z", "status": "draft", "action": "created"},
+    {"date": "2026-09-14T13:40:00Z", "status": "ready", "action": "requirements-defined"},
+    {"date": "2026-09-14T13:40:00Z", "status": "in_progress", "action": "implementation-started"},
+    {"date": "2026-09-14T14:00:14Z", "status": "in_progress", "action": "pull-request-opened", "details": "PR #6"}
   ],
   "relations": []
 }
