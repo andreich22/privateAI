@@ -1,9 +1,9 @@
 {
   "id": "b6e1",
   "title": "Добавить универсальный Skill для task-driven AI development",
-  "status": "ready",
+  "status": "done",
   "createdAt": "2026-09-14T12:00:00Z",
-  "updatedAt": "2026-09-14T12:00:00Z",
+  "updatedAt": "2026-09-14T13:23:00Z",
   "description": "Добавить в репозиторий агент-независимый Skill, который формализует обязательный task-driven workflow и делает его доступным для разных AI-агентов без привязки к конкретному runtime.",
   "requirements": [
     "Skill хранится в репозитории и доступен независимо от конкретного AI-агента.",
@@ -50,10 +50,22 @@
       "reason": "Не каждый AI runtime автоматически загружает repository skills, поэтому критические ограничения нельзя делать зависимыми от обнаружения Skill."
     }
   ],
-  "commits": [],
+  "commits": [
+    { "sha": "f15522402f7ab0218dd4755b09bdd099fbfbe192", "message": "feat: b6e1 | create task for agent-independent development skill" },
+    { "sha": "93a5e3ae2c1e6d7573519145a6d4f42f34722339", "message": "feat: b6e1 | add agent-independent task-driven development skill" },
+    { "sha": "a890525eb0e5f82b16decddefc3055a12183df3c", "message": "feat: b6e1 | add task JSON schema for agents" },
+    { "sha": "e4fdd59483c1fc37e88a664e311cccb0ee096187", "message": "feat: b6e1 | add task creation example" },
+    { "sha": "da403457df173a3cadacac337eba6a2403fc93b1", "message": "feat: b6e1 | add task relation example" },
+    { "sha": "30f842582f2074f56d14b28a4e85a91542ff92bc", "message": "feat: b6e1 | add task completion example" },
+    { "sha": "390d213ef5d372ab7c5ddd6642574c63f9ee5f94", "message": "feat: b6e1 | register task in task index" },
+    { "sha": "12c62db53738f4ff615282c45c7c9420576e0d5c", "message": "feat: b6e1 | link skill task to workflow task" },
+    { "sha": "5bf502a088020c6c92bd0b8a8d1eaf9b47cfea98", "message": "docs: b6e1 | document canonical agent skill" },
+    { "sha": "ed2a56f737e90568509ae69936a7a5cee81fc71d", "message": "docs: b6e1 | connect agent context to canonical skill" },
+    { "sha": "f90a216d13e056abc1989d36a910731e448b84ba", "message": "fix: b6e1 | correct skill examples" }
+  ],
   "definitionOfDone": [
     "Все acceptance criteria выполнены.",
-    "Task validator проходит.",
+    "Task validator проходит через GitHub Actions CI.",
     "Skill и примеры согласованы с текущим task schema.",
     "AGENTS.md и development workflow обновлены.",
     "Связь с 7c2a добавлена.",
@@ -69,6 +81,16 @@
       "date": "2026-09-14T12:00:00Z",
       "status": "ready",
       "action": "requirements-defined"
+    },
+    {
+      "date": "2026-09-14T13:20:51Z",
+      "status": "in_progress",
+      "action": "skill-and-documentation-implemented"
+    },
+    {
+      "date": "2026-09-14T13:22:00Z",
+      "status": "done",
+      "action": "ci-validation-passed"
     }
   ],
   "relations": []
