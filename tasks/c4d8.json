@@ -3,7 +3,7 @@
   "title": "Ввести защищённый Git workflow для AI-агентов",
   "status": "in_progress",
   "createdAt": "2026-09-14T13:40:00Z",
-  "updatedAt": "2026-09-14T14:02:00Z",
+  "updatedAt": "2026-09-14T14:03:00Z",
   "description": "Закрепить обязательный workflow разработки через task → feature branch → pull request → checks → human merge и подготовить универсальный Skill для разных AI-агентов.",
   "requirements": [
     "AI-агент не должен коммитить непосредственно в default branch.",
@@ -60,7 +60,9 @@
     {"sha": "5ca75444ec522ca08d5aa11cc6c47fffcc46beaf", "message": "feat: c4d8 | validate task metadata in pull requests"},
     {"sha": "6476a8e8f286087e96e681a4bd0e79a871efabb5", "message": "feat: c4d8 | enforce PR task checks and build in CI"},
     {"sha": "cc10790b6f2363aa85c637edd01a5d185193efa8", "message": "feat: c4d8 | add AI pull request review workflow"},
-    {"sha": "4efb2917e1b380cd238f936705fa13c4476eb79a", "message": "feat: c4d8 | register protected Git workflow task"}
+    {"sha": "4efb2917e1b380cd238f936705fa13c4476eb79a", "message": "feat: c4d8 | register protected Git workflow task"},
+    {"sha": "eb1b1c1a6bffab1572b6cd8e421086a426dea463", "message": "feat: c4d8 | record Git workflow implementation history"},
+    {"sha": "ff1f6093a873e8e128628f1e7c043b5cef0946cc", "message": "feat: c4d8 | relate Git workflow to task-driven development"}
   ],
   "definitionOfDone": [
     "Skill добавлен и описывает branch/PR/merge policy.",
@@ -74,7 +76,8 @@
     {"date": "2026-09-14T13:40:00Z", "status": "draft", "action": "created"},
     {"date": "2026-09-14T13:40:00Z", "status": "ready", "action": "requirements-defined"},
     {"date": "2026-09-14T13:40:00Z", "status": "in_progress", "action": "implementation-started"},
-    {"date": "2026-09-14T14:00:14Z", "status": "in_progress", "action": "pull-request-opened", "details": "PR #6"}
+    {"date": "2026-09-14T14:00:14Z", "status": "in_progress", "action": "pull-request-opened", "details": "PR #6"},
+    {"date": "2026-09-14T14:03:00Z", "status": "in_progress", "action": "implementation-history-updated"}
   ],
   "relations": []
 }
