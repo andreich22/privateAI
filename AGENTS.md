@@ -80,6 +80,8 @@ Inspect the repository and existing implementation before using an API, Wllama m
 
 All development work is governed by [`docs/development-workflow.md`](docs/development-workflow.md).
 
+The canonical agent-independent procedural Skill is [`skills/task-driven-development/SKILL.md`](skills/task-driven-development/SKILL.md). Agents that support repository Skills SHOULD load it before editing. The Skill is vendor-neutral; it does not assume a particular AI runtime. If an agent cannot load repository Skills automatically, this file and the validator remain authoritative and the same workflow is still mandatory.
+
 **Mandatory rule:** AI MUST NOT modify project code, configuration, tests, or documentation without an associated Task ID. If a task does not exist, create it in `tasks/<id>.json` before editing.
 
 Task IDs are four lowercase hexadecimal characters. Every commit MUST use `<type>: <task-id> | <description>`. All commits for the same task use the same ID.
@@ -210,18 +212,19 @@ When changing behavior, update or add tests where practical. Pay particular atte
 
 Before editing:
 
-1. Identify or create the associated task.
-2. Verify the task is `ready` and its Definition of Ready is satisfied.
-3. Inspect the relevant files and existing implementation.
-4. Search for existing patterns or utilities that solve the same problem.
-5. Identify lifecycle, state, persistence, and browser-API implications.
-6. Make the smallest reasonable change.
-7. Avoid unrelated refactors; create and link another task instead.
-8. Use the task ID in every commit.
-9. Run relevant tests and `npm run tasks:validate`.
-10. Run `npm run build` for changes that can affect production compilation/bundling.
-11. Update task history, commits, decisions, and final status.
-12. Review the diff for regressions, privacy issues, memory leaks, and unnecessary dependencies.
+1. Load `skills/task-driven-development/SKILL.md` when the runtime supports repository Skills.
+2. Identify or create the associated task.
+3. Verify the task is `ready` and its Definition of Ready is satisfied.
+4. Inspect the relevant files and existing implementation.
+5. Search for existing patterns or utilities that solve the same problem.
+6. Identify lifecycle, state, persistence, and browser-API implications.
+7. Make the smallest reasonable change.
+8. Avoid unrelated refactors; create and link another task instead.
+9. Use the task ID in every commit.
+10. Run relevant tests and `npm run tasks:validate`.
+11. Run `npm run build` for changes that can affect production compilation/bundling.
+12. Update task history, commits, decisions, and final status.
+13. Review the diff for regressions, privacy issues, memory leaks, and unnecessary dependencies.
 
 After editing, report:
 
