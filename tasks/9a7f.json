@@ -1,0 +1,57 @@
+{
+  "id": "9a7f",
+  "title": "Автоматическая регистрация Task ID при создании Issue",
+  "status": "draft",
+  "createdAt": "2026-09-14T15:22:16Z",
+  "updatedAt": "2026-09-14T15:22:16Z",
+  "description": "Автоматизировать регистрацию задач, чтобы GitHub Issue вида TASK-<4-hex-id> приводил к созданию канонического tasks/<id>.json и записи в tasks/index.json до создания implementation PR.",
+  "requirements": [
+    "Issue с корректным Task ID запускает регистрацию задачи.",
+    "До implementation PR задача зарегистрирована в tasks/index.json.",
+    "Для задачи создаётся tasks/<id>.json с обязательными полями task system.",
+    "Повторная обработка одного Issue идемпотентна.",
+    "Существующий другой Task ID не перезаписывается и не скрывается.",
+    "Некорректный Issue получает понятный результат регистрации.",
+    "Agent Skill и development workflow требуют дождаться регистрации перед implementation PR.",
+    "CI остаётся защитным слоем и продолжает валидировать task metadata."
+  ],
+  "definitionOfReady": [
+    "Определён формат Task ID: четыре строчных hex-символа.",
+    "Определено безопасное поведение для invalid и duplicate ID.",
+    "Определён порядок Issue → registration → implementation PR.",
+    "Определено, что автоматизация не обходит branch protection."
+  ],
+  "acceptanceCriteria": [
+    "Создание Issue TASK-xxxx запускает регистрацию.",
+    "tasks/index.json содержит ID до implementation PR.",
+    "tasks/xxxx.json создаётся автоматически.",
+    "Duplicate ID не перезаписывает существующую задачу.",
+    "Invalid Issue получает понятный комментарий.",
+    "Повторный запуск безопасен.",
+    "Skill и docs описывают новый порядок.",
+    "Регистрация проверяется автоматическими тестами."
+  ],
+  "technicalApproach": [
+    "GitHub Actions слушает opened/reopened/edited Issues.",
+    "Registration workflow создаёт отдельную task/<id>-registration ветку и Pull Request, не обходя branch protection.",
+    "Node-скрипт валидирует Task ID и генерирует task metadata из Issue.",
+    "AI-агент должен дождаться merge registration PR перед созданием implementation PR."
+  ],
+  "definitionOfDone": [
+    "Workflow регистрации работает для новых Task Issues.",
+    "Регистрация идемпотентна и защищена от перезаписи чужой задачи.",
+    "Документация и Skill обновлены.",
+    "tasks:validate, тесты и build проходят.",
+    "История задачи содержит commits и результаты проверки."
+  ],
+  "history": [
+    {
+      "at": "2026-09-14T15:22:16Z",
+      "event": "created",
+      "details": "Task created from GitHub Issue #10 after identifying missing pre-PR task registration."
+    }
+  ],
+  "commits": [],
+  "decisionLog": [],
+  "relations": []
+}
