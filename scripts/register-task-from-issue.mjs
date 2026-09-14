@@ -26,7 +26,7 @@ const issue = event.issue;
 const title = issue?.title ?? '';
 const body = issue?.body ?? '';
 
-const match = title.match(/^TASK-([0-9a-f]{4})(?:\s+|:\s*|-\s*)(.+)$/);
+const match = title.match(/^TASK-([0-9a-f]{4})(?:\|\s*|:\s*|-\s*|\s+)(.+)$/);
 if (!match) {
   console.log(`Ignoring issue title: ${title}`);
   writeOutput('status', 'invalid');
