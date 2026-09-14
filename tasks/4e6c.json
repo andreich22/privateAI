@@ -1,0 +1,51 @@
+{
+  "id": "4e6c",
+  "title": "Атомарная проверка task registry в registration workflow",
+  "status": "draft",
+  "createdAt": "2026-09-14T15:43:26Z",
+  "updatedAt": "2026-09-14T15:43:26Z",
+  "description": "Усилить registration workflow так, чтобы tasks/index.json и tasks/<id>.json проверялись как единое согласованное состояние до и после регистрации задачи. Workflow не должен создавать registration PR, если состояние registry уже противоречиво или сгенерированная пара файлов не согласована.",
+  "requirements": [
+    "Проверять согласованность tasks/index.json и tasks/<id>.json внутри registration script/workflow до записи.",
+    "Проверять, что ID, title и status в index и task file совпадают.",
+    "После генерации повторно проверять пару файлов как единое состояние.",
+    "При ошибке не создавать registration PR.",
+    "Сохранить идемпотентность существующей корректной регистрации.",
+    "Добавить тесты на рассинхрон index/task file и на успешную согласованную регистрацию."
+  ],
+  "definitionOfReady": [
+    "Есть уникальный Task ID.",
+    "Требования и критерии проверки определены.",
+    "Изменение ограничено registration workflow и его тестами."
+  ],
+  "acceptanceCriteria": [
+    "Несогласованные tasks/index.json и tasks/<id>.json приводят к ошибке registration step.",
+    "При согласованном состоянии registration step успешно завершается и PR может быть создан.",
+    "После генерации task file и index проходят взаимную проверку.",
+    "Существующая корректная регистрация остаётся идемпотентной."
+  ],
+  "technicalApproach": [
+    "Registration script валидирует существующую пару до принятия решения об идемпотентном завершении.",
+    "Перед записью генерируемые task file и index проверяются в памяти как единая пара.",
+    "Оба файла записываются через временные файлы с откатом первого rename при ошибке второго.",
+    "После записи оба файла перечитываются и повторно валидируются.",
+    "Registration workflow остаётся единственной точкой, которая создаёт registration PR после успешной проверки."
+  ],
+  "definitionOfDone": [
+    "Код и тесты изменены.",
+    "npm run tasks:validate проходит.",
+    "npm run test:run проходит.",
+    "Registration workflow описан как единая проверка состояния.",
+    "Изменения отправлены через implementation PR, связанный с этой задачей."
+  ],
+  "history": [
+    {
+      "at": "2026-09-14T15:43:26Z",
+      "event": "created",
+      "details": "Task created from GitHub Issue #12."
+    }
+  ],
+  "commits": [],
+  "decisionLog": [],
+  "relations": []
+}
