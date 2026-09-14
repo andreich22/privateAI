@@ -1,11 +1,15 @@
 import path from 'path';
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
+import packageJson from './package.json';
 
 const isTest = process.env.PLAYWRIGHT_TEST === '1';
 
 export default defineConfig({
   plugins: [react()],
+  define: {
+    __APP_VERSION__: JSON.stringify(packageJson.version),
+  },
   resolve: isTest
     ? {
         alias: {
