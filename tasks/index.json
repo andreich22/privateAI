@@ -5,6 +5,11 @@
       "id": "7c2a",
       "title": "Внедрить систему задач и связей для AI-разработки",
       "status": "done"
+    },
+    {
+      "id": "b6e1",
+      "title": "Добавить универсальный Skill для task-driven AI development",
+      "status": "ready"
     }
   ]
 }
