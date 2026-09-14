@@ -1,0 +1,53 @@
+{
+  "id": "0016",
+  "title": "Настроить версионирование приложения",
+  "status": "in_progress",
+  "createdAt": "2026-09-14T14:36:10Z",
+  "updatedAt": "2026-09-14T14:52:00Z",
+  "description": "Ввести единый механизм версионирования privateAI на основе Semantic Versioning. Версия должна иметь один источник истины, попадать в production build и быть доступна приложению для отображения/диагностики. Изменение версии должно оставлять явную историю в Git.",
+  "requirements": [
+    "Использовать SemVer MAJOR.MINOR.PATCH.",
+    "Источником версии сделать package.json.",
+    "Не дублировать номер версии вручную в нескольких местах.",
+    "Передавать версию в клиентское приложение на этапе Vite build.",
+    "Предусмотреть npm-скрипты для patch/minor/major bump с обновлением lockfile.",
+    "Добавить автоматическую проверку корректности версии в CI.",
+    "Документировать правила изменения версии и соответствие типов изменений MAJOR/MINOR/PATCH.",
+    "Версия должна быть пригодна для отображения в UI/диагностике приложения."
+  ],
+  "definitionOfReady": [
+    "Определён источник истины для версии.",
+    "Определён формат SemVer.",
+    "Определён механизм передачи версии из package metadata в frontend.",
+    "Определены правила bump версии.",
+    "Определён CI check."
+  ],
+  "acceptanceCriteria": [
+    "package.json содержит валидную SemVer версию.",
+    "Production build получает ту же версию без ручного дублирования.",
+    "Команды bump версии работают штатно и обновляют lockfile.",
+    "CI валидирует версию.",
+    "Документация содержит правила версионирования.",
+    "Изменения проходят существующие проверки проекта."
+  ],
+  "technicalApproach": [
+    "Использовать package.json как единственный источник версии.",
+    "Инжектировать версию через Vite define.",
+    "Добавить version check и npm version bump scripts.",
+    "Показывать версию в диагностике приложения.",
+    "Запускать version check в CI."
+  ],
+  "definitionOfDone": [
+    "Версия зарегистрирована в task registry.",
+    "Версионирование реализовано и документировано.",
+    "CI проверяет согласованность package.json и package-lock.json.",
+    "PR проходит task validation и проектные проверки."
+  ],
+  "history": [
+    {"date": "2026-09-14T14:36:10Z", "status": "draft", "action": "created"},
+    {"date": "2026-09-14T14:36:10Z", "status": "ready", "action": "requirements-defined"},
+    {"date": "2026-09-14T14:37:29Z", "status": "in_progress", "action": "implementation-started", "details": "PR #8"},
+    {"date": "2026-09-14T14:52:00Z", "status": "in_progress", "action": "ci-failure-diagnosed", "details": "Task registry was missing 0016 and branch naming did not match PR validator."}
+  ],
+  "relations": []
+}
