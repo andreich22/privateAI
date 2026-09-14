@@ -10,6 +10,11 @@
       "id": "b6e1",
       "title": "Добавить универсальный Skill для task-driven AI development",
       "status": "done"
+    },
+    {
+      "id": "c4d8",
+      "title": "Ввести защищённый Git workflow для AI-агентов",
+      "status": "in_progress"
     }
   ]
 }
