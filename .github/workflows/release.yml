@@ -1,0 +1,120 @@
+name: Release on version bump
+
+on:
+  pull_request:
+    types: [closed]
+    branches:
+      - master
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Create release when application version changes
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const baseSha = context.payload.pull_request.base.sha;
+            const mergeSha = context.payload.pull_request.merge_commit_sha;
+
+            if (!mergeSha) {
+              core.setFailed('Merged PR does not contain merge_commit_sha.');
+              return;
+            }
+
+            async function readVersion(ref) {
+              const response = await github.rest.repos.getContent({
+                owner,
+                repo,
+                path: 'package.json',
+                ref
+              });
+
+              if (Array.isArray(response.data) || !response.data.content) {
+                throw new Error(`package.json was not found at ${ref}.`);
+              }
+
+              return JSON.parse(Buffer.from(response.data.content, 'base64').toString('utf8')).version;
+            }
+
+            const baseVersion = await readVersion(baseSha);
+            const mergeVersion = await readVersion(mergeSha);
+            const semver = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/;
+
+            if (!semver.test(baseVersion) || !semver.test(mergeVersion)) {
+              core.setFailed(`Invalid SemVer: ${baseVersion} -> ${mergeVersion}`);
+              return;
+            }
+
+            if (baseVersion === mergeVersion) {
+              core.info(`Version unchanged (${mergeVersion}); no release required.`);
+              return;
+            }
+
+            const parse = (version) => version.split('.').map(Number);
+            const [baseMajor, baseMinor, basePatch] = parse(baseVersion);
+            const [mergeMajor, mergeMinor, mergePatch] = parse(mergeVersion);
+            const isGreater =
+              mergeMajor > baseMajor ||
+              (mergeMajor === baseMajor && mergeMinor > baseMinor) ||
+              (mergeMajor === baseMajor && mergeMinor === baseMinor && mergePatch > basePatch);
+
+            if (!isGreater) {
+              core.setFailed(`Version must increase: ${baseVersion} -> ${mergeVersion}`);
+              return;
+            }
+
+            const tagName = `v${mergeVersion}`;
+
+            let existingRelease = null;
+            try {
+              const response = await github.rest.repos.getReleaseByTag({
+                owner,
+                repo,
+                tag: tagName
+              });
+              existingRelease = response.data;
+            } catch (error) {
+              if (error.status !== 404) throw error;
+            }
+
+            if (existingRelease) {
+              core.info(`Release ${tagName} already exists; nothing to do.`);
+              return;
+            }
+
+            let existingTag = null;
+            try {
+              const response = await github.rest.git.getRef({
+                owner,
+                repo,
+                ref: `tags/${tagName}`
+              });
+              existingTag = response.data.object.sha;
+            } catch (error) {
+              if (error.status !== 404) throw error;
+            }
+
+            if (existingTag && existingTag !== mergeSha) {
+              core.setFailed(`Tag ${tagName} already exists at ${existingTag}, expected ${mergeSha}.`);
+              return;
+            }
+
+            const release = await github.rest.repos.createRelease({
+              owner,
+              repo,
+              tag_name: tagName,
+              target_commitish: mergeSha,
+              name: tagName,
+              generate_release_notes: true
+            });
+
+            core.info(`Created ${release.data.html_url}`);
