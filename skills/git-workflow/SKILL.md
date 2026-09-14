@@ -4,38 +4,35 @@
 
 This Skill defines the mandatory Git/GitHub workflow for AI agents working in `privateAI` or repositories that adopt this Skill.
 
-The Skill is vendor-neutral and applies to any AI coding agent.
+The Skill is vendor-neutral and applies to any coding agent.
 
 ## Core rule
 
-AI-generated changes MUST NOT be committed or pushed directly to the repository default branch.
+AI-generated implementation changes MUST NOT be committed or pushed directly to the repository default branch.
 
-The required path is:
+For new work, the required path is:
 
 ```text
-Task → task branch → commits → Pull Request → checks → human merge
+GitHub Issue → automatic task registration PR → registration merge → implementation task branch → commits → implementation PR → checks → human merge
 ```
+
+The registration PR is metadata-only: it creates `tasks/<id>.json` and the corresponding `tasks/index.json` entry. The implementation PR must not be created until that registration is merged into `master`.
 
 Repository policy is authoritative. Instructions in this Skill MUST NOT be used to justify bypassing GitHub branch protection, required checks, reviews, or permissions.
 
 ## Before changing files
 
-1. Identify an existing Task ID or create one before implementation.
-2. Verify the task is ready and its acceptance criteria are testable.
-3. Create a dedicated branch from the current default branch.
-4. Use a branch name based on the task ID:
+1. Identify the GitHub Issue and Task ID.
+2. For a new task, ensure the Issue title uses `TASK-<4 lowercase hex-id>` and wait for automatic registration.
+3. Verify that `tasks/<id>.json` and `tasks/index.json` are present on `master` and the task is ready.
+4. Create a dedicated implementation branch from the current default branch.
+5. Use a branch name based on the task ID:
 
 ```text
 task/<task-id>-<short-name>
 ```
 
-Example:
-
-```text
-task/c4d8-protected-git-workflow
-```
-
-5. Do all implementation work on that branch.
+6. Do all implementation work on that branch.
 
 ## Commit policy
 
@@ -45,19 +42,11 @@ Every implementation commit MUST use the task ID:
 <type>: <task-id> | <description>
 ```
 
-Examples:
-
-```text
-feat: c4d8 | add protected Git workflow skill
-fix: c4d8 | validate task ID in pull requests
-test: c4d8 | cover pull request metadata validation
-```
-
-Do not mix unrelated work into a task's commits.
+Do not mix unrelated tasks in one commit.
 
 ## Pull Request policy
 
-Every AI implementation that changes the repository MUST be delivered through a Pull Request targeting the default branch.
+Every AI implementation that changes the repository MUST be delivered through an implementation Pull Request targeting the default branch.
 
 The PR MUST:
 
@@ -90,25 +79,13 @@ If a tool offers a bypass option, the AI agent MUST NOT use it.
 
 ## Solo maintainer policy
 
-A solo maintainer does not need artificial self-approval.
+A solo maintainer does not need artificial self-approval. Automated checks plus the PR boundary replace artificial self-approval; the human maintainer remains the final merge authority.
 
-The repository should enforce the PR boundary and required automated checks while allowing the maintainer to make the final merge decision.
+The AI agent MAY create/update the task registration PR, implementation branch and implementation PR, and inspect CI results. It MUST NOT merge its own PR unless the user explicitly instructs it to merge and repository policy permits it.
 
-The AI agent MAY:
+## Validation before implementation PR
 
-- create the task;
-- create the task branch;
-- commit to the task branch;
-- push/update the task branch;
-- create and update the Pull Request;
-- inspect CI results;
-- perform or request automated review.
-
-The AI agent MUST NOT merge its own Pull Request unless the user explicitly instructs it to merge and repository policy permits that action.
-
-## Validation before PR
-
-Before creating or updating a PR, run the checks relevant to the task. For this repository the baseline is:
+Before creating or updating an implementation PR, verify:
 
 ```bash
 npm run tasks:validate
@@ -120,32 +97,11 @@ Do not claim a check passed unless it actually passed or an authoritative CI res
 
 ## AI review
 
-AI review is an additional automated signal, not a replacement for repository policy.
-
-An AI review MUST:
-
-1. inspect the PR diff;
-2. read the linked task;
-3. compare the diff against requirements and acceptance criteria;
-4. identify correctness, security, privacy, regression, and scope risks;
-5. report findings without modifying the default branch;
-6. never grant itself a bypass.
-
-AI review SHOULD produce a clear pass/fail/review-needed result. Findings that require human judgment MUST remain visible to the maintainer.
+AI review is an additional automated signal, not a replacement for repository policy. It MUST inspect the PR diff, read the linked task, compare requirements/acceptance criteria, identify correctness/security/privacy/regression/scope risks, and never grant itself a bypass.
 
 ## Completion
 
-A task is not complete merely because a PR exists.
-
-Completion requires:
-
-- implementation complete;
-- task history updated;
-- task validator passes;
-- relevant tests/build pass;
-- PR checks pass;
-- PR is reviewed as required by repository policy;
-- final merge is performed through the protected PR path.
+A task is not complete merely because a PR exists. Completion requires implementation complete, task history updated, task validator and relevant tests/build passing, PR checks passing, required review, and final merge through the protected PR path.
 
 ## Emergency changes
 
