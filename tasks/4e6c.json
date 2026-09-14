@@ -1,9 +1,9 @@
 {
   "id": "4e6c",
   "title": "Атомарная проверка task registry в registration workflow",
-  "status": "draft",
+  "status": "in_progress",
   "createdAt": "2026-09-14T15:43:39.311Z",
-  "updatedAt": "2026-09-14T15:43:39.311Z",
+  "updatedAt": "2026-09-14T15:50:00Z",
   "issue": {
     "number": 12,
     "url": "https://github.com/andreich22/privateAI/issues/12",
@@ -48,6 +48,11 @@
       "at": "2026-09-14T15:43:39.311Z",
       "event": "created_from_issue",
       "details": "Automatically registered from GitHub Issue #12."
+    },
+    {
+      "at": "2026-09-14T15:50:00Z",
+      "event": "implementation_started",
+      "details": "Registration PR #13 merged; implementation branch created from the registered task state."
     }
   ],
   "commits": [],
