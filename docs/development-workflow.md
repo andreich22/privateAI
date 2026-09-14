@@ -1,5 +1,13 @@
 # AI development workflow
 
+## Canonical agent Skill
+
+The repository contains an agent-independent procedural Skill at [`skills/task-driven-development/SKILL.md`](../skills/task-driven-development/SKILL.md).
+
+Agents that support repository Skills SHOULD load it before editing. It is intentionally vendor-neutral and does not depend on a particular AI runtime. If an agent cannot automatically load repository Skills, the rules below and `AGENTS.md` remain fully authoritative.
+
+The Skill is a procedure layer, not a replacement for repository policy. The durable source of truth is the combination of task JSON, relations, validator, Git history, and `AGENTS.md`.
+
 ## Rule 1 — every code change has a task
 
 AI MUST NOT modify project code, configuration, tests, or documentation without an associated Task ID. If the requested work is not already represented by a task, AI creates one before editing.
