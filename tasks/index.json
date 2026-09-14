@@ -35,6 +35,11 @@
       "id": "5f21",
       "title": "Автоматическое создание GitHub Release и tag при merge PR с изменением версии",
       "status": "in_progress"
+    },
+    {
+      "id": "d72e",
+      "title": "Менеджер локальных моделей",
+      "status": "draft"
     }
   ]
 }
