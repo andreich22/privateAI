@@ -1,0 +1,108 @@
+name: Register task from Issue
+
+on:
+  issues:
+    types: [opened, reopened, edited]
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+
+jobs:
+  register:
+    if: startsWith(github.event.issue.title, 'TASK-')
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout default branch
+        uses: actions/checkout@v4
+        with:
+          ref: master
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Register task metadata
+        id: register
+        run: node scripts/register-task-from-issue.mjs
+        env:
+          GITHUB_EVENT_PATH: ${{ github.event_path }}
+
+      - name: Validate task metadata
+        if: steps.register.outputs.status == 'registered'
+        run: npm run tasks:validate
+
+      - name: Create or update registration PR
+        id: registration_pr
+        if: steps.register.outputs.status == 'registered'
+        uses: peter-evans/create-pull-request@v7
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          base: master
+          branch: task/${{ steps.register.outputs.task_id }}-registration
+          delete-branch: false
+          commit-message: "feat: ${{ steps.register.outputs.task_id }} | register task from Issue #${{ github.event.issue.number }}"
+          title: "chore: ${{ steps.register.outputs.task_id }} | register task from Issue #${{ github.event.issue.number }}"
+          body: |
+            ## Task registration
+
+            This PR is generated automatically from GitHub Issue #${{ github.event.issue.number }}.
+
+            It registers Task `${{ steps.register.outputs.task_id }}` in `tasks/index.json` and creates its canonical task file.
+
+            **This registration PR must be merged before an AI agent creates the implementation PR.**
+
+            The workflow never pushes directly to `master`, so repository branch protection remains authoritative.
+
+      - name: Comment registration PR
+        if: steps.registration_pr.outputs.pull-request-url != ''
+        uses: actions/github-script@v7
+        env:
+          PR_URL: ${{ steps.registration_pr.outputs.pull-request-url }}
+          TASK_ID: ${{ steps.register.outputs.task_id }}
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const marker = `<!-- task-registration:${process.env.TASK_ID} -->`;
+            const body = `${marker}\nTask **${process.env.TASK_ID}** зарегистрирована автоматически.\n\nСначала дождитесь merge registration PR: ${process.env.PR_URL}\nПосле merge можно создавать implementation branch и PR.`;
+            const comments = await github.paginate(github.rest.issues.listComments, {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              per_page: 100
+            });
+            if (!comments.some((comment) => comment.body?.includes(marker))) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body
+              });
+            }
+
+      - name: Explain invalid Task Issue
+        if: steps.register.outputs.status == 'invalid'
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const marker = '<!-- task-registration-invalid -->';
+            const body = `${marker}\nTask Issue не зарегистрирован. Заголовок должен начинаться с \`TASK-<4 lowercase hex>\`, например \`TASK-a1b2 Название задачи\`.`;
+            const comments = await github.paginate(github.rest.issues.listComments, {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              per_page: 100
+            });
+            if (!comments.some((comment) => comment.body?.includes(marker))) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body
+              });
+            }
