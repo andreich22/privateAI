@@ -1,9 +1,9 @@
 {
   "id": "5f21",
   "title": "Автоматическое создание GitHub Release и tag при merge PR с изменением версии",
-  "status": "in_progress",
+  "status": "done",
   "createdAt": "2026-09-14T17:38:39Z",
-  "updatedAt": "2026-09-14T17:38:39Z",
+  "updatedAt": "2026-09-14T18:00:00Z",
   "description": "Завершить цепочку Task → PR → version bump → merge → Release: после merge PR в master, если package.json содержит новую версию, автоматически создать Git tag vX.Y.Z и GitHub Release на merge-коммите.",
   "requirements": [
     "Запускать release workflow только после merge PR в master.",
@@ -48,7 +48,8 @@
   "history": [
     {"date": "2026-09-14T17:38:39Z", "status": "draft", "action": "created", "details": "GitHub Issue #15"},
     {"date": "2026-09-14T17:38:39Z", "status": "ready", "action": "requirements-defined"},
-    {"date": "2026-09-14T20:00:00Z", "status": "in_progress", "action": "implementation-started"}
+    {"date": "2026-09-14T20:00:00Z", "status": "in_progress", "action": "implementation-started"},
+    {"date": "2026-09-14T18:00:00Z", "status": "done", "action": "implementation-merged", "details": "PR #16 merged; release workflow is active on master"}
   ],
   "relations": [
     {"type": "derived_from", "to": "0016"}
