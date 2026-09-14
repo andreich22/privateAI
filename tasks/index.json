@@ -25,6 +25,11 @@
       "id": "9a7f",
       "title": "Автоматическая регистрация Task ID при создании Issue",
       "status": "in_progress"
+    },
+    {
+      "id": "4e6c",
+      "title": "Атомарная проверка task registry в registration workflow",
+      "status": "draft"
     }
   ]
 }
