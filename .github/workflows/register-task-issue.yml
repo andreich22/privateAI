@@ -32,7 +32,9 @@ jobs:
         env:
           GITHUB_EVENT_PATH: ${{ github.event_path }}
 
-      - name: Validate task metadata
+      # The registration script validates index + task file as one state before
+      # writing, persists them as a pair, and validates the persisted pair again.
+      - name: Validate registered task state
         if: steps.register.outputs.status == 'registered'
         run: npm run tasks:validate
 
