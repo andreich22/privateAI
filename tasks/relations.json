@@ -9,5 +9,11 @@
     "replaces",
     "implements"
   ],
-  "relations": []
+  "relations": [
+    {
+      "from": "b6e1",
+      "type": "derived_from",
+      "to": "7c2a"
+    }
+  ]
 }
