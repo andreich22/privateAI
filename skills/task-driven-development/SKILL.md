@@ -4,8 +4,6 @@
 
 This is the canonical, agent-independent procedure for changing the `privateAI` repository.
 
-It is designed to be usable by different AI agents and runtimes. It does not assume Cursor, Claude, Codex, Copilot, or any other specific product.
-
 Repository contract:
 
 - `AGENTS.md` contains mandatory project-wide constraints.
@@ -13,118 +11,92 @@ Repository contract:
 - `tasks/<id>.json` is the source of truth for an individual task.
 - `tasks/relations.json` is the source of truth for task relationships.
 - `scripts/validate-tasks.mjs` enforces structural integrity.
+- `scripts/register-task-from-issue.mjs` defines the deterministic Issue → task metadata transformation.
+- `.github/workflows/register-task-issue.yml` automates registration from GitHub Issues.
 - Git history records implementation changes.
-
-If the current agent runtime supports repository skills, load this file before editing. If it does not, follow the same workflow from `AGENTS.md`; lack of automatic Skill loading never permits bypassing the task workflow.
 
 ## Non-negotiable rules
 
 1. Do not modify project code, configuration, tests, or documentation without an associated Task ID.
-2. If no suitable task exists, create the task before making the implementation change.
-3. Task IDs are exactly four lowercase hexadecimal characters and must be unique.
-4. Do not silently expand the scope of an existing task. Create another task and relate it instead.
-5. Every commit must use `<type>: <task-id> | <description>`.
-6. All commits belonging to one task use that task's ID.
-7. Task relationships belong in `tasks/relations.json`; do not duplicate reverse edges in task files.
-8. `depends_on` and `parent` relationships must not form cycles.
-9. Before setting a task to `done`, run `npm run tasks:validate` and the relevant tests/build.
-10. A task is not done merely because the code compiles: acceptance criteria, task history, commit metadata, and validation must be complete.
+2. New tasks MUST start as a GitHub Issue titled `TASK-<4 lowercase hex-id> <title>` (the registration script also accepts `TASK-<id>: <title>` and `TASK-<id>-<title>`).
+3. The Issue registration workflow MUST register `tasks/<id>.json` and `tasks/index.json` before an AI agent creates the implementation PR.
+4. If the registration PR is not merged into `master`, do not create the implementation branch or implementation PR.
+5. Task IDs are exactly four lowercase hexadecimal characters and must be unique.
+6. Do not silently expand the scope of an existing task. Create another task and relate it instead.
+7. Every commit must use `<type>: <task-id> | <description>`.
+8. All commits belonging to one task use the same ID.
+9. Task relationships belong in `tasks/relations.json`; do not duplicate reverse edges in task files.
+10. `depends_on` and `parent` relationships must not form cycles.
+11. Before setting a task to `done`, run `npm run tasks:validate` and the relevant tests/build.
+12. A task is not done merely because the code compiles: acceptance criteria, task history, commit metadata, and validation must be complete.
 
 ## Workflow
 
 ### 1. Understand the request
 
-Determine the smallest concrete change requested by the user.
+Determine the smallest concrete change requested by the user. Inspect the repository, tests, documentation, and related tasks before editing. Do not guess about APIs or existing abstractions.
 
-Inspect the repository before editing. Check existing implementation, tests, documentation, and related tasks. Do not guess about APIs or existing abstractions.
+### 2. Create the GitHub Task Issue
 
-### 2. Find or create a task
+If no suitable task exists, create a GitHub Issue first. The Issue should contain the goal, requirements, Definition of Ready, acceptance criteria, technical approach, and Definition of Done.
 
-Search `tasks/index.json` and the task files for an existing task that exactly covers the request.
+Example title:
 
-If one exists:
+```text
+TASK-a1b2 Short task title
+```
 
-- verify its status and scope;
-- read its requirements and acceptance criteria;
-- inspect its relations;
-- continue only if the requested work belongs to that task.
+Do not start implementation merely because the Issue exists.
 
-If none exists, create a new task file `tasks/<id>.json` and register it in `tasks/index.json` before changing implementation files.
+### 3. Wait for automatic registration
 
-A task should contain at least:
+The `Register task from Issue` workflow creates a registration PR containing:
 
-- `id`
-- `title`
-- `status`
-- `createdAt` / `updatedAt`
-- `description`
-- `requirements`
-- `definitionOfReady`
-- `acceptanceCriteria`
-- `technicalApproach`
-- `definitionOfDone`
-- `history`
-- `commits`
+- `tasks/<id>.json`;
+- the corresponding entry in `tasks/index.json`.
 
-Record important implementation choices in `decisionLog`.
+The registration PR is deliberately separate from the implementation PR. It must pass normal repository checks and be merged before implementation starts. The workflow never pushes directly to `master`, so branch protection remains authoritative.
 
-### 3. Check Definition of Ready
+Registration is idempotent. Existing matching task metadata is not overwritten. A registry/task-file conflict fails loudly.
 
-Before implementation, verify that the task has enough information to start safely:
+### 4. Verify registration and Definition of Ready
 
-- goal and scope are clear;
-- requirements are explicit;
-- acceptance criteria are testable;
-- technical direction is understood;
-- required dependencies and relations are known.
+After registration is merged:
+
+- confirm the Task ID exists in `tasks/index.json`;
+- read `tasks/<id>.json`;
+- verify the Definition of Ready;
+- inspect `tasks/relations.json` and add required relationships.
 
 Move the task to `ready` only when its Definition of Ready is satisfied.
 
-### 4. Inspect relationships
+### 5. Create implementation branch
 
-Read `tasks/relations.json` and identify relevant tasks.
+Only after registration is present in `master`, create:
 
-Use the existing relation types:
+```text
+task/<task-id>-<short-name>
+```
 
-- `parent` — structural parent;
-- `depends_on` — implementation dependency;
-- `related` — relevant but non-blocking relationship;
-- `duplicates` — same intent as another task;
-- `derived_from` — task originated from another task;
-- `replaces` — task replaces another task;
-- `implements` — task implements another task/specification.
+Never create the implementation PR before registration is merged.
 
-Reverse views such as `blocks` or `child` should be derived rather than stored as duplicate edges.
+### 6. Implement the smallest change
 
-Never create a self-relation. Never introduce a cycle through `parent` or `depends_on`.
+Change only what the task requires. Preserve project invariants from `AGENTS.md`, especially local-first execution, privacy, browser-side inference, memory safety, streaming behavior, and minimal dependencies.
 
-### 5. Implement the smallest change
+If implementation reveals unrelated work, create a new Issue and let the registration workflow create its task metadata before implementation begins.
 
-Change only what the task requires.
+### 7. Validate continuously
 
-Preserve project invariants from `AGENTS.md`, especially local-first execution, privacy, browser-side inference, memory safety, streaming behavior, and minimal dependencies.
-
-If implementation reveals unrelated work, stop expanding the current scope. Create a new task and add an appropriate relationship.
-
-### 6. Validate continuously
-
-Run the smallest relevant checks during development. Before completion, at minimum:
+Before completion, at minimum:
 
 ```bash
 npm run tasks:validate
 ```
 
-Also run relevant unit/component/e2e tests. Run:
+Also run relevant unit/component/e2e tests and `npm run build` when production compilation can be affected. Do not claim a check passed unless it actually passed or an authoritative CI result confirms it.
 
-```bash
-npm run build
-```
-
-when the change can affect production compilation or bundling.
-
-Do not claim a check passed unless it was actually run or verified through an authoritative CI result.
-
-### 7. Commit with the task ID
+### 8. Commit with the task ID
 
 Every implementation commit must follow:
 
@@ -132,61 +104,20 @@ Every implementation commit must follow:
 <type>: <task-id> | <description>
 ```
 
-Examples:
-
-```text
-feat: a1b2 | add model download progress
-fix: a1b2 | handle cancelled file access
-refactor: a1b2 | isolate model lifecycle helper
-test: a1b2 | cover permission restoration
-```
-
 Use the same Task ID for every commit belonging to the task.
 
-### 8. Update task history
+### 9. Update task history
 
-After meaningful implementation milestones, update the task's history and decision log.
+Before completion, record final status, relevant commit SHAs/messages, decisions, validation, and known limitations.
 
-Before completion, record:
+### 10. Complete the task
 
-- final status;
-- relevant commit SHAs and messages;
-- decisions that affect future maintenance;
-- validation performed;
-- any known limitations.
-
-### 9. Complete the task
-
-Set the task to `done` only after:
-
-- all requirements are implemented;
-- all acceptance criteria are satisfied;
-- relevant tests/build pass;
-- `npm run tasks:validate` passes;
-- task history and commit metadata are complete;
-- the final diff contains no accidental or unrelated changes.
+Set the task to `done` only after all requirements and acceptance criteria are satisfied, relevant tests/build pass, `npm run tasks:validate` passes, history/commit metadata are complete, and the implementation PR has passed repository checks and is merged through the protected PR path.
 
 ## Scope management
 
-The task is the unit of traceability.
-
-If a change is useful but not necessary to satisfy the current acceptance criteria, do not bundle it casually. Create a separate task and relate it using `related`, `derived_from`, `parent`, or another appropriate relation.
-
-A task may have multiple commits, but those commits must keep the same Task ID.
+The task is the unit of traceability. If a change is useful but not necessary to satisfy current acceptance criteria, create a separate Issue/task and relate it using `related`, `derived_from`, `parent`, or another appropriate relation.
 
 ## Agent handoff
 
-A future agent should be able to understand the work without relying on chat history.
-
-Before handing off, ensure the repository contains enough information to answer:
-
-1. What was requested?
-2. Why was it requested?
-3. What was implemented?
-4. What decisions were made?
-5. Which tasks are related?
-6. Which commits implement it?
-7. What remains unfinished?
-8. Which validations were run?
-
-The repository, not the transient conversation, is the durable project memory.
+The repository should contain enough information to understand what was requested, why, what was implemented, which decisions were made, which tasks are related, which commits implement it, what remains, and which validations were run. The repository, not transient chat history, is the durable project memory.
