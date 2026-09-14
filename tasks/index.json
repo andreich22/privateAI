@@ -30,6 +30,11 @@
       "id": "4e6c",
       "title": "Атомарная проверка task registry в registration workflow",
       "status": "in_progress"
+    },
+    {
+      "id": "5f21",
+      "title": "Автоматическое создание GitHub Release и tag при merge PR с изменением версии",
+      "status": "in_progress"
     }
   ]
 }
