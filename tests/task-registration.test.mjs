@@ -42,6 +42,16 @@ describe('register-task-from-issue', () => {
     expect(after).toBe(before);
   });
 
+  it('accepts the pipe separator used by Task Issue titles', () => {
+    const fixture = createFixture({ title: 'TASK-a1b2 | Pipe task title' });
+    run(fixture);
+
+    const index = JSON.parse(fs.readFileSync(path.join(fixture.root, 'tasks/index.json'), 'utf8'));
+    const task = JSON.parse(fs.readFileSync(path.join(fixture.root, 'tasks/a1b2.json'), 'utf8'));
+    expect(index.tasks).toEqual([{ id: 'a1b2', title: 'Pipe task title', status: 'draft' }]);
+    expect(task.title).toBe('Pipe task title');
+  });
+
   it('rejects a conflicting task file instead of overwriting it', () => {
     const fixture = createFixture({ title: 'TASK-a1b2 Another task' });
     fs.writeFileSync(path.join(fixture.root, 'tasks/a1b2.json'), JSON.stringify({ id: 'a1b2', title: 'Existing task' }));
