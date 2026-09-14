@@ -12,7 +12,11 @@
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:debug": "playwright test --debug",
-    "tasks:validate": "node scripts/validate-tasks.mjs"
+    "tasks:validate": "node scripts/validate-tasks.mjs",
+    "version:check": "node scripts/validate-version.mjs",
+    "version:patch": "npm version patch --no-git-tag-version",
+    "version:minor": "npm version minor --no-git-tag-version",
+    "version:major": "npm version major --no-git-tag-version"
   },
   "dependencies": {
     "@wllama/wllama": "^3.6.0",
