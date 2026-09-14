@@ -49,6 +49,45 @@ describe('register-task-from-issue', () => {
     expect(() => run(fixture)).toThrow();
   });
 
+  it('rejects an already registered task when index and task file disagree', () => {
+    const fixture = createFixture({ title: 'TASK-a1b2 Example task' });
+    fs.writeFileSync(path.join(fixture.root, 'tasks/index.json'), JSON.stringify({
+      version: 1,
+      tasks: [{ id: 'a1b2', title: 'Example task', status: 'draft' }]
+    }, null, 2));
+    fs.writeFileSync(path.join(fixture.root, 'tasks/a1b2.json'), JSON.stringify({
+      id: 'a1b2',
+      title: 'Example task',
+      status: 'in_progress'
+    }, null, 2));
+
+    expect(() => run(fixture)).toThrow(/status mismatch/);
+  });
+
+  it('rejects an already registered task when index and task title disagree', () => {
+    const fixture = createFixture({ title: 'TASK-a1b2 Example task' });
+    fs.writeFileSync(path.join(fixture.root, 'tasks/index.json'), JSON.stringify({
+      version: 1,
+      tasks: [{ id: 'a1b2', title: 'Example task', status: 'draft' }]
+    }, null, 2));
+    fs.writeFileSync(path.join(fixture.root, 'tasks/a1b2.json'), JSON.stringify({
+      id: 'a1b2',
+      title: 'Different task',
+      status: 'draft'
+    }, null, 2));
+
+    expect(() => run(fixture)).toThrow(/title mismatch/);
+  });
+
+  it('keeps index and task file synchronized after registration', () => {
+    const fixture = createFixture({ title: 'TASK-c3d4 Synchronized task' });
+    run(fixture);
+
+    const index = JSON.parse(fs.readFileSync(path.join(fixture.root, 'tasks/index.json'), 'utf8'));
+    const task = JSON.parse(fs.readFileSync(path.join(fixture.root, 'tasks/c3d4.json'), 'utf8'));
+    expect(index.tasks).toContainEqual({ id: task.id, title: task.title, status: task.status });
+  });
+
   it('ignores an issue without a valid Task ID', () => {
     const fixture = createFixture({ title: 'Feature request without task id' });
     run(fixture);
