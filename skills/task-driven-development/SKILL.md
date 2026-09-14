@@ -138,7 +138,7 @@ Examples:
 feat: a1b2 | add model download progress
 fix: a1b2 | handle cancelled file access
 refactor: a1b2 | isolate model lifecycle helper
- test: a1b2 | cover permission restoration
+test: a1b2 | cover permission restoration
 ```
 
 Use the same Task ID for every commit belonging to the task.
