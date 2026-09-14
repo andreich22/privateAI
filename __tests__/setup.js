@@ -21,7 +21,7 @@ function createWllamaMock() {
     ),
     createCompletion: vi.fn().mockResolvedValue(
       (async function* () {
-        yield { choices: [{ text: 'completion result' }] };
+        yield { choices: [{ text: 'completion result' } }] };
       })()
     ),
     exit: vi.fn().mockResolvedValue(undefined),
@@ -79,11 +79,16 @@ if (typeof window !== 'undefined') {
   window.showSaveFilePicker = vi.fn().mockResolvedValue(mockFileHandle);
 }
 
-globalThis.navigator = {
-  gpu: null,
-};
+if (typeof navigator !== 'undefined' && !('gpu' in navigator)) {
+  Object.defineProperty(navigator, 'gpu', {
+    value: null,
+    configurable: true,
+  });
+}
 
-globalThis.window.crossOriginIsolated = false;
+if (typeof window !== 'undefined') {
+  window.crossOriginIsolated = false;
+}
 
 if (typeof document !== 'undefined') {
   if (!document.baseURI) {
