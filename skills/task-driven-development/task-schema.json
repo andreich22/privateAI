@@ -1,0 +1,74 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "privateAI Task",
+  "type": "object",
+  "required": [
+    "id",
+    "title",
+    "status",
+    "createdAt",
+    "updatedAt",
+    "description",
+    "requirements",
+    "definitionOfReady",
+    "acceptanceCriteria",
+    "technicalApproach",
+    "definitionOfDone",
+    "history",
+    "commits",
+    "relations"
+  ],
+  "properties": {
+    "id": { "type": "string", "pattern": "^[0-9a-f]{4}$" },
+    "title": { "type": "string", "minLength": 1 },
+    "status": { "enum": ["draft", "ready", "in_progress", "blocked", "done"] },
+    "createdAt": { "type": "string", "format": "date-time" },
+    "updatedAt": { "type": "string", "format": "date-time" },
+    "description": { "type": "string", "minLength": 1 },
+    "requirements": { "type": "array", "items": { "type": "string" } },
+    "definitionOfReady": { "type": "array", "items": { "type": "string" } },
+    "acceptanceCriteria": { "type": "array", "items": { "type": "string" } },
+    "technicalApproach": { "type": "array", "items": { "type": "string" } },
+    "definitionOfDone": { "type": "array", "items": { "type": "string" } },
+    "decisionLog": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["date", "decision", "reason"],
+        "properties": {
+          "date": { "type": "string", "format": "date-time" },
+          "decision": { "type": "string" },
+          "reason": { "type": "string" }
+        },
+        "additionalProperties": true
+      }
+    },
+    "commits": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["sha", "message"],
+        "properties": {
+          "sha": { "type": "string", "minLength": 7 },
+          "message": { "type": "string", "pattern": "^[^:]+: [0-9a-f]{4} \\| .+$" }
+        },
+        "additionalProperties": false
+      }
+    },
+    "history": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["date", "status", "action"],
+        "properties": {
+          "date": { "type": "string", "format": "date-time" },
+          "status": { "enum": ["draft", "ready", "in_progress", "blocked", "done"] },
+          "action": { "type": "string" }
+        },
+        "additionalProperties": true
+      }
+    },
+    "relations": { "type": "array" }
+  },
+  "additionalProperties": true
+}
