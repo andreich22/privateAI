@@ -193,6 +193,65 @@ When changing behavior, update or add tests where practical. Pay particular atte
 - chat UI;
 - critical user flows.
 
+## Task-based workflow
+
+**Every code change MUST be tracked through a task.** No exceptions.
+
+### Task structure
+
+Each task is a JSON file at `tasks/<id>.json` with a unique 4-char hex ID (e.g. `3f7a`).
+
+Required fields:
+- `id` — unique 4-char hex identifier
+- `name` — short title
+- `description` — what the task does and why
+- `status` — `planned` | `in_progress` | `done` | `cancelled`
+- `created` / `updated` — ISO 8601 timestamps
+- `criteria.definition_of_done` — checklist of completion conditions
+- `criteria.technical_requirements` — implementation constraints
+- `commits` — array of `{ hash, message, timestamp }` objects
+- `files_changed` — list of modified/created files
+- `links` — array of `{ task, relation, note? }` linking to related tasks
+- `notes` — rationale, trade-offs, decisions
+
+Full schema: `tasks/schema.json`. See `tasks/README.md` for examples.
+
+### Task links
+
+Each link is `{ task: "<4hex>", relation: "<type>", note?: "..." }`.
+
+| Relation     | Meaning                                               |
+| ------------ | ----------------------------------------------------- |
+| `depends_on` | This task requires the linked task to be done first   |
+| `blocked_by` | Cannot start until the linked task is resolved        |
+| `relates_to` | Loose association, no hard dependency                 |
+| `supersedes` | This task replaces the linked task                    |
+| `parent`     | This task is a sub-task of the linked task            |
+| `child`      | This task contains the linked task as a sub-task      |
+
+### Git commit format
+
+```
+<type>: <task_id> | <description>
+```
+
+- Types: `feat`, `fix`, `refactor`, `test`, `docs`, `chore`
+- All commits for the same task share the same `<task_id>`
+- Examples:
+  - `feat: 3f7a | Add dark mode toggle component`
+  - `fix: 3f7a | Handle edge case in theme persistence`
+
+### Workflow steps
+
+1. **Before editing** — create a task file with description, criteria, and status `in_progress`
+2. **Show the task** to the user before starting work
+3. **While editing** — append commits to the task, update `files_changed` and `updated`
+4. **After editing** — set status to `done` when all criteria are met, report task ID and commits
+
+### Looking up tasks
+
+Before creating a new task, check `tasks/` for existing relevant tasks.
+
 ## Development workflow for agents
 
 Before editing:
@@ -200,16 +259,20 @@ Before editing:
 1. Inspect the relevant files and existing implementation.
 2. Search for existing patterns or utilities that solve the same problem.
 3. Identify lifecycle, state, persistence, and browser-API implications.
-4. Make the smallest reasonable change.
-5. Avoid unrelated refactors.
-6. Run relevant tests.
-7. Run `npm run build` for changes that can affect production compilation/bundling.
-8. Review the diff for regressions, privacy issues, memory leaks, and unnecessary dependencies.
+4. Create a task file in `tasks/<id>.json` with description and criteria.
+5. Make the smallest reasonable change.
+6. Avoid unrelated refactors.
+7. Run relevant tests.
+8. Run `npm run build` for changes that can affect production compilation/bundling.
+9. Review the diff for regressions, privacy issues, memory leaks, and unnecessary dependencies.
+10. Update the task file with commits and final status.
 
 After editing, report:
 
+- task ID and name;
 - what changed;
 - which files changed;
+- commits made (with hashes);
 - tests/build commands run;
 - any known limitations or remaining risks.
 

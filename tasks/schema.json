@@ -1,0 +1,113 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Task",
+  "description": "Schema for a project task file stored in tasks/<id>.json",
+  "type": "object",
+  "required": ["id", "name", "description", "status", "created", "criteria", "commits"],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{4}$",
+      "description": "Unique 4-char hex task ID, e.g. 1d4e"
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 80,
+      "description": "Short task title"
+    },
+    "description": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Detailed description of what the task does and why"
+    },
+    "status": {
+      "type": "string",
+      "enum": ["planned", "in_progress", "done", "cancelled"],
+      "description": "Current task status"
+    },
+    "created": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 creation timestamp"
+    },
+    "updated": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 last update timestamp"
+    },
+    "criteria": {
+      "type": "object",
+      "required": ["definition_of_done"],
+      "properties": {
+        "definition_of_done": {
+          "type": "array",
+          "items": { "type": "string" },
+          "minItems": 1,
+          "description": "Checklist of conditions that must be met for the task to be considered complete"
+        },
+        "technical_requirements": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Technical constraints or requirements to follow during implementation"
+        }
+      }
+    },
+    "commits": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["hash", "message", "timestamp"],
+        "properties": {
+          "hash": {
+            "type": "string",
+            "description": "Git commit hash (short or full)"
+          },
+          "message": {
+            "type": "string",
+            "description": "Commit message in conventional format"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time",
+            "description": "ISO 8601 commit timestamp"
+          }
+        }
+      },
+      "description": "List of all commits belonging to this task"
+    },
+    "files_changed": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "List of files modified or created by this task"
+    },
+    "links": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["task", "relation"],
+        "properties": {
+          "task": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{4}$",
+            "description": "ID of the related task"
+          },
+          "relation": {
+            "type": "string",
+            "enum": ["depends_on", "blocked_by", "relates_to", "supersedes", "parent", "child"],
+            "description": "Type of relationship"
+          },
+          "note": {
+            "type": "string",
+            "description": "Optional note explaining why this link exists"
+          }
+        }
+      },
+      "description": "Links to other tasks that relate to this one"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Free-form notes, rationale, trade-offs, or links"
+    }
+  }
+}
