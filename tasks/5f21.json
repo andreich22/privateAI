@@ -1,0 +1,36 @@
+{
+  "id": "5f21",
+  "title": "Автоматическое создание GitHub Release и tag при merge PR с изменением версии",
+  "status": "draft",
+  "createdAt": "2026-09-14T17:38:47.923Z",
+  "updatedAt": "2026-09-14T17:38:47.923Z",
+  "issue": {
+    "number": 15,
+    "url": "https://github.com/andreich22/privateAI/issues/15",
+    "title": "TASK-5f21 Автоматическое создание GitHub Release и tag при merge PR с изменением версии"
+  },
+  "description": "## Цель\nЗавершить цепочку `Task → PR → version bump → merge → Release`.\n\n## Требования\n- Запускать release workflow только после merge PR в `master`.\n- Определять версию из `package.json` merge-коммита.\n- Сравнивать версию с `package.json` базового коммита PR.\n- Если версия не изменилась — release не создавать.\n- Если версия изменилась — создавать Git tag строго `vX.Y.Z`.\n- Создавать GitHub Release для этого tag автоматически.\n- Release должен указывать на merge-коммит PR.\n- Повторный запуск workflow не должен создавать дубликат release/tag.\n- Версия должна проходить SemVer-проверку.\n- Версия должна быть выше предыдущей версии.\n- Workflow должен иметь минимальные необходимые permissions.\n- Документировать новый release workflow.\n\n## Definition of Ready\n- Определено событие запуска: `pull_request.closed` + `merged=true` + base `master`.\n- Определён источник текущей и предыдущей версии.\n- Определено имя tag: `v${version}`.\n- Определено идемпотентное поведение.\n\n## Acceptance Criteria\n- [ ] Merge PR без изменения версии не создаёт Release.\n- [ ] Merge PR с version bump создаёт `vX.Y.Z`.\n- [ ] Для tag создаётся GitHub Release.\n- [ ] Release указывает на merge commit.\n- [ ] Повторный запуск безопасен и не создаёт дубль.\n- [ ] Некорректный или пониженный SemVer отклоняется.\n- [ ] CI/release workflow валидируется.\n- [ ] Документация обновлена.\n\n## Definition of Done\nRelease automation работает как часть task-driven Git workflow и завершает жизненный цикл изменения версии от Task до опубликованного Release.",
+  "requirements": [
+    "See GitHub Issue #15 for the requirements definition."
+  ],
+  "definitionOfReady": [
+    "See GitHub Issue #15 for the definitionOfReady definition."
+  ],
+  "acceptanceCriteria": [
+    "See GitHub Issue #15 for the acceptanceCriteria definition."
+  ],
+  "technicalApproach": [],
+  "definitionOfDone": [
+    "See GitHub Issue #15 for the definitionOfDone definition."
+  ],
+  "history": [
+    {
+      "at": "2026-09-14T17:38:47.923Z",
+      "event": "created_from_issue",
+      "details": "Automatically registered from GitHub Issue #15."
+    }
+  ],
+  "commits": [],
+  "decisionLog": [],
+  "relations": []
+}
