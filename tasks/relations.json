@@ -24,6 +24,11 @@
       "from": "9a7f",
       "type": "derived_from",
       "to": "0016"
+    },
+    {
+      "from": "5f21",
+      "type": "derived_from",
+      "to": "0016"
     }
   ]
 }
