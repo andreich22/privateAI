@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { getSavedFileHandle, verifyPermission, selectAndSaveFile, saveFilePicker, saveFileHandle } from './services/fileStorage';
 import { AIRuntime } from './services/AIRuntime';
+import { APP_VERSION } from './version';
 import WelcomeScreen from './components/WelcomeScreen';
 import AccessScreen from './components/AccessScreen';
 import LoadingScreen from './components/LoadingScreen';
@@ -136,6 +137,7 @@ export default function App() {
       padding: '6px 16px', fontSize: 12, fontFamily: 'monospace',
       display: 'flex', gap: 16, justifyContent: 'center', flexWrap: 'wrap'
     }}>
+      <span>App: v{APP_VERSION}</span>
       <span>B: {envInfo.browser}</span>
       <span>WebGPU: {envInfo.gpu ? '✓ available' : '✗ unavailable'}</span>
       <span>COOP: {envInfo.coop ? '✓' : '✗'}</span>
