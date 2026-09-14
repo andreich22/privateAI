@@ -1,0 +1,75 @@
+{
+  "id": "b6e1",
+  "title": "Добавить универсальный Skill для task-driven AI development",
+  "status": "ready",
+  "createdAt": "2026-09-14T12:00:00Z",
+  "updatedAt": "2026-09-14T12:00:00Z",
+  "description": "Добавить в репозиторий агент-независимый Skill, который формализует обязательный task-driven workflow и делает его доступным для разных AI-агентов без привязки к конкретному runtime.",
+  "requirements": [
+    "Skill хранится в репозитории и доступен независимо от конкретного AI-агента.",
+    "Skill описывает полный жизненный цикл задачи от запроса до Definition of Done.",
+    "Skill требует использовать Task ID до изменения кода, конфигурации, тестов или документации.",
+    "Skill описывает работу со связями задач и запрет неявного расширения scope.",
+    "Skill описывает обязательный формат Git-коммитов.",
+    "Skill требует запускать validator и релевантные тесты/build перед завершением задачи.",
+    "AGENTS.md явно указывает на Skill, но критические правила остаются действительными без его автоматической загрузки."
+  ],
+  "definitionOfReady": [
+    "Канонический путь Skill определён.",
+    "Skill должен быть написан без привязки к Cursor, Claude, Codex или другому конкретному агенту.",
+    "Формат существующих задач и связей известен.",
+    "Критические правила workflow уже закреплены в AGENTS.md и validator."
+  ],
+  "technicalApproach": [
+    "Создать skills/task-driven-development/SKILL.md как каноническую инструкцию.",
+    "Добавить JSON Schema для формата task-файла.",
+    "Добавить короткие примеры создания, связывания и завершения задач.",
+    "Обновить AGENTS.md и docs/development-workflow.md ссылкой на Skill и fallback-правилом.",
+    "Связать задачу с 7c2a через derived_from."
+  ],
+  "acceptanceCriteria": [
+    "В репозитории существует skills/task-driven-development/SKILL.md.",
+    "Skill не содержит vendor-specific команд или предположений о конкретном агенте.",
+    "Skill покрывает create/ready/implement/validate/commit/done workflow.",
+    "В Skill описана работа с tasks/index.json, tasks/<id>.json и tasks/relations.json.",
+    "В Skill описан формат коммита <type>: <task-id> | <description>.",
+    "Есть task-schema.json и минимум три практических примера.",
+    "AGENTS.md и docs/development-workflow.md ссылаются на канонический Skill.",
+    "Task relations содержат связь b6e1 derived_from 7c2a.",
+    "npm run tasks:validate проходит после завершения изменений."
+  ],
+  "decisionLog": [
+    {
+      "date": "2026-09-14T12:00:00Z",
+      "decision": "Каноническим источником Skill будет skills/task-driven-development/SKILL.md.",
+      "reason": "Это нейтральный путь в репозитории, который не требует отдельного runtime-specific формата."
+    },
+    {
+      "date": "2026-09-14T12:00:00Z",
+      "decision": "AGENTS.md остаётся обязательным контрактом, а Skill является процедурным слоем.",
+      "reason": "Не каждый AI runtime автоматически загружает repository skills, поэтому критические ограничения нельзя делать зависимыми от обнаружения Skill."
+    }
+  ],
+  "commits": [],
+  "definitionOfDone": [
+    "Все acceptance criteria выполнены.",
+    "Task validator проходит.",
+    "Skill и примеры согласованы с текущим task schema.",
+    "AGENTS.md и development workflow обновлены.",
+    "Связь с 7c2a добавлена.",
+    "Все изменения используют Task ID b6e1."
+  ],
+  "history": [
+    {
+      "date": "2026-09-14T12:00:00Z",
+      "status": "draft",
+      "action": "created"
+    },
+    {
+      "date": "2026-09-14T12:00:00Z",
+      "status": "ready",
+      "action": "requirements-defined"
+    }
+  ],
+  "relations": []
+}
