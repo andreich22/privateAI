@@ -14,6 +14,11 @@
       "from": "b6e1",
       "type": "derived_from",
       "to": "7c2a"
+    },
+    {
+      "from": "c4d8",
+      "type": "related",
+      "to": "b6e1"
     }
   ]
 }
