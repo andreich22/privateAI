@@ -29,8 +29,15 @@ jobs:
       - name: Validate task metadata
         run: npm run tasks:validate
 
+      - name: Validate pull request task
+        if: github.event_name == 'pull_request'
+        run: node scripts/validate-pr-task.mjs
+
       - name: Run unit tests
         run: npm run test:run
+
+      - name: Build
+        run: npm run build
 
       - name: Install Playwright Chromium
         run: npx playwright install --with-deps chromium
