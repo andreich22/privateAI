@@ -49,8 +49,13 @@
     }
   ],
   "commits": [
-    "feat: 7c2a | add task registry, relations and validator",
-    "docs: 7c2a | document AI task-driven development workflow"
+    {
+      "sha": "8860fdf6d2b063d0dd37d846ef097921ca2d2832",
+      "message": "feat: 7c2a | add task registry, relations and validator"
+    },
+    {
+      "message": "fix: 7c2a | restore existing Vite React plugin dependency"
+    }
   ],
   "definitionOfDone": [
     "Все требования реализованы.",
