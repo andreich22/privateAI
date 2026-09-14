@@ -1,9 +1,9 @@
 {
   "id": "9a7f",
   "title": "Автоматическая регистрация Task ID при создании Issue",
-  "status": "draft",
+  "status": "in_progress",
   "createdAt": "2026-09-14T15:22:16Z",
-  "updatedAt": "2026-09-14T15:22:16Z",
+  "updatedAt": "2026-09-14T15:28:30Z",
   "description": "Автоматизировать регистрацию задач, чтобы GitHub Issue вида TASK-<4-hex-id> приводил к созданию канонического tasks/<id>.json и записи в tasks/index.json до создания implementation PR.",
   "requirements": [
     "Issue с корректным Task ID запускает регистрацию задачи.",
@@ -49,9 +49,20 @@
       "at": "2026-09-14T15:22:16Z",
       "event": "created",
       "details": "Task created from GitHub Issue #10 after identifying missing pre-PR task registration."
+    },
+    {
+      "at": "2026-09-14T15:28:30Z",
+      "event": "implementation_pr_opened",
+      "details": "Implementation PR #11 opened on task/9a7f-task-registration. It includes the task registry entry, registration workflow, deterministic registration script, tests, and workflow documentation."
     }
   ],
   "commits": [],
-  "decisionLog": [],
+  "decisionLog": [
+    {
+      "at": "2026-09-14T15:27:00Z",
+      "decision": "Use a separate registration PR rather than direct pushes to master.",
+      "reason": "Preserves branch protection and avoids granting AI an administrative bypass while still making task registration a hard gate before implementation PR creation."
+    }
+  ],
   "relations": []
 }
