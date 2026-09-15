@@ -198,14 +198,14 @@ export async function setupMocks(page, options = {}) {
     });
   });
 
-  await page.route(/\/node_modules\/\.vite\/deps\/idb.*/, async (route) => {
+  await page.route(/\/node_modules\/.*idb.*\.(js|mjs)/, async (route) => {
     await route.fulfill({
       contentType: 'application/javascript',
       body: idbMockCode,
     });
   });
 
-  await page.route(/\/node_modules\/\.vite\/deps\/.+wllama.+/, async (route) => {
+  await page.route(/\/node_modules\/.*wllama.*\.(js|mjs)/, async (route) => {
     await route.fulfill({
       contentType: 'application/javascript',
       body: wllamaMockCode,
