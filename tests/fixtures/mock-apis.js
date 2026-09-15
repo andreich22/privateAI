@@ -205,7 +205,7 @@ export async function setupMocks(page, options = {}) {
     });
   });
 
-  await page.route(/\/node_modules\/\.vite\/deps\/@wllama_wllama.*/, async (route) => {
+  await page.route(/\/node_modules\/\.vite\/deps\/.+wllama.+/, async (route) => {
     await route.fulfill({
       contentType: 'application/javascript',
       body: wllamaMockCode,
