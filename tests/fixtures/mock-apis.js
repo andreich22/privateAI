@@ -198,25 +198,19 @@ export async function setupMocks(page, options = {}) {
     });
   });
 
-  await page.route(
-    /.*\/node_modules\/\.vite\/deps\/idb.*\.js.*/,
-    async (route) => {
-      await route.fulfill({
-        contentType: 'application/javascript',
-        body: idbMockCode,
-      });
-    }
-  );
+  await page.route(/\/node_modules\/\.vite\/deps\/idb.*/, async (route) => {
+    await route.fulfill({
+      contentType: 'application/javascript',
+      body: idbMockCode,
+    });
+  });
 
-  await page.route(
-    '**/node_modules/.vite/deps/@wllama_wllama.js*',
-    async (route) => {
-      await route.fulfill({
-        contentType: 'application/javascript',
-        body: wllamaMockCode,
-      });
-    }
-  );
+  await page.route(/\/node_modules\/\.vite\/deps\/@wllama_wllama.*/, async (route) => {
+    await route.fulfill({
+      contentType: 'application/javascript',
+      body: wllamaMockCode,
+    });
+  });
 
   await page.addInitScript(
     ({ savedHandleName, chatResponse }) => {
