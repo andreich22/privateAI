@@ -2,39 +2,99 @@ const GGUF_MAGIC = new Uint8Array([0x47, 0x47, 0x55, 0x46]); // "GGUF"
 
 const idbMockCode = `
 const __mockData = {};
+function createMockStore(name, keyPath) {
+    const data = {};
+    const indexes = {};
+    const indexData = {};
+    return {
+        name,
+        keyPath,
+        data,
+        createIndex: function(idxName, keyPath) {
+            indexes[idxName] = keyPath;
+            indexData[idxName] = {};
+            return this;
+        },
+        put: async function(value) {
+            const k = value[keyPath];
+            data[k] = value;
+            for (const [idxName, kp] of Object.entries(indexes)) {
+                if (!indexData[idxName]) indexData[idxName] = {};
+                const idxVal = kp ? value[kp] : k;
+                if (!indexData[idxName][idxVal]) indexData[idxName][idxVal] = new Set();
+                indexData[idxName][idxVal].add(k);
+            }
+        },
+        get: async function(k) { return data[k] || null; },
+        delete: async function(k) { delete data[k]; },
+        getAll: async function(filter) {
+            if (filter === undefined) return Object.values(data);
+            return null;
+        },
+        getAllFromIndex: async function(idxName, idxVal) {
+            const idxD = indexData[idxName];
+            if (!idxD) return [];
+            const keys = idxD[idxVal];
+            if (!keys) return [];
+            return Array.from(keys).map((k) => data[k]).filter(Boolean);
+        },
+        index: function(idxName) {
+            return {
+                getAll: async function(idxVal) {
+                    const idxD = indexData[idxName];
+                    if (!idxD) return [];
+                    const keys = idxD[idxVal];
+                    if (!keys) return [];
+                    return Array.from(keys).map((k) => data[k]).filter(Boolean);
+                }
+            };
+        }
+    };
+}
 export async function openDB(name, version, config) {
-    if (!__mockData[name]) __mockData[name] = {};
+    if (!__mockData[name]) __mockData[name] = { stores: {}, txCounter: 0 };
+    const state = __mockData[name];
     const db = {
-        put: async (store, value, key) => {
-            if (!__mockData[name][store]) __mockData[name][store] = {};
-            __mockData[name][store][key] = value;
+        name, version,
+        objectStoreNames: { contains: (n) => Object.prototype.hasOwnProperty.call(state.stores, n) },
+        createObjectStore: function(name, opts) {
+            const store = createMockStore(name, opts?.keyPath);
+            state.stores[name] = store;
+            return store;
         },
-        get: async (store, key) => {
-            const result = __mockData[name]?.[store]?.[key];
-            return result !== undefined ? result : null;
+        transaction: function(storeNames, mode) {
+            const stores = Array.isArray(storeNames) ? storeNames : [storeNames];
+            const storeObjs = stores.map((s) => state.stores[s] || null);
+            const tx = {
+                store: storeObjs[0],
+                objectStore: (s) => state.stores[s] || null,
+                mode,
+                done: new Promise((r) => setTimeout(r, 10)),
+                abort: () => {},
+            };
+            return tx;
         },
-        delete: async (store, key) => {
-            if (__mockData[name]?.[store]) delete __mockData[name][store][key];
+        get: async function(storeName, key) {
+            const store = state.stores[storeName];
+            return store ? await store.get(key) : null;
         },
-        close: () => {},
-        deleteObjectStore: (store) => {
-            if (__mockData[name]) delete __mockData[name][store];
+        put: async function(storeName, value) {
+            const store = state.stores[storeName];
+            if (store) await store.put(value);
         },
-        clear: async (store) => {
-            if (__mockData[name]?.[store]) __mockData[name][store] = {};
+        delete: async function(storeName, key) {
+            const store = state.stores[storeName];
+            if (store) await store.delete(key);
         },
+        getAllFromIndex: async function(storeName, indexName, idxVal) {
+            const store = state.stores[storeName];
+            if (!store) return [];
+            return await store.getAllFromIndex(indexName, idxVal);
+        },
+        deleteDatabase: () => Promise.resolve(),
     };
     if (config?.upgrade) {
-        const upgradeDb = {
-            objectStoreNames: {
-                contains: (storeName) => Object.prototype.hasOwnProperty.call(__mockData[name], storeName),
-            },
-            createObjectStore: (storeName) => {
-                if (!__mockData[name][storeName]) __mockData[name][storeName] = {};
-                return {};
-            },
-        };
-        config.upgrade(upgradeDb);
+        config.upgrade(db);
     }
     return db;
 }
@@ -139,7 +199,7 @@ export async function setupMocks(page, options = {}) {
   });
 
   await page.route(
-    '**/node_modules/.vite/deps/idb.js*',
+    /.*\/node_modules\/\.vite\/deps\/idb.*\.js.*/,
     async (route) => {
       await route.fulfill({
         contentType: 'application/javascript',
@@ -301,13 +361,101 @@ export async function setupMocks(page, options = {}) {
         : null;
 
       let dbData = {};
-      const mockDb = {
-        put: async (store, value, key) => {
-          dbData[store + ':' + key] = value;
+      let objectStores = new Set();
+      let indexes = {};
+      let transactions = [];
+      let txId = 0;
+
+      const createMockStore = (storeName, keyPath) => ({
+        name: storeName,
+        keyPath,
+        data: {},
+        _indexes: {},
+        createIndex: (idxName, keyPath) => {
+          this._indexes[idxName] = keyPath;
+          return this;
         },
-        get: async (store, key) => {
-          if (store === 'FileHandles' && key === 'gguf_model_handle' && savedHandle) return savedHandle;
-          return dbData[store + ':' + key] || null;
+        put: async (value) => {
+          const k = value[keyPath];
+          this.data[k] = value;
+          for (const [idxName, kp] of Object.entries(this._indexes)) {
+            if (!this._indexes[idxName + '_data']) this._indexes[idxName + '_data'] = {};
+            const idxVal = kp ? value[kp] : k;
+            if (!this._indexes[idxName + '_data'][idxVal]) this._indexes[idxName + '_data'][idxVal] = new Set();
+            this._indexes[idxName + '_data'][idxVal].add(k);
+          }
+        },
+        get: async (k) => this.data[k] || null,
+        delete: async (k) => {
+          delete this.data[k];
+        },
+        getAll: async (idxVal) => {
+          const idxKey = this._indexes['default'] ? null : null;
+          if (idxVal === undefined) {
+            return Object.values(this.data);
+          }
+          const idxData = this._indexes[idxVal + '_data'] || this._indexes['default_data'];
+          const keys = idxData ? Array.from(idxData) : [];
+          return keys.map((k) => this.data[k]).filter(Boolean);
+        },
+        getAllFromIndex: async (idxName, idxVal) => {
+          const idxData = this._indexes[idxName + '_data'];
+          if (!idxData) return [];
+          const keys = idxData[idxVal] || new Set();
+          return Array.from(keys).map((k) => this.data[k]).filter(Boolean);
+        },
+        index: (idxName) => ({
+          getAll: async (idxVal) => {
+            const idxData = this._indexes[idxName + '_data'];
+            if (!idxData) return [];
+            const keys = idxData[idxVal] || new Set();
+            return Array.from(keys).map((k) => this.data[k]).filter(Boolean);
+          },
+        }),
+      });
+
+      const mockDb = {
+        _stores: {},
+        objectStoreNames: {
+          contains: (name) => objectStores.has(name),
+        },
+        createObjectStore: (name, opts) => {
+          objectStores.add(name);
+          const store = createMockStore(name, opts?.keyPath);
+          mockDb._stores[name] = store;
+          return store;
+        },
+        transaction: (storeNames, mode) => {
+          const id = ++txId;
+          const storeArr = Array.isArray(storeNames) ? storeNames : [storeNames];
+          const stores = storeArr.map((s) => mockDb._stores[s]);
+          const tx = {
+            store: stores.length === 1 ? stores[0] : null,
+            objectStore: (name) => mockDb._stores[name],
+            mode,
+            done: new Promise((resolve) => {
+              setTimeout(resolve, 10);
+            }),
+          };
+          transactions.push(tx);
+          return tx;
+        },
+        get: async (storeName, key) => {
+          const store = mockDb._stores[storeName];
+          return store ? await store.get(key) : null;
+        },
+        put: async (storeName, value) => {
+          const store = mockDb._stores[storeName];
+          if (store) await store.put(value);
+        },
+        delete: async (storeName, key) => {
+          const store = mockDb._stores[storeName];
+          if (store) await store.delete(key);
+        },
+        getAllFromIndex: async (storeName, indexName, idxVal) => {
+          const store = mockDb._stores[storeName];
+          if (!store) return [];
+          return await store.getAllFromIndex(indexName, idxVal);
         },
         deleteObjectStore: () => {},
       };

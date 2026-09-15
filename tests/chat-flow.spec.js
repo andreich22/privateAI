@@ -14,6 +14,7 @@ test.describe('Chat Flow', () => {
     await page.waitForLoadState('networkidle');
     await page.waitForSelector(selectors.chatContainer, { timeout: 30000 });
     await expect(page.locator(selectors.chatContainer)).toBeVisible();
+    await expect(page.locator(selectors.chatInput), 'input should be enabled').toBeEnabled({ timeout: 10000 });
   });
 
   test.afterEach(async ({ page }) => {
