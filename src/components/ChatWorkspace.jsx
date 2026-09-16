@@ -11,6 +11,8 @@ import {
 import { loadGenerationSettings } from '../services/generationSettings';
 import GenerationSettings from './GenerationSettings';
 
+const DEFAULT_CAPABILITIES = { temperature: true, top_p: true, max_tokens: true };
+
 export default function ChatWorkspace({ runtime, fileName, onUnload }) {
   const [conversation, setConversation] = useState(null);
   const [conversations, setConversations] = useState([]);
@@ -100,7 +102,7 @@ export default function ChatWorkspace({ runtime, fileName, onUnload }) {
 
   const handleSend = async (e) => {
     e.preventDefault();
-    if (!input.trim() || generationRef.current || !runtime.isLoaded() || !conversation) return;
+    if (!input.trim() || generationRef.current || !runtime?.isLoaded?.() || !conversation) return;
 
     const userText = input.trim();
     setInput('');
@@ -148,13 +150,13 @@ export default function ChatWorkspace({ runtime, fileName, onUnload }) {
 
   const handleUnload = async () => {
     if (generationRef.current) return;
-    await onUnload();
+    await onUnload?.();
   };
 
   return (
     <div className="chat-container">
       <header>
-        <span>Модель: <strong>{fileName.split('/').pop()}</strong></span>
+        <span>Модель: <strong>{fileName?.split('/').pop()}</strong></span>
         <span style={{ display: 'flex', gap: 8 }}>
           <button onClick={handleNewChat} disabled={isGenerating}>Новый чат</button>
           <button onClick={handleRename} disabled={isGenerating || !conversation}>Переименовать</button>
@@ -185,7 +187,7 @@ export default function ChatWorkspace({ runtime, fileName, onUnload }) {
             conversation={conversation}
             onConversationChange={updateConversation}
             disabled={isGenerating}
-            supported={runtime.getGenerationCapabilities()}
+            supported={runtime?.getGenerationCapabilities?.() || DEFAULT_CAPABILITIES}
           />
           <div className="messages-box">
             {messages.map((msg) => (
