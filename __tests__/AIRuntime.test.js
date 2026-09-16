@@ -70,4 +70,30 @@ describe('AIRuntime', () => {
     expect(result).toBe('test response');
     expect(onToken).toHaveBeenCalledWith('test response');
   });
+
+  it('passes validated generation parameters to Wllama', async () => {
+    await runtime.loadModelFromFile(createFileHandle());
+    const { Wllama } = await import('@wllama/wllama');
+    const instance = Wllama.getFreshInstance();
+    await runtime.streamChat([{ role: 'user', content: 'Hello' }], vi.fn(), {
+      temperature: 1.2,
+      top_p: 0.8,
+      max_tokens: 1024,
+    });
+    expect(instance.createChatCompletion).toHaveBeenCalledWith(expect.objectContaining({
+      temperature: 1.2,
+      top_p: 0.8,
+      max_tokens: 1024,
+      stream: true,
+      messages: [{ role: 'user', content: 'Hello' }],
+    }));
+  });
+
+  it('rejects invalid generation parameters before calling Wllama', async () => {
+    await runtime.loadModelFromFile(createFileHandle());
+    const { Wllama } = await import('@wllama/wllama');
+    const instance = Wllama.getFreshInstance();
+    await expect(runtime.streamChat([{ role: 'user', content: 'Hello' }], vi.fn(), { temperature: 3 })).rejects.toThrow('temperature');
+    expect(instance.createChatCompletion).not.toHaveBeenCalled();
+  });
 });
