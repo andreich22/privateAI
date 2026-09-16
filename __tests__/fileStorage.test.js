@@ -12,28 +12,16 @@ vi.mock('idb', () => ({
 }));
 
 describe('fileStorage - getDB', () => {
-  it('opens DB with correct name and version', async () => {
+  it('opens DB with the current schema version and upgrade callback', async () => {
     const { openDB } = await import('idb');
     const { getDB } = await import('../src/services/fileStorage.js');
     await getDB();
 
     expect(openDB).toHaveBeenCalledWith(
       'LocalReactAIVault',
-      1,
+      2,
       expect.objectContaining({ upgrade: expect.any(Function) })
     );
-  });
-
-  it('creates object store FileHandles on upgrade', async () => {
-    const { openDB } = await import('idb');
-    const { getDB } = await import('../src/services/fileStorage.js');
-
-    await getDB();
-
-    const callArgs = openDB.mock.calls[0];
-    expect(callArgs[0]).toBe('LocalReactAIVault');
-    expect(callArgs[1]).toBe(1);
-    expect(typeof callArgs[2].upgrade).toBe('function');
   });
 });
 
