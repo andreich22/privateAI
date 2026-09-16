@@ -3,7 +3,7 @@
   "title": "Настройки генерации и системный промпт",
   "status": "in_progress",
   "createdAt": "2026-09-16T13:13:00Z",
-  "updatedAt": "2026-09-16T13:13:00Z",
+  "updatedAt": "2026-09-16T13:24:30Z",
   "description": "Дать пользователю локальный контроль над системным промптом и параметрами генерации модели через UI без изменения кода.",
   "requirements": [
     "Системный промпт текущего чата редактируется через UI и хранится локально.",
@@ -33,6 +33,14 @@
     "Добавлены tests для persistence, validation и передачи параметров в AI service.",
     "Существующие CI, task validation и build проходят."
   ],
+  "technicalApproach": [
+    "Хранить temperature, top_p и max_tokens в локальном localStorage через отдельный generationSettings service.",
+    "Хранить systemPrompt как поле conversation в существующем IndexedDB chat storage.",
+    "Валидировать параметры в generationSettings и повторно передавать только validated values из AIRuntime в wllama createChatCompletion.",
+    "Expose runtime capabilities и скрывать неподдерживаемые параметры в UI.",
+    "Блокировать изменение настроек во время активной генерации и применять новые значения к следующему запросу.",
+    "Покрыть persistence, validation и runtime parameter forwarding unit tests и прогнать полный CI."
+  ],
   "definitionOfDone": [
     "Настройки интегрированы в ChatWorkspace и AIRuntime.",
     "Persistence и validation покрыты тестами.",
@@ -45,6 +53,11 @@
       "at": "2026-09-16T13:13:00Z",
       "event": "created",
       "details": "Implementation task created from GitHub Issue #19."
+    },
+    {
+      "at": "2026-09-16T13:24:30Z",
+      "event": "ci_fix",
+      "details": "Added required technicalApproach metadata after CI task validation reported it missing."
     }
   ],
   "commits": [],
