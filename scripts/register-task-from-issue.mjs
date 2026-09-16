@@ -8,18 +8,16 @@ const indexPath = path.join(tasksDir, 'index.json');
 const eventPath = process.env.GITHUB_EVENT_PATH;
 
 const writeOutput = (key, value) => {
-  const output = process.env.GITHUB_OUTPUT;
-  if (output) fs.appendFileSync(output, `${key}=${String(value).replace(/%/g, '%25').replace(/\r/g, '%0D').replace(/\n/g, '%0A')}\n`);
+  if (process.env.GITHUB_OUTPUT) fs.appendFileSync(process.env.GITHUB_OUTPUT, `${key}=${String(value).replace(/%/g, '%25').replace(/\r/g, '%0D').replace(/\n/g, '%0A')}\n`);
 };
 
 const fail = (message) => {
   console.error(`Task registration failed: ${message}`);
   writeOutput('status', 'error');
-  process.exitCode = 1;
+  throw new Error(message);
 };
 
 if (!eventPath || !fs.existsSync(eventPath)) fail('GITHUB_EVENT_PATH is missing');
-if (process.exitCode) process.exit();
 
 const event = JSON.parse(fs.readFileSync(eventPath, 'utf8'));
 const issue = event.issue;
@@ -43,10 +41,8 @@ const taskExists = fs.existsSync(taskPath);
 if (existingEntry && !taskExists) fail(`registry entry ${id} exists but ${taskPath} is missing`);
 
 if (existingEntry) {
-  if (taskExists) {
-    const existingTask = readJson(taskPath);
-    validateTaskPair(id, existingEntry, existingTask);
-  }
+  const existingTask = readJson(taskPath);
+  validateTaskPair(id, existingEntry, existingTask);
   console.log(`Task ${id} is already registered and consistent; no changes needed.`);
   writeOutput('status', 'already-registered');
   writeOutput('task_id', id);
@@ -145,7 +141,7 @@ function writePairedState(taskFilePath, taskFile, registryFilePath, registryFile
 
 function extractSection(markdown, ...names) {
   const heading = names.map(escapeRegExp).join('|');
-  const match = markdown.match(new RegExp(`^##\\s+(?:${heading})\\s+([\\s\\S]*?)(?=^##\\s+|$)`, 'im'));
+  const match = markdown.match(new RegExp(`^##[ \\t]+(?:${heading})[ \\t]+([\\s\\S]*?)(?=^##[ \\t]+|$)`, 'im'));
   if (!match) return [];
   return match[1]
     .split('\n')
