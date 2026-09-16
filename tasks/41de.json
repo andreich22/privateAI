@@ -1,0 +1,47 @@
+{
+  "id": "41de",
+  "title": "Privacy boundary и аудит сетевой активности",
+  "status": "draft",
+  "createdAt": "2026-09-16T13:58:30.719Z",
+  "updatedAt": "2026-09-16T13:58:30.719Z",
+  "issue": {
+    "number": 30,
+    "url": "https://github.com/andreich22/privateAI/issues/30",
+    "title": "TASK-41de Privacy boundary и аудит сетевой активности"
+  },
+  "description": "## Цель\nФормально гарантировать, что локальные чаты, модели, промпты и пользовательские данные не уходят во внешнюю сеть.\n\n## Требования\n- Зафиксировать privacy boundary приложения.\n- Проверить production bundle и runtime на непреднамеренные внешние запросы.\n- Разделить намеренные model downloads и прочий runtime network traffic.\n- Добавить тест/проверку, обнаруживающую неожиданные внешние fetch/XHR в критических сценариях.\n- Документировать исключения: загрузка моделей и внешние источники, если они предусмотрены продуктом.\n\n## Definition of Ready\n- Составлен список разрешённых сетевых направлений и сценариев.\n- Определены данные, которые должны оставаться локальными.\n- Определён способ проверки network activity в E2E/CI.\n\n## Acceptance Criteria\n- [ ] Privacy boundary документирован.\n- [ ] Chat prompt/response не отправляются на backend или сторонний inference API.\n- [ ] Неожиданный внешний запрос в критическом chat flow приводит к тестовой ошибке.\n- [ ] Разрешённые model-download сценарии явно отделены от chat runtime.\n- [ ] Есть automated check для production/CI.\n- [ ] README и архитектурная документация отражают фактическое поведение.\n\n## Definition of Done\nЕсть воспроизводимая автоматическая проверка privacy boundary и актуальная документация.\n\n## Relations\n- Дополняет E2E TASK-c915.\n- Проверяет privacy-требования TASK-f48b и Model Registry TASK-d72e.",
+  "requirements": [
+    "Зафиксировать privacy boundary приложения.",
+    "Проверить production bundle и runtime на непреднамеренные внешние запросы.",
+    "Разделить намеренные model downloads и прочий runtime network traffic.",
+    "Добавить тест/проверку, обнаруживающую неожиданные внешние fetch/XHR в критических сценариях.",
+    "Документировать исключения: загрузка моделей и внешние источники, если они предусмотрены продуктом."
+  ],
+  "definitionOfReady": [
+    "Составлен список разрешённых сетевых направлений и сценариев.",
+    "Определены данные, которые должны оставаться локальными.",
+    "Определён способ проверки network activity в E2E/CI."
+  ],
+  "acceptanceCriteria": [
+    "Privacy boundary документирован.",
+    "Chat prompt/response не отправляются на backend или сторонний inference API.",
+    "Неожиданный внешний запрос в критическом chat flow приводит к тестовой ошибке.",
+    "Разрешённые model-download сценарии явно отделены от chat runtime.",
+    "Есть automated check для production/CI.",
+    "README и архитектурная документация отражают фактическое поведение."
+  ],
+  "technicalApproach": [],
+  "definitionOfDone": [
+    "Есть воспроизводимая автоматическая проверка privacy boundary и актуальная документация."
+  ],
+  "history": [
+    {
+      "at": "2026-09-16T13:58:30.719Z",
+      "event": "created_from_issue",
+      "details": "Automatically registered from GitHub Issue #30."
+    }
+  ],
+  "commits": [],
+  "decisionLog": [],
+  "relations": []
+}
