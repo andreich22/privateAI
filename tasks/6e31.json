@@ -1,0 +1,17 @@
+{
+  "id":"6e31",
+  "title":"Управление памятью и жизненным циклом AI runtime",
+  "status":"in_progress",
+  "createdAt":"2026-09-16T13:58:00Z",
+  "updatedAt":"2026-09-16T14:30:00Z",
+  "description":"Сделать жизненный цикл локального AI runtime явным и безопасным при загрузке, генерации, ошибках, выгрузке и переключении моделей.",
+  "requirements":["Runtime имеет состояния unloaded, loading, ready, generating, error и unloading.","Ресурсы wllama освобождаются при unload и перед переключением модели.","Несовместимые параллельные load/generate/unload переходы блокируются.","Состояние runtime доступно UI через безопасный observable API.","Ошибки загрузки и генерации переводят runtime в recoverable error state.","Добавлены тесты жизненного цикла, ошибок и конкурентных переходов."],
+  "definitionOfReady":["Проверен текущий AIRuntime и API wllama для loadModel/createChatCompletion/exit.","Определены допустимые runtime states и переходы.","Определены правила отмены load/generation перед unload."],
+  "acceptanceCriteria":["Все основные операции отражаются явным runtime state.","Unload дожидается завершения отменённых операций и освобождает wllama.","Новая загрузка невозможна во время активной загрузки или выгрузки.","Генерация невозможна без ready runtime и не конфликтует с другой генерацией.","Ошибки доступны через runtime status и не оставляют runtime в ложном ready state.","Unit tests покрывают lifecycle/error/transition paths.","CI, task validation и build проходят."],
+  "technicalApproach":["Добавить state machine и subscribe/status API в AIRuntime.","Хранить loadPromise и generationPromise для сериализации жизненного цикла.","Переводить runtime в error только для настоящих ошибок, а cancellation возвращать в unloaded/ready.","На unload отменять активные операции, дожидаться их завершения и вызывать wllama.exit()."],
+  "definitionOfDone":["AIRuntime имеет явный lifecycle state machine.","Load/generate/unload transitions безопасно сериализованы.","Ошибки и cancellation покрыты тестами.","CI, task validation и build проходят."],
+  "history":[{"at":"2026-09-16T13:58:00Z","event":"created","details":"Implementation task created from GitHub Issue #27."},{"at":"2026-09-16T14:30:00Z","event":"implementation_started","details":"Started implementation in PR for TASK-6e31."}],
+  "commits":[],
+  "decisionLog":[],
+  "relations":[{"type":"follows","taskId":"2b7c"},{"type":"related_to","taskId":"f48b"}]
+}
