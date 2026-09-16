@@ -41,9 +41,7 @@ export default function HuggingFaceModelSearch({ onSelect }) {
           onChange={(event) => setQuery(event.target.value)}
           placeholder="Например, Qwen, Llama, Mistral"
         />
-        <button type="submit" className="btn-sub" disabled={loading}>
-          {loading ? 'Поиск…' : 'Найти'}
-        </button>
+        <input type="submit" className="btn-sub" disabled={loading} value={loading ? 'Поиск…' : 'Найти'} />
       </form>
 
       {error && <p role="alert" className="hf-search-error">{error}</p>}
