@@ -1,0 +1,47 @@
+{
+  "id": "c915",
+  "title": "Покрытие критических пользовательских сценариев E2E",
+  "status": "draft",
+  "createdAt": "2026-09-16T13:58:22.805Z",
+  "updatedAt": "2026-09-16T13:58:22.805Z",
+  "issue": {
+    "number": 29,
+    "url": "https://github.com/andreich22/privateAI/issues/29",
+    "title": "TASK-c915 Покрытие критических пользовательских сценариев E2E"
+  },
+  "description": "## Цель\nЗащитить основной privacy-first flow от регрессий на уровне реального браузера.\n\n## Требования\n- Покрыть запуск приложения и выбор/восстановление модели.\n- Покрыть отправку сообщения и streaming ответа.\n- Покрыть настройки и сохранение данных между перезапусками/контекстами, где это возможно.\n- Покрыть ошибки доступа к File System Access API и runtime.\n- Добавить стабильные mocks/fixtures для AI runtime, чтобы E2E не зависели от реальной большой GGUF-модели.\n\n## Definition of Ready\n- Определены критические user journeys.\n- Выделены browser APIs, требующие mock/fixture.\n- Определены минимальные smoke tests для CI.\n\n## Acceptance Criteria\n- [ ] Есть E2E smoke suite для основного chat flow.\n- [ ] Есть сценарий восстановления доступа к локальной модели.\n- [ ] Есть сценарий ошибки runtime и восстановления.\n- [ ] Тесты работают headless в CI без скачивания большой модели.\n- [ ] Flaky-тесты исключены или имеют контролируемые ожидания.\n- [ ] CI запускает smoke suite на pull request.\n\n## Definition of Done\nКритические пользовательские пути покрыты воспроизводимыми E2E-тестами и встроены в CI.\n\n## Relations\n- Покрывает TASK-f48b, TASK-d72e и TASK-6e31.\n- Использует существующие Playwright зависимости.",
+  "requirements": [
+    "Покрыть запуск приложения и выбор/восстановление модели.",
+    "Покрыть отправку сообщения и streaming ответа.",
+    "Покрыть настройки и сохранение данных между перезапусками/контекстами, где это возможно.",
+    "Покрыть ошибки доступа к File System Access API и runtime.",
+    "Добавить стабильные mocks/fixtures для AI runtime, чтобы E2E не зависели от реальной большой GGUF-модели."
+  ],
+  "definitionOfReady": [
+    "Определены критические user journeys.",
+    "Выделены browser APIs, требующие mock/fixture.",
+    "Определены минимальные smoke tests для CI."
+  ],
+  "acceptanceCriteria": [
+    "Есть E2E smoke suite для основного chat flow.",
+    "Есть сценарий восстановления доступа к локальной модели.",
+    "Есть сценарий ошибки runtime и восстановления.",
+    "Тесты работают headless в CI без скачивания большой модели.",
+    "Flaky-тесты исключены или имеют контролируемые ожидания.",
+    "CI запускает smoke suite на pull request."
+  ],
+  "technicalApproach": [],
+  "definitionOfDone": [
+    "Критические пользовательские пути покрыты воспроизводимыми E2E-тестами и встроены в CI."
+  ],
+  "history": [
+    {
+      "at": "2026-09-16T13:58:22.805Z",
+      "event": "created_from_issue",
+      "details": "Automatically registered from GitHub Issue #29."
+    }
+  ],
+  "commits": [],
+  "decisionLog": [],
+  "relations": []
+}
