@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { AIRuntime } from '../src/services/AIRuntime.js';
+import { AIRuntime, RUNTIME_STATES } from '../src/services/AIRuntime.js';
 
 function createFileHandle(bytes = [0x47, 0x47, 0x55, 0x46, 0, 0, 0, 0]) {
   return {
@@ -14,6 +14,16 @@ describe('AIRuntime', () => {
   beforeEach(() => {
     vi.resetModules();
     runtime = new AIRuntime();
+  });
+
+  it('starts unloaded and exposes lifecycle state changes', async () => {
+    const states = [];
+    const unsubscribe = runtime.subscribe((status) => states.push(status.state));
+    expect(runtime.getRuntimeState()).toBe(RUNTIME_STATES.UNLOADED);
+    await runtime.loadModelFromFile(createFileHandle());
+    expect(states).toContain(RUNTIME_STATES.LOADING);
+    expect(runtime.getRuntimeState()).toBe(RUNTIME_STATES.READY);
+    unsubscribe();
   });
 
   it('creates one Wllama instance per runtime', async () => {
@@ -33,9 +43,11 @@ describe('AIRuntime', () => {
     expect(instance.loadModel.mock.calls[0][1]).not.toHaveProperty('n_gpu_layers');
   });
 
-  it('rejects invalid GGUF files', async () => {
+  it('rejects invalid GGUF files and enters error state', async () => {
     await expect(runtime.loadModelFromFile(createFileHandle([0, 0, 0, 0]))).rejects.toThrow('Invalid GGUF magic');
     expect(runtime.isLoaded()).toBe(false);
+    expect(runtime.getRuntimeState()).toBe(RUNTIME_STATES.ERROR);
+    expect(runtime.getRuntimeStatus().error).toBeInstanceOf(Error);
   });
 
   it('keeps loading state instance-local and cancellable', async () => {
@@ -48,12 +60,14 @@ describe('AIRuntime', () => {
     const loadPromise = runtime.loadModelFromFile(createFileHandle());
     await vi.waitFor(() => expect(instance.loadModel).toHaveBeenCalled());
     expect(runtime.isLoadPending()).toBe(true);
+    expect(runtime.getRuntimeState()).toBe(RUNTIME_STATES.LOADING);
 
     runtime.cancelLoad();
     resolveLoad();
 
     await expect(loadPromise).rejects.toThrow('Load cancelled');
     expect(runtime.isLoadPending()).toBe(false);
+    expect(runtime.getRuntimeState()).toBe(RUNTIME_STATES.UNLOADED);
   });
 
   it('unloads the model and clears runtime state', async () => {
@@ -61,6 +75,7 @@ describe('AIRuntime', () => {
     expect(runtime.isLoaded()).toBe(true);
     await runtime.unloadModel();
     expect(runtime.isLoaded()).toBe(false);
+    expect(runtime.getRuntimeState()).toBe(RUNTIME_STATES.UNLOADED);
   });
 
   it('streams chat responses through the runtime instance', async () => {
@@ -69,6 +84,7 @@ describe('AIRuntime', () => {
     const result = await runtime.streamChat([{ role: 'user', content: 'Hello' }], onToken);
     expect(result).toBe('test response');
     expect(onToken).toHaveBeenCalledWith('test response');
+    expect(runtime.getRuntimeState()).toBe(RUNTIME_STATES.READY);
   });
 
   it('passes validated generation parameters to Wllama', async () => {

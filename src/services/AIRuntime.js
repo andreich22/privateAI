@@ -2,6 +2,14 @@ import { Wllama } from '@wllama/wllama';
 import { DEFAULT_GENERATION_SETTINGS, validateGenerationSettings } from './generationSettings';
 
 const MODEL_CONTEXT = 4096;
+export const RUNTIME_STATES = Object.freeze({
+  UNLOADED: 'unloaded',
+  LOADING: 'loading',
+  READY: 'ready',
+  GENERATING: 'generating',
+  ERROR: 'error',
+  UNLOADING: 'unloading',
+});
 
 function createAbortError() {
   return new DOMException('Load cancelled', 'AbortError');
@@ -20,9 +28,13 @@ export class AIRuntime {
   constructor() {
     this.wllama = null;
     this.loadAbortController = null;
+    this.loadPromise = null;
     this.generationAbortController = null;
     this.generationPromise = null;
     this.modelLoaded = false;
+    this.runtimeState = RUNTIME_STATES.UNLOADED;
+    this.runtimeError = null;
+    this.listeners = new Set();
   }
 
   async init() {
@@ -30,6 +42,28 @@ export class AIRuntime {
     this.wllama = new Wllama({ default: '/wllama/wllama.wasm' });
     this.wllama.setCompat(null);
     return this.wllama;
+  }
+
+  subscribe(listener) {
+    if (typeof listener !== 'function') return () => {};
+    this.listeners.add(listener);
+    listener(this.getRuntimeStatus());
+    return () => this.listeners.delete(listener);
+  }
+
+  getRuntimeState() { return this.runtimeState; }
+
+  getRuntimeStatus() {
+    return { state: this.runtimeState, error: this.runtimeError, loaded: this.isLoaded() };
+  }
+
+  #setState(state, error = null) {
+    this.runtimeState = state;
+    this.runtimeError = error;
+    const status = this.getRuntimeStatus();
+    for (const listener of this.listeners) {
+      try { listener(status); } catch { /* listener errors must not affect runtime */ }
+    }
   }
 
   async loadModelFromFile(fileHandle, onProgress) {
@@ -86,22 +120,32 @@ export class AIRuntime {
   }
 
   async #loadModel(loadSource, onProgress) {
-    if (this.loadAbortController) throw new Error('Model loading is already in progress');
+    if (this.loadPromise) throw new Error('Model loading is already in progress');
+    if (this.runtimeState === RUNTIME_STATES.UNLOADING) throw new Error('Model unloading is in progress');
     const controller = new AbortController();
     this.loadAbortController = controller;
+    this.#setState(RUNTIME_STATES.LOADING);
     onProgress?.(5);
-    try {
-      await loadSource(controller.signal);
-      if (controller.signal.aborted) throw createAbortError();
-      this.modelLoaded = true;
-      onProgress?.(100);
-    } catch (error) {
-      this.modelLoaded = false;
-      onProgress?.(0);
-      throw error;
-    } finally {
-      if (this.loadAbortController === controller) this.loadAbortController = null;
-    }
+    const operation = (async () => {
+      try {
+        await loadSource(controller.signal);
+        if (controller.signal.aborted) throw createAbortError();
+        this.modelLoaded = true;
+        this.#setState(RUNTIME_STATES.READY);
+        onProgress?.(100);
+      } catch (error) {
+        this.modelLoaded = false;
+        if (error?.name === 'AbortError') this.#setState(RUNTIME_STATES.UNLOADED);
+        else this.#setState(RUNTIME_STATES.ERROR, error);
+        onProgress?.(0);
+        throw error;
+      } finally {
+        if (this.loadAbortController === controller) this.loadAbortController = null;
+        if (this.loadPromise === operation) this.loadPromise = null;
+      }
+    })();
+    this.loadPromise = operation;
+    return operation;
   }
 
   async #loadWllama(files, signal) {
@@ -123,11 +167,7 @@ export class AIRuntime {
   }
 
   async streamChat(messages, onToken, settings) {
-    this.#assertLoaded();
-    if (this.generationAbortController) throw new Error('Generation is already in progress');
-    const controller = new AbortController();
-    this.generationAbortController = controller;
-    const operation = (async () => {
+    return this.#generate(async (controller) => {
       const response = await this.wllama.createChatCompletion({
         messages,
         stream: true,
@@ -144,23 +184,12 @@ export class AIRuntime {
         }
       }
       return fullText;
-    })();
-    this.generationPromise = operation;
-    try {
-      return await operation;
-    } finally {
-      if (this.generationPromise === operation) this.generationPromise = null;
-      if (this.generationAbortController === controller) this.generationAbortController = null;
-    }
+    });
   }
 
   async simpleCompletion(prompt, onToken, settings) {
-    this.#assertLoaded();
-    if (this.generationAbortController) throw new Error('Generation is already in progress');
-    const controller = new AbortController();
-    this.generationAbortController = controller;
-    const options = settings ? createGenerationOptions(settings) : { ...DEFAULT_GENERATION_SETTINGS, max_tokens: 64 };
-    const operation = (async () => {
+    return this.#generate(async (controller) => {
+      const options = settings ? createGenerationOptions(settings) : { ...DEFAULT_GENERATION_SETTINGS, max_tokens: 64 };
       const response = await this.wllama.createCompletion({
         prompt,
         stream: true,
@@ -177,26 +206,46 @@ export class AIRuntime {
         }
       }
       return fullText;
+    });
+  }
+
+  async #generate(generate) {
+    if (!this.isLoaded()) throw new Error('Модель не загружена');
+    if (this.generationPromise) throw new Error('Generation is already in progress');
+    const controller = new AbortController();
+    this.generationAbortController = controller;
+    this.#setState(RUNTIME_STATES.GENERATING);
+    const operation = (async () => {
+      try {
+        return await generate(controller);
+      } catch (error) {
+        if (error?.name !== 'AbortError') this.#setState(RUNTIME_STATES.ERROR, error);
+        throw error;
+      } finally {
+        if (this.generationPromise === operation) this.generationPromise = null;
+        if (this.generationAbortController === controller) this.generationAbortController = null;
+        if (this.runtimeState === RUNTIME_STATES.GENERATING) this.#setState(RUNTIME_STATES.READY);
+      }
     })();
     this.generationPromise = operation;
-    try {
-      return await operation;
-    } finally {
-      if (this.generationPromise === operation) this.generationPromise = null;
-      if (this.generationAbortController === controller) this.generationAbortController = null;
-    }
+    return operation;
   }
 
   cancelLoad() { this.loadAbortController?.abort(); }
   cancelGeneration() { this.generationAbortController?.abort(); }
-  isLoadPending() { return Boolean(this.loadAbortController && !this.loadAbortController.signal.aborted); }
-  isGenerationPending() { return Boolean(this.generationAbortController && !this.generationAbortController.signal.aborted); }
+  isLoadPending() { return Boolean(this.loadPromise); }
+  isGenerationPending() { return Boolean(this.generationPromise); }
   isLoaded() { return this.modelLoaded && Boolean(this.wllama?.isModelLoaded?.()); }
   getContextInfo() { return this.wllama?.getLoadedContextInfo?.() ?? null; }
 
   async unloadModel() {
+    this.#setState(RUNTIME_STATES.UNLOADING);
     this.cancelLoad();
     this.cancelGeneration();
+    const load = this.loadPromise;
+    if (load) {
+      try { await load; } catch { /* expected on cancellation */ }
+    }
     const generation = this.generationPromise;
     if (generation) {
       try { await generation; } catch { /* expected on cancellation */ }
@@ -204,11 +253,10 @@ export class AIRuntime {
     const instance = this.wllama;
     this.wllama = null;
     this.modelLoaded = false;
-    if (instance) await instance.exit();
-  }
-
-  #assertLoaded() {
-    if (!this.isLoaded()) throw new Error('Модель не загружена');
+    if (instance) {
+      try { await instance.exit(); } catch (error) { this.#setState(RUNTIME_STATES.ERROR, error); throw error; }
+    }
+    this.#setState(RUNTIME_STATES.UNLOADED);
   }
 }
 
