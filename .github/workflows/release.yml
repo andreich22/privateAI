@@ -1,4 +1,4 @@
-name: Release after merge
+name: Release on version bump
 
 on:
   pull_request:
@@ -8,12 +8,6 @@ on:
 
 permissions:
   contents: write
-  pull-requests: write
-  actions: write
-
-concurrency:
-  group: application-version-after-merge
-  cancel-in-progress: false
 
 jobs:
   release:
@@ -21,121 +15,106 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout current master
-        uses: actions/checkout@v4
+      - name: Create release for merged application version
+        uses: actions/github-script@v7
         with:
-          ref: master
-          fetch-depth: 0
-          token: ${{ secrets.GITHUB_TOKEN }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const baseSha = context.payload.pull_request.base.sha;
+            const mergeSha = context.payload.pull_request.merge_commit_sha;
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: npm
+            if (!mergeSha) {
+              core.setFailed('Merged PR does not contain merge_commit_sha.');
+              return;
+            }
 
-      - name: Install dependencies
-        run: npm ci
+            async function readVersion(ref) {
+              const response = await github.rest.repos.getContent({
+                owner,
+                repo,
+                path: 'package.json',
+                ref
+              });
 
-      - name: Validate current version
-        run: npm run version:check
+              if (Array.isArray(response.data) || !response.data.content) {
+                throw new Error(`package.json was not found at ${ref}.`);
+              }
 
-      - name: Prepare version bump
-        id: prepare
-        run: |
-          npm version patch --no-git-tag-version
-          npm run version:check
-          VERSION=$(node -p "require('./package.json').version")
-          BRANCH="chore/version-bump-${{ github.event.pull_request.number }}-${{ github.run_id }}"
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git checkout -b "$BRANCH"
-          git add package.json package-lock.json
-          git commit -m "chore: bump application version to v${VERSION}"
-          git push --set-upstream origin "$BRANCH"
-          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
-          echo "branch=${BRANCH}" >> "$GITHUB_OUTPUT"
+              return JSON.parse(Buffer.from(response.data.content, 'base64').toString('utf8')).version;
+            }
 
-      - name: Open version bump PR
-        id: pr
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          BRANCH: ${{ steps.prepare.outputs.branch }}
-          VERSION: ${{ steps.prepare.outputs.version }}
-        run: |
-          PR_URL=$(gh pr create \
-            --repo "$GITHUB_REPOSITORY" \
-            --base master \
-            --head "$BRANCH" \
-            --title "chore: bump application version to v${VERSION}" \
-            --body "Automated version bump created after merged PR #${{ github.event.pull_request.number }}.\n\nThis PR is intentionally validated and merged by the post-merge release workflow." )
-          PR_NUMBER="${PR_URL##*/}"
-          echo "number=${PR_NUMBER}" >> "$GITHUB_OUTPUT"
+            const baseVersion = await readVersion(baseSha);
+            const mergeVersion = await readVersion(mergeSha);
+            const semver = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?(?:\+[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?$/;
 
-      - name: Run CI for version bump PR
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          BRANCH: ${{ steps.prepare.outputs.branch }}
-        run: |
-          gh workflow run ci.yml --repo "$GITHUB_REPOSITORY" --ref "$BRANCH"
+            if (!semver.test(baseVersion) || !semver.test(mergeVersion)) {
+              core.setFailed(`Invalid SemVer: ${baseVersion} -> ${mergeVersion}`);
+              return;
+            }
 
-      - name: Wait for CI validation
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          BRANCH: ${{ steps.prepare.outputs.branch }}
-        run: |
-          for attempt in {1..30}; do
-            RUN_ID=$(gh run list \
-              --repo "$GITHUB_REPOSITORY" \
-              --workflow ci.yml \
-              --branch "$BRANCH" \
-              --event workflow_dispatch \
-              --limit 1 \
-              --json databaseId \
-              --jq '.[0].databaseId')
+            if (baseVersion === mergeVersion) {
+              core.setFailed(`Merged PR did not increase application version: ${baseVersion} -> ${mergeVersion}`);
+              return;
+            }
 
-            if [ -n "$RUN_ID" ] && [ "$RUN_ID" != "null" ]; then
-              echo "Watching CI run $RUN_ID"
-              gh run watch "$RUN_ID" --repo "$GITHUB_REPOSITORY" --exit-status
-              exit 0
-            fi
+            const parse = (version) => version.split('-')[0].split('+')[0].split('.').map(Number);
+            const [baseMajor, baseMinor, basePatch] = parse(baseVersion);
+            const [mergeMajor, mergeMinor, mergePatch] = parse(mergeVersion);
+            const isGreater =
+              mergeMajor > baseMajor ||
+              (mergeMajor === baseMajor && mergeMinor > baseMinor) ||
+              (mergeMajor === baseMajor && mergeMinor === baseMinor && mergePatch > basePatch);
 
-            sleep 2
-          done
+            if (!isGreater) {
+              core.setFailed(`Version must increase: ${baseVersion} -> ${mergeVersion}`);
+              return;
+            }
 
-          echo "Timed out waiting for CI workflow run."
-          exit 1
+            const tagName = `v${mergeVersion}`;
 
-      - name: Merge validated version bump PR
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PR_NUMBER: ${{ steps.pr.outputs.number }}
-        run: |
-          gh pr merge "$PR_NUMBER" \
-            --repo "$GITHUB_REPOSITORY" \
-            --squash \
-            --delete-branch
+            let existingRelease = null;
+            try {
+              const response = await github.rest.repos.getReleaseByTag({
+                owner,
+                repo,
+                tag: tagName
+              });
+              existingRelease = response.data;
+            } catch (error) {
+              if (error.status !== 404) throw error;
+            }
 
-      - name: Create GitHub Release
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          VERSION: ${{ steps.prepare.outputs.version }}
-          PR_NUMBER: ${{ steps.pr.outputs.number }}
-        run: |
-          MERGE_SHA=$(gh pr view "$PR_NUMBER" --repo "$GITHUB_REPOSITORY" --json mergeCommit --jq '.mergeCommit.oid')
+            if (existingRelease) {
+              core.info(`Release ${tagName} already exists; nothing to do.`);
+              return;
+            }
 
-          if [ -z "$MERGE_SHA" ] || [ "$MERGE_SHA" = "null" ]; then
-            echo "Version bump PR did not produce a merge commit."
-            exit 1
-          fi
+            let existingTag = null;
+            try {
+              const response = await github.rest.git.getRef({
+                owner,
+                repo,
+                ref: `tags/${tagName}`
+              });
+              existingTag = response.data.object.sha;
+            } catch (error) {
+              if (error.status !== 404) throw error;
+            }
 
-          if gh release view "v${VERSION}" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
-            echo "Release v${VERSION} already exists; nothing to do."
-            exit 0
-          fi
+            if (existingTag && existingTag !== mergeSha) {
+              core.setFailed(`Tag ${tagName} already exists at ${existingTag}, expected ${mergeSha}.`);
+              return;
+            }
 
-          gh release create "v${VERSION}" \
-            --repo "$GITHUB_REPOSITORY" \
-            --target "$MERGE_SHA" \
-            --title "v${VERSION}" \
-            --generate-notes
+            const release = await github.rest.repos.createRelease({
+              owner,
+              repo,
+              tag_name: tagName,
+              target_commitish: mergeSha,
+              name: tagName,
+              generate_release_notes: true
+            });
+
+            core.info(`Created ${release.data.html_url}`);
