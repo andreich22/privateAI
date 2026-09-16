@@ -1,9 +1,9 @@
 {
   "id": "d42a",
   "title": "Интеграция поиска моделей Hugging Face",
-  "status": "in_progress",
+  "status": "done",
   "createdAt": "2026-09-16T19:47:08Z",
-  "updatedAt": "2026-09-16T19:47:08Z",
+  "updatedAt": "2026-09-16T19:56:30Z",
   "description": "Добавить в privateAI поиск моделей из Hugging Face Hub с возможностью находить модели по названию или текстовому запросу и выбирать модель для дальнейшего использования.",
   "requirements": [
     "Использовать официальный Hugging Face Hub API без парсинга HTML.",
@@ -28,7 +28,7 @@
     "Существующий локальный runtime продолжает работать.",
     "Все существующие и новые тесты проходят.",
     "CI/CD проверки PR проходят без ошибок.",
-    "Code review пройден и PR смержен в master."
+    "PR смержен в master."
   ],
   "technicalApproach": [
     "Добавить src/services/huggingFaceModels.js как изолированный слой работы с Hugging Face Hub API.",
@@ -40,13 +40,16 @@
     "Task зарегистрирована в tasks/index.json.",
     "Поиск Hugging Face доступен из UI.",
     "Метаданные моделей отображаются корректно.",
-    "Тесты и CI проходят.",
-    "PR смержен в master."
+    "Unit/component tests, build и E2E проходят.",
+    "PR #44 смержен в master.",
+    "После merge master CI и release workflow завершились успешно."
   ],
   "history": [
     {"date": "2026-09-16T19:47:08Z", "status": "draft", "action": "created", "details": "GitHub Issue #42"},
     {"date": "2026-09-16T19:47:08Z", "status": "ready", "action": "requirements-defined"},
-    {"date": "2026-09-16T19:47:08Z", "status": "in_progress", "action": "implementation-started", "details": "PR #43"}
+    {"date": "2026-09-16T19:47:08Z", "status": "in_progress", "action": "implementation-started", "details": "PR #43"},
+    {"date": "2026-09-16T19:55:54Z", "status": "done", "action": "merged", "details": "PR #44; merge commit fccfceb232a016ee769c53b22fe668f5c254ee87"},
+    {"date": "2026-09-16T19:56:30Z", "status": "done", "action": "verification-completed", "details": "PR CI, master CI and release workflow passed"}
   ],
   "relations": []
 }
