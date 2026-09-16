@@ -21,7 +21,7 @@ describe('HuggingFaceModelSearch', () => {
     const onSelect = vi.fn();
     render(<HuggingFaceModelSearch onSelect={onSelect} />);
 
-    fireEvent.change(screen.getByLabelText('Поиск моделей Hugging Face'), { target: { value: 'Qwen' } });
+    fireEvent.change(screen.getByRole('textbox', { name: 'Поиск моделей Hugging Face' }), { target: { value: 'Qwen' } });
     fireEvent.click(screen.getByRole('button', { name: 'Найти' }));
 
     expect(await screen.findByText('Qwen/Qwen3-8B')).toBeInTheDocument();
@@ -32,7 +32,7 @@ describe('HuggingFaceModelSearch', () => {
   it('shows empty state', async () => {
     searchHuggingFaceModels.mockResolvedValue([]);
     render(<HuggingFaceModelSearch />);
-    fireEvent.change(screen.getByLabelText('Поиск моделей Hugging Face'), { target: { value: 'missing' } });
+    fireEvent.change(screen.getByRole('textbox', { name: 'Поиск моделей Hugging Face' }), { target: { value: 'missing' } });
     fireEvent.click(screen.getByRole('button', { name: 'Найти' }));
     await waitFor(() => expect(screen.getByText('Модели не найдены.')).toBeInTheDocument());
   });
@@ -40,7 +40,7 @@ describe('HuggingFaceModelSearch', () => {
   it('shows API errors', async () => {
     searchHuggingFaceModels.mockRejectedValue(Object.assign(new Error('rate limited'), { status: 429 }));
     render(<HuggingFaceModelSearch />);
-    fireEvent.change(screen.getByLabelText('Поиск моделей Hugging Face'), { target: { value: 'llama' } });
+    fireEvent.change(screen.getByRole('textbox', { name: 'Поиск моделей Hugging Face' }), { target: { value: 'llama' } });
     fireEvent.click(screen.getByRole('button', { name: 'Найти' }));
     expect(await screen.findByRole('alert')).toHaveTextContent('Hugging Face временно ограничил запросы');
   });
