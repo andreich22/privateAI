@@ -26,7 +26,7 @@ const issue = event.issue;
 const title = issue?.title ?? '';
 const body = issue?.body ?? '';
 
-const match = title.match(/^TASK-([0-9a-f]{4})(?:\|\s*|:\s*|-\s*|\s+)(.+)$/);
+const match = title.match(/^TASK-([0-9a-f]{4})(?::\s*|-\s*|\s*\|\s*|\s+)(.+)$/);
 if (!match) {
   console.log(`Ignoring issue title: ${title}`);
   writeOutput('status', 'invalid');
@@ -41,17 +41,20 @@ const taskPath = path.join(tasksDir, `${id}.json`);
 const taskExists = fs.existsSync(taskPath);
 
 if (existingEntry && !taskExists) fail(`registry entry ${id} exists but ${taskPath} is missing`);
-if (taskExists && !existingEntry) fail(`task file ${taskPath} exists but registry entry ${id} is missing`);
 
-if (existingEntry && taskExists) {
-  const existingTask = readJson(taskPath);
-  validateTaskPair(id, existingEntry, existingTask);
+if (existingEntry) {
+  if (taskExists) {
+    const existingTask = readJson(taskPath);
+    validateTaskPair(id, existingEntry, existingTask);
+  }
   console.log(`Task ${id} is already registered and consistent; no changes needed.`);
   writeOutput('status', 'already-registered');
   writeOutput('task_id', id);
   writeOutput('task_title', taskTitle.trim());
   process.exit(0);
 }
+
+if (taskExists) fail(`task file ${taskPath} exists but registry entry ${id} is missing`);
 
 const now = new Date().toISOString();
 const task = {
@@ -142,7 +145,7 @@ function writePairedState(taskFilePath, taskFile, registryFilePath, registryFile
 
 function extractSection(markdown, ...names) {
   const heading = names.map(escapeRegExp).join('|');
-  const match = markdown.match(new RegExp(`^##\\s+(?:${heading})\\s*$([\\s\\S]*?)(?=^##\\s+|$)`, 'im'));
+  const match = markdown.match(new RegExp(`^##\\s+(?:${heading})\\s+([\\s\\S]*?)(?=^##\\s+|$)`, 'im'));
   if (!match) return [];
   return match[1]
     .split('\n')
