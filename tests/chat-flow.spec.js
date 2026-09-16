@@ -83,7 +83,7 @@ test.describe('Chat Flow', () => {
     await prompt.fill('Отвечай кратко.');
     await prompt.blur();
     await page.getByRole('button', { name: 'Новый чат' }).click();
-    await expect(page.getByText('Новый чат')).toBeVisible();
+    await expect(page.getByRole('main').getByText('Новый чат', { exact: true })).toBeVisible();
     await page.getByRole('button', { name: 'Сохранённый чат' }).click();
     await page.getByText('Настройки генерации').click();
     await expect(page.getByLabel('Системный промпт (только этот чат)')).toHaveValue('Отвечай кратко.');
