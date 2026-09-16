@@ -8,6 +8,8 @@ import {
   renameConversation,
   saveConversation,
 } from '../services/chatStorage';
+import { loadGenerationSettings } from '../services/generationSettings';
+import GenerationSettings from './GenerationSettings';
 
 export default function ChatWorkspace({ runtime, fileName, onUnload }) {
   const [conversation, setConversation] = useState(null);
@@ -46,8 +48,12 @@ export default function ChatWorkspace({ runtime, fileName, onUnload }) {
     setDebugInfo((prev) => `${prev}\n[${new Date().toLocaleTimeString()}] ${text}`.slice(-8000));
   };
 
-  const refreshConversations = async () => {
-    setConversations(await listConversations());
+  const refreshConversations = async () => setConversations(await listConversations());
+
+  const updateConversation = async (next) => {
+    setConversation(next);
+    await saveConversation(next);
+    await refreshConversations();
   };
 
   const openConversation = async (id) => {
@@ -112,10 +118,13 @@ export default function ChatWorkspace({ runtime, fileName, onUnload }) {
 
     let fullAssistantText = '';
     try {
-      await runtime.streamChat(nextMessages.map(({ role, content }) => ({ role, content })), (token) => {
+      const promptMessage = conversation.systemPrompt?.trim()
+        ? [{ role: 'system', content: conversation.systemPrompt.trim() }, ...nextMessages.map(({ role, content }) => ({ role, content }))]
+        : nextMessages.map(({ role, content }) => ({ role, content }));
+      await runtime.streamChat(promptMessage, (token) => {
         fullAssistantText += token;
         setCurrentTokens(fullAssistantText);
-      });
+      }, loadGenerationSettings());
 
       appendDebug(`DONE: ${fullAssistantText}`);
       const assistantMessage = { id: crypto.randomUUID(), role: 'assistant', content: fullAssistantText, createdAt: Date.now() };
@@ -158,16 +167,10 @@ export default function ChatWorkspace({ runtime, fileName, onUnload }) {
         <aside style={{ width: 240, borderRight: '1px solid #333', overflowY: 'auto', padding: 8 }}>
           <div style={{ padding: '6px 8px', fontSize: 12, color: '#888' }}>История чатов</div>
           {conversations.map((item) => (
-            <button
-              key={item.id}
-              onClick={() => openConversation(item.id)}
-              disabled={isGenerating}
-              style={{
-                display: 'block', width: '100%', textAlign: 'left', padding: '9px 8px', marginBottom: 4,
+            <button key={item.id} onClick={() => openConversation(item.id)} disabled={isGenerating}
+              style={{ display: 'block', width: '100%', textAlign: 'left', padding: '9px 8px', marginBottom: 4,
                 background: item.id === conversation?.id ? '#252525' : 'transparent', color: 'inherit',
-                border: '1px solid #333', borderRadius: 6, cursor: isGenerating ? 'default' : 'pointer',
-              }}
-            >
+                border: '1px solid #333', borderRadius: 6, cursor: isGenerating ? 'default' : 'pointer' }}>
               <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.title}</div>
               <small style={{ color: '#777' }}>{new Date(item.updatedAt).toLocaleString()}</small>
             </button>
@@ -178,6 +181,12 @@ export default function ChatWorkspace({ runtime, fileName, onUnload }) {
           <div style={{ padding: '8px 15px', borderBottom: '1px solid #333', color: '#aaa' }}>
             <strong>{conversation?.title || 'Загрузка...'}</strong>
           </div>
+          <GenerationSettings
+            conversation={conversation}
+            onConversationChange={updateConversation}
+            disabled={isGenerating}
+            supported={runtime.getGenerationCapabilities()}
+          />
           <div className="messages-box">
             {messages.map((msg) => (
               <div key={msg.id} className={`message ${msg.role}`}>
@@ -197,12 +206,8 @@ export default function ChatWorkspace({ runtime, fileName, onUnload }) {
             {debugInfo}
           </div>
           <form onSubmit={handleSend} className="input-form">
-            <input
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              placeholder={isGenerating ? 'Генерация...' : '1+1 = ?'}
-              disabled={isGenerating || !conversation}
-            />
+            <input value={input} onChange={(e) => setInput(e.target.value)}
+              placeholder={isGenerating ? 'Генерация...' : '1+1 = ?'} disabled={isGenerating || !conversation} />
             <button type="submit" disabled={isGenerating || !input.trim() || !conversation}>Отправить</button>
           </form>
         </main>
