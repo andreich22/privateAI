@@ -109,7 +109,7 @@ describe('ChatWorkspace local chat history', () => {
     expect(await screen.findByText('Удалить меня')).toBeInTheDocument();
 
     const messageDeleteButtons = screen.getAllByRole('button', { name: 'Удалить' });
-    fireEvent.click(messageDeleteButtons.at(-1));
+    fireEvent.click(messageDeleteButtons[1]);
 
     await waitFor(() => expect(screen.queryByText('Удалить меня')).not.toBeInTheDocument());
     expect(screen.getByText('Останусь')).toBeInTheDocument();
