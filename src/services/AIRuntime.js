@@ -1,9 +1,19 @@
 import { Wllama } from '@wllama/wllama';
+import { validateGenerationSettings } from './generationSettings';
 
 const MODEL_CONTEXT = 4096;
 
 function createAbortError() {
   return new DOMException('Load cancelled', 'AbortError');
+}
+
+function createGenerationOptions(settings = {}) {
+  const validated = validateGenerationSettings(settings);
+  return {
+    max_tokens: validated.max_tokens,
+    temperature: validated.temperature,
+    top_p: validated.top_p,
+  };
 }
 
 export class AIRuntime {
@@ -70,20 +80,12 @@ export class AIRuntime {
           writable = null;
         }
 
-        // When saving to disk, load the closed File directly instead of retaining
-        // every network chunk in memory alongside the model Blob.
-        const model = fileHandle
-          ? await fileHandle.getFile()
-          : new Blob(chunks, { type: 'application/x-gguf' });
-
+        const model = fileHandle ? await fileHandle.getFile() : new Blob(chunks, { type: 'application/x-gguf' });
         await this.#loadWllama([model], signal);
         return { fileHandle };
       } catch (error) {
         try { await reader.cancel(); } catch { /* ignore */ }
         if (writable) {
-          // FileSystemWritableFileStream#abort discards the in-progress write
-          // without replacing the existing file. The handle is persisted only
-          // after the model has loaded successfully.
           try { await writable.abort(); } catch { /* ignore */ }
         }
         throw error;
@@ -115,9 +117,6 @@ export class AIRuntime {
   async #loadWllama(files, signal) {
     const wllama = await this.init();
     if (signal.aborted) throw createAbortError();
-
-    // Wllama v3 enables WebGPU automatically when available. n_gpu_layers: 0
-    // would explicitly disable GPU inference, so leave the option unset.
     await wllama.loadModel(files, { n_ctx: MODEL_CONTEXT, signal });
     if (!wllama.isModelLoaded()) throw new Error('Model not loaded');
   }
@@ -129,11 +128,13 @@ export class AIRuntime {
     };
   }
 
-  async streamChat(messages, onToken) {
+  getGenerationCapabilities() {
+    return { temperature: true, top_p: true, max_tokens: true };
+  }
+
+  async streamChat(messages, onToken, settings) {
     this.#assertLoaded();
-    if (this.generationAbortController) {
-      throw new Error('Generation is already in progress');
-    }
+    if (this.generationAbortController) throw new Error('Generation is already in progress');
 
     const controller = new AbortController();
     this.generationAbortController = controller;
@@ -141,8 +142,7 @@ export class AIRuntime {
       const response = await this.wllama.createChatCompletion({
         messages,
         stream: true,
-        max_tokens: 512,
-        temperature: 0.7,
+        ...createGenerationOptions(settings),
         abortSignal: controller.signal,
       });
 
@@ -167,11 +167,9 @@ export class AIRuntime {
     }
   }
 
-  async simpleCompletion(prompt, onToken) {
+  async simpleCompletion(prompt, onToken, settings) {
     this.#assertLoaded();
-    if (this.generationAbortController) {
-      throw new Error('Generation is already in progress');
-    }
+    if (this.generationAbortController) throw new Error('Generation is already in progress');
 
     const controller = new AbortController();
     this.generationAbortController = controller;
@@ -179,8 +177,7 @@ export class AIRuntime {
       const response = await this.wllama.createCompletion({
         prompt,
         stream: true,
-        max_tokens: 64,
-        temperature: 0.7,
+        ...createGenerationOptions(settings),
         abortSignal: controller.signal,
       });
 
@@ -205,43 +202,20 @@ export class AIRuntime {
     }
   }
 
-  cancelLoad() {
-    this.loadAbortController?.abort();
-  }
-
-  cancelGeneration() {
-    this.generationAbortController?.abort();
-  }
-
-  isLoadPending() {
-    return Boolean(this.loadAbortController && !this.loadAbortController.signal.aborted);
-  }
-
-  isGenerationPending() {
-    return Boolean(this.generationAbortController && !this.generationAbortController.signal.aborted);
-  }
-
-  isLoaded() {
-    return this.modelLoaded && Boolean(this.wllama?.isModelLoaded?.());
-  }
-
-  getContextInfo() {
-    return this.wllama?.getLoadedContextInfo?.() ?? null;
-  }
+  cancelLoad() { this.loadAbortController?.abort(); }
+  cancelGeneration() { this.generationAbortController?.abort(); }
+  isLoadPending() { return Boolean(this.loadAbortController && !this.loadAbortController.signal.aborted); }
+  isGenerationPending() { return Boolean(this.generationAbortController && !this.generationAbortController.signal.aborted); }
+  isLoaded() { return this.modelLoaded && Boolean(this.wllama?.isModelLoaded?.()); }
+  getContextInfo() { return this.wllama?.getLoadedContextInfo?.() ?? null; }
 
   async unloadModel() {
     this.cancelLoad();
     this.cancelGeneration();
-
     const generation = this.generationPromise;
     if (generation) {
-      try {
-        await generation;
-      } catch {
-        // Cancellation/errors are expected while shutting down the runtime.
-      }
+      try { await generation; } catch { /* expected on cancellation */ }
     }
-
     const instance = this.wllama;
     this.wllama = null;
     this.modelLoaded = false;
@@ -252,3 +226,5 @@ export class AIRuntime {
     if (!this.isLoaded()) throw new Error('Модель не загружена');
   }
 }
+
+export { createGenerationOptions };
