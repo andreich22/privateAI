@@ -3,7 +3,7 @@
 html, body, #root { min-height: 100%; }
 
 body { margin: 0; font-family: sans-serif; background: #1e1e2e; color: #cdd6f4; }
-.centered { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; text-align: center; padding: 20px; box-sizing: border-box; }
+.centered { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; text-align: center; padding: 20px; box-sizing: border-box; }
 .screen h1 { margin-bottom: 10px; color: #89b4fa; }
 .screen p { color: #a6adc8; margin-bottom: 25px; }
 .btn-main { background: #89b4fa; color: #11111b; border: none; padding: 12px 24px; font-size: 16px; border-radius: 8px; cursor: pointer; font-weight: bold; }
@@ -24,4 +24,17 @@ header { display: flex; flex: 0 0 auto; justify-content: space-between; align-it
 .progress-bar-fill { height: 100%; background: #a6e3a1; transition: width 0.2s ease; }
 .progress-text { font-weight: bold; color: #a6e3a1; }
 .cursor { animation: blink 0.7s step-end infinite; }
+.hf-search { width: min(760px, 100%); margin-top: 30px; padding: 20px; background: #181825; border: 1px solid #313244; border-radius: 10px; text-align: left; }
+.hf-search h2 { margin-top: 0; }
+.hf-search-form { display: flex; gap: 10px; }
+.hf-search-form input { flex: 1; min-width: 0; padding: 12px; background: #313244; border: 1px solid #45475a; border-radius: 6px; color: #cdd6f4; font-size: 15px; }
+.hf-search-form button:disabled { opacity: 0.5; cursor: not-allowed; }
+.hf-search-error { color: #f38ba8 !important; }
+.hf-model-results { display: grid; gap: 10px; margin-top: 15px; max-height: 420px; overflow-y: auto; }
+.hf-model-card { display: flex; justify-content: space-between; gap: 15px; padding: 12px; background: #313244; border-radius: 8px; }
+.hf-model-card strong { overflow-wrap: anywhere; }
+.hf-model-card div { margin-top: 4px; font-size: 13px; color: #a6adc8; }
+.hf-model-actions { display: flex; flex-direction: column; gap: 8px; flex: 0 0 auto; }
+.hf-model-actions a, .hf-model-actions button { color: #89b4fa; background: transparent; border: 1px solid #45475a; border-radius: 6px; padding: 6px 10px; cursor: pointer; text-decoration: none; white-space: nowrap; }
+.hf-selected { max-width: 760px; margin-top: 15px; }
 @keyframes blink { from, to { opacity: 1; } 50% { opacity: 0; } }
