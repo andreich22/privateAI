@@ -59,24 +59,14 @@ const task = {
   status: 'draft',
   createdAt: now,
   updatedAt: now,
-  issue: {
-    number: issue.number,
-    url: issue.html_url ?? null,
-    title
-  },
+  issue: { number: issue.number, url: issue.html_url ?? null, title },
   description: body.trim() || `Task created from GitHub Issue #${issue.number}.`,
   requirements: extractSection(body, 'Требования', 'Requirements'),
   definitionOfReady: extractSection(body, 'Definition of Ready'),
   acceptanceCriteria: extractCheckboxes(body, 'Acceptance Criteria'),
   technicalApproach: [],
   definitionOfDone: extractSection(body, 'Definition of Done'),
-  history: [
-    {
-      at: now,
-      event: 'created_from_issue',
-      details: `Automatically registered from GitHub Issue #${issue.number}.`
-    }
-  ],
+  history: [{ at: now, event: 'created_from_issue', details: `Automatically registered from GitHub Issue #${issue.number}.` }],
   commits: [],
   decisionLog: [],
   relations: []
@@ -141,7 +131,7 @@ function writePairedState(taskFilePath, taskFile, registryFilePath, registryFile
 
 function extractSection(markdown, ...names) {
   const heading = names.map(escapeRegExp).join('|');
-  const match = markdown.match(new RegExp(`^##[ \\t]+(?:${heading})[ \\t]+([\\s\\S]*?)(?=^##[ \\t]+|$)`, 'im'));
+  const match = markdown.match(new RegExp(`^##[ \\t]+(?:${heading})[ \\t]*\\r?\\n([\\s\\S]*?)(?=^##[ \\t]+|$)`, 'im'));
   if (!match) return [];
   return match[1]
     .split('\n')
