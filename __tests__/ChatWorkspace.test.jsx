@@ -95,6 +95,81 @@ describe('ChatWorkspace local chat history', () => {
     expect(getConversation).toHaveBeenCalledWith('chat-3');
   });
 
+  it('deletes an individual message and persists the updated conversation', async () => {
+    window.confirm = vi.fn().mockReturnValue(true);
+    const conversation = makeConversation({
+      messages: [
+        { id: 'm1', role: 'user', content: 'Удалить меня', createdAt: 300 },
+        { id: 'm2', role: 'assistant', content: 'Останусь', createdAt: 301 },
+      ],
+    });
+    getConversation.mockResolvedValue(conversation);
+
+    render(<ChatWorkspace runtime={{ isLoaded: () => true }} fileName="model.gguf" onUnload={vi.fn()} />);
+    expect(await screen.findByText('Удалить меня')).toBeInTheDocument();
+
+    const messageDeleteButtons = screen.getAllByRole('button', { name: 'Удалить' });
+    fireEvent.click(messageDeleteButtons.at(-1));
+
+    await waitFor(() => expect(screen.queryByText('Удалить меня')).not.toBeInTheDocument());
+    expect(screen.getByText('Останусь')).toBeInTheDocument();
+    const saved = saveConversation.mock.calls.at(-1)[0];
+    expect(saved.messages).toEqual([conversation.messages[1]]);
+  });
+
+  it('loads a user prompt into edit mode and drops the old branch', async () => {
+    const conversation = makeConversation({
+      messages: [
+        { id: 'm1', role: 'user', content: 'Старый промт', createdAt: 300 },
+        { id: 'm2', role: 'assistant', content: 'Старый ответ', createdAt: 301 },
+      ],
+    });
+    getConversation.mockResolvedValue(conversation);
+
+    render(<ChatWorkspace runtime={{ isLoaded: () => true }} fileName="model.gguf" onUnload={vi.fn()} />);
+    expect(await screen.findByText('Старый промт')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Изменить' }));
+
+    expect(screen.getByPlaceholderText('Редактирование промта...')).toHaveValue('Старый промт');
+    expect(screen.getByText('Старый ответ')).toBeInTheDocument();
+  });
+
+  it('regenerates from an edited user prompt without keeping the old branch', async () => {
+    const conversation = makeConversation({
+      messages: [
+        { id: 'm1', role: 'user', content: 'Старый промт', createdAt: 300 },
+        { id: 'm2', role: 'assistant', content: 'Старый ответ', createdAt: 301 },
+      ],
+    });
+    getConversation.mockResolvedValue(conversation);
+    const runtime = {
+      isLoaded: () => true,
+      streamChat: vi.fn(async (_messages, onToken) => onToken('Новый ответ')),
+    };
+
+    render(<ChatWorkspace runtime={runtime} fileName="model.gguf" onUnload={vi.fn()} />);
+    await screen.findByText('Старый промт');
+    fireEvent.click(screen.getByRole('button', { name: 'Изменить' }));
+
+    const input = screen.getByPlaceholderText('Редактирование промта...');
+    fireEvent.change(input, { target: { value: 'Новый промт' } });
+    fireEvent.submit(input.closest('form'));
+
+    await waitFor(() => expect(screen.getByText('Новый ответ')).toBeInTheDocument());
+    expect(screen.queryByText('Старый ответ')).not.toBeInTheDocument();
+    expect(runtime.streamChat).toHaveBeenCalledWith(
+      [{ role: 'user', content: 'Новый промт' }],
+      expect.any(Function),
+      expect.anything(),
+    );
+    const saved = saveConversation.mock.calls.map(([value]) => value);
+    expect(saved[0].messages).toHaveLength(1);
+    expect(saved[0].messages[0]).toMatchObject({ role: 'user', content: 'Новый промт' });
+    expect(saved.at(-1).messages).toHaveLength(2);
+    expect(saved.at(-1).messages[1]).toMatchObject({ role: 'assistant', content: 'Новый ответ' });
+  });
+
   it('persists user and assistant messages', async () => {
     const runtime = {
       isLoaded: () => true,
