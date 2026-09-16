@@ -119,4 +119,35 @@ describe('ChatWorkspace local chat history', () => {
     expect(saved[1].messages).toHaveLength(2);
     expect(saved[1].messages[1]).toMatchObject({ role: 'assistant', content: 'Ответ' });
   });
+
+  it('cancels generation and persists the partial assistant response', async () => {
+    let rejectGeneration;
+    const runtime = {
+      isLoaded: () => true,
+      cancelGeneration: vi.fn(() => rejectGeneration(new DOMException('Generation cancelled', 'AbortError'))),
+      streamChat: vi.fn(async (_messages, onToken) => {
+        onToken('Частичный ответ');
+        await new Promise((_, reject) => { rejectGeneration = reject; });
+      }),
+    };
+
+    render(<ChatWorkspace runtime={runtime} fileName="model.gguf" onUnload={vi.fn()} />);
+    await waitFor(() => expect(screen.getAllByText('Сохранённый чат').length).toBeGreaterThan(0));
+
+    const input = screen.getByPlaceholderText('1+1 = ?');
+    fireEvent.change(input, { target: { value: 'Долгий вопрос' } });
+    fireEvent.submit(input.closest('form'));
+
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Остановить' })).toBeInTheDocument());
+    fireEvent.click(screen.getByRole('button', { name: 'Остановить' }));
+
+    await waitFor(() => expect(screen.getByPlaceholderText('1+1 = ?')).toBeInTheDocument());
+    expect(runtime.cancelGeneration).toHaveBeenCalledOnce();
+    const saved = saveConversation.mock.calls.map(([value]) => value);
+    expect(saved.at(-1).messages.at(-1)).toMatchObject({
+      role: 'assistant',
+      content: 'Частичный ответ',
+      generationStatus: 'cancelled',
+    });
+  });
 });
