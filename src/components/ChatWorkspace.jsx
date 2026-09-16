@@ -17,6 +17,7 @@ export default function ChatWorkspace({ runtime, fileName, onUnload }) {
   const [conversation, setConversation] = useState(null);
   const [conversations, setConversations] = useState([]);
   const [input, setInput] = useState('');
+  const [editingMessageId, setEditingMessageId] = useState(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [currentTokens, setCurrentTokens] = useState('');
   const [debugInfo, setDebugInfo] = useState('');
@@ -67,6 +68,8 @@ export default function ChatWorkspace({ runtime, fileName, onUnload }) {
       await saveConversation(next);
       await refreshConversations();
       setCurrentTokens('');
+      setEditingMessageId(null);
+      setInput('');
     }
   };
 
@@ -77,6 +80,7 @@ export default function ChatWorkspace({ runtime, fileName, onUnload }) {
     await refreshConversations();
     setCurrentTokens('');
     setInput('');
+    setEditingMessageId(null);
   };
 
   const handleRename = async () => {
@@ -99,6 +103,32 @@ export default function ChatWorkspace({ runtime, fileName, onUnload }) {
     await refreshConversations();
     setCurrentTokens('');
     setInput('');
+    setEditingMessageId(null);
+  };
+
+  const handleDeleteMessage = async (message) => {
+    if (!conversation || generationRef.current || !message?.id) return;
+    if (!window.confirm('Удалить это сообщение?')) return;
+    const next = {
+      ...conversation,
+      messages: messages.filter((item) => item.id !== message.id),
+    };
+    await updateConversation(next);
+    if (editingMessageId === message.id) {
+      setEditingMessageId(null);
+      setInput('');
+    }
+  };
+
+  const handleEditMessage = (message) => {
+    if (!conversation || generationRef.current || message?.role !== 'user') return;
+    setEditingMessageId(message.id);
+    setInput(message.content);
+  };
+
+  const handleCancelEdit = () => {
+    setEditingMessageId(null);
+    setInput('');
   };
 
   const handleCancelGeneration = () => {
@@ -112,7 +142,13 @@ export default function ChatWorkspace({ runtime, fileName, onUnload }) {
     if (!input.trim() || generationRef.current || !runtime?.isLoaded?.() || !conversation) return;
 
     const userText = input.trim();
+    const editingIndex = editingMessageId
+      ? messages.findIndex((message) => message.id === editingMessageId && message.role === 'user')
+      : -1;
+    const baseMessages = editingIndex >= 0 ? messages.slice(0, editingIndex) : messages;
+
     setInput('');
+    setEditingMessageId(null);
     setIsGenerating(true);
     generationRef.current = true;
     partialResponseRef.current = '';
@@ -120,7 +156,7 @@ export default function ChatWorkspace({ runtime, fileName, onUnload }) {
     appendDebug(`USER: ${userText}`);
 
     const userMessage = { id: crypto.randomUUID(), role: 'user', content: userText, createdAt: Date.now() };
-    const nextMessages = [...messages, userMessage];
+    const nextMessages = [...baseMessages, userMessage];
     const pending = { ...conversation, messages: nextMessages };
     setConversation(pending);
     await saveConversation(pending);
@@ -223,6 +259,12 @@ export default function ChatWorkspace({ runtime, fileName, onUnload }) {
               <div key={msg.id} className={`message ${msg.role}`}>
                 <div className="sender">{msg.role === 'user' ? 'Вы' : 'ИИ'}</div>
                 <div className="text">{msg.content}</div>
+                <div style={{ display: 'flex', gap: 6, marginTop: 6 }}>
+                  {msg.role === 'user' && (
+                    <button type="button" onClick={() => handleEditMessage(msg)} disabled={isGenerating}>Изменить</button>
+                  )}
+                  <button type="button" onClick={() => handleDeleteMessage(msg)} disabled={isGenerating}>Удалить</button>
+                </div>
               </div>
             ))}
             {currentTokens && (
@@ -238,9 +280,15 @@ export default function ChatWorkspace({ runtime, fileName, onUnload }) {
           </div>
           <form onSubmit={handleSend} className="input-form">
             <input value={input} onChange={(e) => setInput(e.target.value)}
-              placeholder={isGenerating ? 'Генерация...' : '1+1 = ?'} disabled={isGenerating || !conversation} />
+              placeholder={editingMessageId ? 'Редактирование промта...' : (isGenerating ? 'Генерация...' : '1+1 = ?')}
+              disabled={isGenerating || !conversation} />
             {isGenerating ? (
               <button type="button" onClick={handleCancelGeneration}>Остановить</button>
+            ) : editingMessageId ? (
+              <>
+                <button type="button" onClick={handleCancelEdit}>Отмена</button>
+                <button type="submit" disabled={!input.trim() || !conversation}>Отправить</button>
+              </>
             ) : (
               <button type="submit" disabled={!input.trim() || !conversation}>Отправить</button>
             )}
