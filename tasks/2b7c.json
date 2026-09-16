@@ -1,62 +1,17 @@
 {
   "id": "2b7c",
   "title": "Надёжность хранения и восстановления локальных данных",
-  "status": "in_progress",
+  "status": "done",
   "createdAt": "2026-09-16T13:57:48Z",
-  "updatedAt": "2026-09-16T14:30:00Z",
+  "updatedAt": "2026-09-16T14:28:10Z",
   "description": "Повысить устойчивость локального хранения моделей, настроек и истории чатов к ошибкам браузерного storage, миграциям схемы и повреждённым записям.",
-  "requirements": [
-    "Схемы IndexedDB и их версии централизованы и явно определены.",
-    "Миграции IndexedDB выполняются безопасно и не теряют существующие данные.",
-    "Ошибки quota/storage и недоступное хранилище не приводят к падению приложения.",
-    "Повреждённая или неполная локальная запись не блокирует запуск и восстановление остальных данных.",
-    "Не допускается появление дублирующих ключей, форматов и независимых версий одной схемы.",
-    "Поведение восстановления имеет безопасные значения по умолчанию и не отправляет локальные данные наружу."
-  ],
-  "definitionOfReady": [
-    "Определены все текущие IndexedDB хранилища и их версии.",
-    "Проверены существующие сервисы chatStorage и fileStorage и их потребители.",
-    "Определены допустимые fallback-значения при недоступном storage.",
-    "Определены критерии валидности conversation и message записей."
-  ],
-  "acceptanceCriteria": [
-    "При обновлении схемы старые данные продолжают читаться через безопасную миграцию.",
-    "Ошибки IndexedDB и storage обрабатываются без необработанных исключений из storage API.",
-    "Повреждённая запись пропускается, а остальные записи остаются доступными.",
-    "Добавлены unit tests для схем, ошибок storage и восстановления после некорректных записей.",
-    "Существующие unit tests и E2E tests проходят.",
-    "CI, tasks:validate, validate-pr-task и build проходят."
-  ],
-  "technicalApproach": [
-    "Вынести имена и версии IndexedDB схем в общий storage service.",
-    "Использовать идемпотентные upgrade callbacks, которые создают отсутствующие stores/indexes без удаления существующих данных.",
-    "Обернуть операции чтения и записи в recoverable error handling с безопасными fallback-значениями.",
-    "Валидировать восстановленные conversation/message записи перед использованием.",
-    "Покрыть storage schema, malformed records и error paths unit tests и прогнать полный CI."
-  ],
-  "definitionOfDone": [
-    "Storage schema/version metadata централизованы.",
-    "Chat и file persistence используют recoverable storage operations.",
-    "Повреждённые записи не блокируют восстановление приложения.",
-    "Тесты покрывают schema, validation и storage error paths.",
-    "CI, tasks:validate, validate-pr-task и build проходят."
-  ],
-  "history": [
-    {
-      "at": "2026-09-16T13:57:48Z",
-      "event": "created",
-      "details": "Implementation task created from GitHub Issue #26."
-    },
-    {
-      "at": "2026-09-16T14:30:00Z",
-      "event": "implementation_started",
-      "details": "Started implementation in PR #31."
-    }
-  ],
-  "commits": [],
+  "requirements": ["Схемы IndexedDB и их версии централизованы и явно определены.","Миграции IndexedDB выполняются безопасно и не теряют существующие данные.","Ошибки quota/storage и недоступное хранилище не приводят к падению приложения.","Повреждённая или неполная локальная запись не блокирует запуск и восстановление остальных данных.","Не допускается появление дублирующих ключей, форматов и независимых версий одной схемы.","Поведение восстановления имеет безопасные значения по умолчанию и не отправляет локальные данные наружу."],
+  "definitionOfReady": ["Определены все текущие IndexedDB хранилища и их версии.","Проверены существующие сервисы chatStorage и fileStorage и их потребители.","Определены допустимые fallback-значения при недоступном storage.","Определены критерии валидности conversation и message записей."],
+  "acceptanceCriteria": ["При обновлении схемы старые данные продолжают читаться через безопасную миграцию.","Ошибки IndexedDB и storage обрабатываются без необработанных исключений из storage API.","Повреждённая запись пропускается, а остальные записи остаются доступными.","Добавлены unit tests для схем, ошибок storage и восстановления после некорректных записей.","Существующие unit tests и E2E tests проходят.","CI, tasks:validate, validate-pr-task и build проходят."],
+  "technicalApproach": ["Вынести имена и версии IndexedDB схем в общий storage service.","Использовать идемпотентные upgrade callbacks, которые создают отсутствующие stores/indexes без удаления существующих данных.","Обернуть операции чтения и записи в recoverable error handling с безопасными fallback-значениями.","Валидировать восстановленные conversation/message записи перед использованием.","Покрыть storage schema, malformed records и error paths unit tests и прогнать полный CI."],
+  "definitionOfDone": ["Storage schema/version metadata централизованы.","Chat и file persistence используют recoverable storage operations.","Повреждённые записи не блокируют восстановление приложения.","Тесты покрывают schema, validation и storage error paths.","CI, tasks:validate, validate-pr-task и build проходят."],
+  "history": [{"at":"2026-09-16T13:57:48Z","event":"created","details":"Implementation task created from GitHub Issue #26."},{"at":"2026-09-16T14:30:00Z","event":"implementation_started","details":"Started implementation in PR #31."},{"at":"2026-09-16T14:28:10Z","event":"completed","details":"PR #31 merged after unit tests, build, E2E, task metadata and PR task validation passed."}],
+  "commits": ["dc86dc020d5f669729ab398b714da975bfcf31c6","34cfe28676d1ead82bb1c8e504906538eb61d571","e6974671f12fddbc99916c8c67a74dc13bb50dd0","45c7b685f5413ec6571507248887a8d73a123cb4","441ab31e0aa464bbaac789d4fffc9256a8c99faa","c81796c2a1af04810299707a17b97f02ad2a9595","d81653658aa089b40d6b8dc51eb65fc130603446","c80f5325ac1857c1e8f7359caa16b27ed0195984"],
   "decisionLog": [],
-  "relations": [
-    {"type": "follows", "taskId": "a13c"},
-    {"type": "follows", "taskId": "f48b"}
-  ]
+  "relations": [{"type":"follows","taskId":"a13c"},{"type":"follows","taskId":"f48b"}]
 }
