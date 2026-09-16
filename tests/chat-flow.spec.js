@@ -78,13 +78,14 @@ test.describe('Chat Flow', () => {
   });
 
   test('chat system prompt persists when switching conversations', async ({ page }) => {
+    const historyButtons = page.locator('aside button');
+    await expect(historyButtons).toHaveCount(1);
     await page.getByText('Настройки генерации').click();
     const prompt = page.getByLabel('Системный промпт (только этот чат)');
     await prompt.fill('Отвечай кратко.');
     await prompt.blur();
     await page.getByRole('button', { name: 'Новый чат' }).click();
     await expect(page.getByRole('main').getByText('Новый чат', { exact: true })).toBeVisible();
-    const historyButtons = page.locator('aside button');
     await expect(historyButtons).toHaveCount(2);
     await historyButtons.last().click();
     await page.getByText('Настройки генерации').click();
