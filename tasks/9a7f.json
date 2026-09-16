@@ -54,6 +54,11 @@
       "at": "2026-09-14T15:28:30Z",
       "event": "implementation_pr_opened",
       "details": "Implementation PR #11 opened on task/9a7f-task-registration. It includes the task registry entry, registration workflow, deterministic registration script, tests, and workflow documentation."
+    },
+    {
+      "at": "2026-09-15T23:11:00Z",
+      "event": "bugs_fixed",
+      "details": "Fixed three bugs: (1) title regex captured pipe separator as part of title instead of treating it as separator, (2) extractSection regex captured empty content due to $ anchor matching before newline, (3) idempotency logic threw error when task file existed without index entry on second run. Added .mjs to vitest include pattern so task-registration tests are picked up. All 48 tests pass, tasks:validate and build pass."
     }
   ],
   "commits": [],
