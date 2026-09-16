@@ -8,6 +8,8 @@ on:
 
 permissions:
   contents: write
+  pull-requests: write
+  actions: write
 
 concurrency:
   group: application-version-after-merge
@@ -38,36 +40,102 @@ jobs:
       - name: Validate current version
         run: npm run version:check
 
-      - name: Bump patch version
-        run: npm version patch --no-git-tag-version
-
-      - name: Validate bumped version
-        run: npm run version:check
-
-      - name: Commit and push version bump
-        id: commit
+      - name: Prepare version bump
+        id: prepare
         run: |
+          npm version patch --no-git-tag-version
+          npm run version:check
           VERSION=$(node -p "require('./package.json').version")
+          BRANCH="chore/version-bump-${{ github.event.pull_request.number }}-${{ github.run_id }}"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -b "$BRANCH"
           git add package.json package-lock.json
           git commit -m "chore: bump application version to v${VERSION}"
-          git push origin HEAD:master
+          git push --set-upstream origin "$BRANCH"
           echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
-          echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+          echo "branch=${BRANCH}" >> "$GITHUB_OUTPUT"
+
+      - name: Open version bump PR
+        id: pr
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          BRANCH: ${{ steps.prepare.outputs.branch }}
+          VERSION: ${{ steps.prepare.outputs.version }}
+        run: |
+          PR_URL=$(gh pr create \
+            --repo "$GITHUB_REPOSITORY" \
+            --base master \
+            --head "$BRANCH" \
+            --title "chore: bump application version to v${VERSION}" \
+            --body "Automated version bump created after merged PR #${{ github.event.pull_request.number }}.\n\nThis PR is intentionally validated and merged by the post-merge release workflow." )
+          PR_NUMBER="${PR_URL##*/}"
+          echo "number=${PR_NUMBER}" >> "$GITHUB_OUTPUT"
+
+      - name: Run CI for version bump PR
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          BRANCH: ${{ steps.prepare.outputs.branch }}
+        run: |
+          gh workflow run ci.yml --repo "$GITHUB_REPOSITORY" --ref "$BRANCH"
+
+      - name: Wait for CI validation
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          BRANCH: ${{ steps.prepare.outputs.branch }}
+        run: |
+          for attempt in {1..30}; do
+            RUN_ID=$(gh run list \
+              --repo "$GITHUB_REPOSITORY" \
+              --workflow ci.yml \
+              --branch "$BRANCH" \
+              --event workflow_dispatch \
+              --limit 1 \
+              --json databaseId \
+              --jq '.[0].databaseId')
+
+            if [ -n "$RUN_ID" ] && [ "$RUN_ID" != "null" ]; then
+              echo "Watching CI run $RUN_ID"
+              gh run watch "$RUN_ID" --repo "$GITHUB_REPOSITORY" --exit-status
+              exit 0
+            fi
+
+            sleep 2
+          done
+
+          echo "Timed out waiting for CI workflow run."
+          exit 1
+
+      - name: Merge validated version bump PR
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ steps.pr.outputs.number }}
+        run: |
+          gh pr merge "$PR_NUMBER" \
+            --repo "$GITHUB_REPOSITORY" \
+            --squash \
+            --delete-branch
 
       - name: Create GitHub Release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          VERSION: ${{ steps.commit.outputs.version }}
-          SHA: ${{ steps.commit.outputs.sha }}
+          VERSION: ${{ steps.prepare.outputs.version }}
+          PR_NUMBER: ${{ steps.pr.outputs.number }}
         run: |
-          if gh release view "v${VERSION}" >/dev/null 2>&1; then
+          MERGE_SHA=$(gh pr view "$PR_NUMBER" --repo "$GITHUB_REPOSITORY" --json mergeCommit --jq '.mergeCommit.oid')
+
+          if [ -z "$MERGE_SHA" ] || [ "$MERGE_SHA" = "null" ]; then
+            echo "Version bump PR did not produce a merge commit."
+            exit 1
+          fi
+
+          if gh release view "v${VERSION}" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
             echo "Release v${VERSION} already exists; nothing to do."
             exit 0
           fi
 
           gh release create "v${VERSION}" \
-            --target "${SHA}" \
+            --repo "$GITHUB_REPOSITORY" \
+            --target "$MERGE_SHA" \
             --title "v${VERSION}" \
             --generate-notes
