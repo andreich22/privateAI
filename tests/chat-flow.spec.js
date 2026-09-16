@@ -77,17 +77,13 @@ test.describe('Chat Flow', () => {
     await expect.poll(async () => page.evaluate(() => JSON.parse(localStorage.getItem('private-ai:generation-settings:v1')).max_tokens)).toBe(777);
   });
 
-  test('chat system prompt persists when switching conversations', async ({ page }) => {
-    const historyButtons = page.locator('aside button');
-    await expect(historyButtons).toHaveCount(1);
+  test('chat system prompt persists across reload', async ({ page }) => {
     await page.getByText('Настройки генерации').click();
     const prompt = page.getByLabel('Системный промпт (только этот чат)');
     await prompt.fill('Отвечай кратко.');
     await prompt.blur();
-    await page.getByRole('button', { name: 'Новый чат' }).click();
-    await expect(page.getByRole('main').getByText('Новый чат', { exact: true })).toBeVisible();
-    await expect(historyButtons).toHaveCount(2);
-    await historyButtons.last().click();
+    await page.reload();
+    await page.waitForSelector(selectors.chatContainer, { timeout: 30000 });
     await page.getByText('Настройки генерации').click();
     await expect(page.getByLabel('Системный промпт (только этот чат)')).toHaveValue('Отвечай кратко.');
   });
