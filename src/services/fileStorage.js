@@ -1,17 +1,21 @@
 import { openDB } from 'idb';
+import { FILE_DB, logStorageError } from './storage.js';
 
-const DB_NAME = 'LocalReactAIVault';
-const STORE_NAME = 'FileHandles';
-const KEY_NAME = 'gguf_model_handle';
+let dbPromise;
 
 export async function getDB() {
-  return openDB(DB_NAME, 1, {
-    upgrade(db) {
-      if (!db.objectStoreNames.contains(STORE_NAME)) {
-        db.createObjectStore(STORE_NAME);
-      }
-    },
-  });
+  if (!dbPromise) {
+    dbPromise = openDB(FILE_DB.name, FILE_DB.version, {
+      upgrade(db) {
+        if (!db.objectStoreNames.contains(FILE_DB.store)) db.createObjectStore(FILE_DB.store);
+      },
+    }).catch((error) => {
+      dbPromise = undefined;
+      logStorageError('open file database', error);
+      return null;
+    });
+  }
+  return dbPromise;
 }
 
 export async function selectAndSaveFile() {
@@ -24,37 +28,57 @@ export async function selectAndSaveFile() {
       excludeAcceptAllOption: true,
       multiple: false,
     });
-
     await saveFileHandle(handle);
     return handle;
   } catch (error) {
-    if (error?.name !== 'AbortError') console.error('Ошибка выбора файла:', error);
+    if (error?.name !== 'AbortError') logStorageError('select file', error);
     return null;
   }
 }
 
 export async function saveFileHandle(handle) {
   if (!handle) return null;
-  const db = await getDB();
-  await db.put(STORE_NAME, handle, KEY_NAME);
-  return handle;
+  try {
+    const db = await getDB();
+    if (!db) return null;
+    await db.put(FILE_DB.store, handle, FILE_DB.key);
+    return handle;
+  } catch (error) {
+    logStorageError('save file handle', error);
+    return null;
+  }
 }
 
 export async function getSavedFileHandle() {
-  const db = await getDB();
-  return (await db.get(STORE_NAME, KEY_NAME)) || null;
+  try {
+    const db = await getDB();
+    if (!db) return null;
+    return (await db.get(FILE_DB.store, FILE_DB.key)) || null;
+  } catch (error) {
+    logStorageError('get saved file handle', error);
+    return null;
+  }
 }
 
 export async function clearSavedFileHandle() {
-  const db = await getDB();
-  await db.delete(STORE_NAME, KEY_NAME);
+  try {
+    const db = await getDB();
+    if (db) await db.delete(FILE_DB.store, FILE_DB.key);
+  } catch (error) {
+    logStorageError('clear file handle', error);
+  }
 }
 
 export async function verifyPermission(fileHandle) {
   if (!fileHandle) return false;
-  const opts = { mode: 'read' };
-  if ((await fileHandle.queryPermission(opts)) === 'granted') return true;
-  return (await fileHandle.requestPermission(opts)) === 'granted';
+  try {
+    const opts = { mode: 'read' };
+    if ((await fileHandle.queryPermission(opts)) === 'granted') return true;
+    return (await fileHandle.requestPermission(opts)) === 'granted';
+  } catch (error) {
+    logStorageError('verify file permission', error);
+    return false;
+  }
 }
 
 export async function saveModelToDisk(file, saveName) {
@@ -67,14 +91,13 @@ export async function saveModelToDisk(file, saveName) {
       }],
       excludeAcceptAllOption: true,
     });
-
     const writable = await handle.createWritable();
     await writable.write(file);
     await writable.close();
     await saveFileHandle(handle);
     return handle;
   } catch (error) {
-    if (error?.name !== 'AbortError') console.error('Ошибка сохранения:', error);
+    if (error?.name !== 'AbortError') logStorageError('save model to disk', error);
     return null;
   }
 }
@@ -90,7 +113,7 @@ export async function saveFilePicker(suggestedName) {
       excludeAcceptAllOption: true,
     });
   } catch (error) {
-    if (error?.name !== 'AbortError') console.error('Ошибка выбора места сохранения:', error);
+    if (error?.name !== 'AbortError') logStorageError('save file picker', error);
     return null;
   }
 }
