@@ -1,0 +1,52 @@
+{
+  "id": "d42a",
+  "title": "Интеграция поиска моделей Hugging Face",
+  "status": "in_progress",
+  "createdAt": "2026-09-16T19:47:08Z",
+  "updatedAt": "2026-09-16T19:47:08Z",
+  "description": "Добавить в privateAI поиск моделей из Hugging Face Hub с возможностью находить модели по названию или текстовому запросу и выбирать модель для дальнейшего использования.",
+  "requirements": [
+    "Использовать официальный Hugging Face Hub API без парсинга HTML.",
+    "Не раскрывать Hugging Face access token в клиентском коде.",
+    "Поддержать текстовый поиск моделей и базовые параметры сортировки и ограничения результата.",
+    "Показывать model id, author, downloads, likes, pipeline/task, дату обновления и ссылку на модель.",
+    "Обработать loading, empty state, ошибки API и rate limit.",
+    "Не ломать существующий локальный runtime и выбор GGUF-модели.",
+    "Добавить unit/component tests и e2e coverage основного сценария, если архитектура позволяет."
+  ],
+  "definitionOfReady": [
+    "Определена точка интеграции поиска с текущим выбором моделей.",
+    "Определены поля Hugging Face API, отображаемые пользователю.",
+    "Для публичного discovery не требуется токен; приватные API-вызовы не должны выполняться из клиентского кода с секретом.",
+    "Есть отдельный тестируемый API/service слой."
+  ],
+  "acceptanceCriteria": [
+    "Пользователь может открыть поиск Hugging Face и найти модели по запросу.",
+    "Результаты содержат необходимые метаданные и ссылку на страницу модели.",
+    "Пользователь может выбрать найденную модель для дальнейшей работы.",
+    "Обработаны загрузка, отсутствие результатов, ошибки API и rate limit.",
+    "Существующий локальный runtime продолжает работать.",
+    "Все существующие и новые тесты проходят.",
+    "CI/CD проверки PR проходят без ошибок.",
+    "Code review пройден и PR смержен в master."
+  ],
+  "technicalApproach": [
+    "Добавить src/services/huggingFaceModels.js как изолированный слой работы с Hugging Face Hub API.",
+    "Добавить HuggingFaceModelSearch и интегрировать его в WelcomeScreen.",
+    "Для публичного поиска использовать HTTPS API Hugging Face без клиентского access token.",
+    "Покрыть service и UI состояния Vitest/Testing Library и сохранить существующие E2E сценарии."
+  ],
+  "definitionOfDone": [
+    "Task зарегистрирована в tasks/index.json.",
+    "Поиск Hugging Face доступен из UI.",
+    "Метаданные моделей отображаются корректно.",
+    "Тесты и CI проходят.",
+    "PR смержен в master."
+  ],
+  "history": [
+    {"date": "2026-09-16T19:47:08Z", "status": "draft", "action": "created", "details": "GitHub Issue #42"},
+    {"date": "2026-09-16T19:47:08Z", "status": "ready", "action": "requirements-defined"},
+    {"date": "2026-09-16T19:47:08Z", "status": "in_progress", "action": "implementation-started", "details": "PR #43"}
+  ],
+  "relations": []
+}
