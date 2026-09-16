@@ -1,0 +1,48 @@
+{
+  "id": "a842",
+  "title": "Отмена генерации и управление долгими операциями",
+  "status": "draft",
+  "createdAt": "2026-09-16T13:58:13.949Z",
+  "updatedAt": "2026-09-16T13:58:13.949Z",
+  "issue": {
+    "number": 28,
+    "url": "https://github.com/andreich22/privateAI/issues/28",
+    "title": "TASK-a842 Отмена генерации и управление долгими операциями"
+  },
+  "description": "## Цель\nДать пользователю безопасный способ останавливать долгую локальную генерацию и корректно восстанавливать UI/runtime.\n\n## Требования\n- Добавить явную отмену активной генерации.\n- Синхронизировать cancel между UI, AI service и runtime.\n- Не терять уже сгенерированный текст при остановке.\n- Разрешить новый запрос после отмены без перезагрузки.\n- Обработать отмену, timeout и runtime error как разные состояния.\n\n## Definition of Ready\n- Проверен API abort/cancel текущей версии wllama.\n- Определён контракт cancel между ChatWorkspace и AI service.\n- Определено поведение частичного ответа.\n\n## Acceptance Criteria\n- [ ] Во время генерации доступна кнопка Stop.\n- [ ] Stop действительно прекращает дальнейшую генерацию.\n- [ ] Частичный ответ остаётся в сообщении.\n- [ ] После Stop можно сразу отправить следующий запрос.\n- [ ] Cancel не оставляет runtime в заблокированном состоянии.\n- [ ] Есть tests для cancel, partial response и recovery.\n- [ ] CI, task validation и build проходят.\n\n## Definition of Done\nCancel flow реализован end-to-end и покрыт тестами.\n\n## Relations\n- Зависит от lifecycle runtime TASK-6e31.\n- Дополняет настройки генерации TASK-f48b.",
+  "requirements": [
+    "Добавить явную отмену активной генерации.",
+    "Синхронизировать cancel между UI, AI service и runtime.",
+    "Не терять уже сгенерированный текст при остановке.",
+    "Разрешить новый запрос после отмены без перезагрузки.",
+    "Обработать отмену, timeout и runtime error как разные состояния."
+  ],
+  "definitionOfReady": [
+    "Проверен API abort/cancel текущей версии wllama.",
+    "Определён контракт cancel между ChatWorkspace и AI service.",
+    "Определено поведение частичного ответа."
+  ],
+  "acceptanceCriteria": [
+    "Во время генерации доступна кнопка Stop.",
+    "Stop действительно прекращает дальнейшую генерацию.",
+    "Частичный ответ остаётся в сообщении.",
+    "После Stop можно сразу отправить следующий запрос.",
+    "Cancel не оставляет runtime в заблокированном состоянии.",
+    "Есть tests для cancel, partial response и recovery.",
+    "CI, task validation и build проходят."
+  ],
+  "technicalApproach": [],
+  "definitionOfDone": [
+    "Cancel flow реализован end-to-end и покрыт тестами."
+  ],
+  "history": [
+    {
+      "at": "2026-09-16T13:58:13.949Z",
+      "event": "created_from_issue",
+      "details": "Automatically registered from GitHub Issue #28."
+    }
+  ],
+  "commits": [],
+  "decisionLog": [],
+  "relations": []
+}
