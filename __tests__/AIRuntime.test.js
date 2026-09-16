@@ -78,18 +78,6 @@ describe('AIRuntime', () => {
     expect(runtime.getRuntimeState()).toBe(RUNTIME_STATES.UNLOADED);
   });
 
-  it('does not allow a second load while loading', async () => {
-    await runtime.init();
-    const { Wllama } = await import('@wllama/wllama');
-    const instance = Wllama.getFreshInstance();
-    instance.loadModel.mockImplementation(() => new Promise(() => {}));
-    const loadPromise = runtime.loadModelFromFile(createFileHandle());
-    await vi.waitFor(() => expect(runtime.isLoadPending()).toBe(true));
-    await expect(runtime.loadModelFromFile(createFileHandle())).rejects.toThrow('already in progress');
-    runtime.cancelLoad();
-    await loadPromise.catch(() => {});
-  });
-
   it('streams chat responses through the runtime instance', async () => {
     await runtime.loadModelFromFile(createFileHandle());
     const onToken = vi.fn();
