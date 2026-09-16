@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import WelcomeScreen from '../src/components/WelcomeScreen.jsx';
@@ -69,19 +69,23 @@ describe('LoadingScreen', () => {
 });
 
 describe('AccessScreen', () => {
+  const props = { fileName: 'model.gguf', onConfirm: () => {}, onReset: () => {}, onHF: () => {} };
+
   it('renders file name', () => {
-    const html = renderComponent(AccessScreen, { fileName: 'test-model.gguf', onConfirm: () => {}, onReset: () => {}, onHF: () => {} });
-    expect(html).toContain('test-model.gguf');
+    const html = renderComponent(AccessScreen, props);
+    expect(html).toContain('test-model.gguf'.replace('test-', ''));
   });
 
-  it('renders 3 buttons', () => {
-    const html = renderComponent(AccessScreen, { fileName: 'model.gguf', onConfirm: () => {}, onReset: () => {}, onHF: () => {} });
-    const buttons = (html.match(/<button/g) || []).length;
-    expect(buttons).toBe(3);
+  it('renders local actions and a separate HF picker entry point', () => {
+    const html = renderComponent(AccessScreen, props);
+    expect(html).toContain('Запустить');
+    expect(html).toContain('HF');
+    expect(html).toContain('Другой файл');
+    expect(html).toContain('Выбрать другую модель из HF');
   });
 
   it('renders error message when provided', () => {
-    const html = renderComponent(AccessScreen, { fileName: 'model.gguf', onConfirm: () => {}, onReset: () => {}, onHF: () => {}, error: 'Permission denied' });
+    const html = renderComponent(AccessScreen, { ...props, error: 'Permission denied' });
     expect(html).toContain('Permission denied');
   });
 });
