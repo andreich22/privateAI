@@ -11,6 +11,18 @@ vi.mock('../src/services/huggingFaceModels', () => ({
 describe('HuggingFaceModelSearch', () => {
   beforeEach(() => vi.clearAllMocks());
 
+  it('shows a visible HF picker button and focuses search when opened', () => {
+    render(<HuggingFaceModelSearch />);
+
+    expect(screen.getByRole('button', { name: 'Выбрать модель из HF' })).toBeInTheDocument();
+    expect(screen.queryByRole('textbox', { name: 'Поиск моделей Hugging Face' })).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Выбрать модель из HF' }));
+
+    const input = screen.getByRole('textbox', { name: 'Поиск моделей Hugging Face' });
+    expect(input).toHaveFocus();
+  });
+
   it('shows search results and selection', async () => {
     const model = {
       id: 'Qwen/Qwen3-8B', author: 'Qwen', downloads: 1000, likes: 10,
@@ -21,6 +33,7 @@ describe('HuggingFaceModelSearch', () => {
     const onSelect = vi.fn();
     render(<HuggingFaceModelSearch onSelect={onSelect} />);
 
+    fireEvent.click(screen.getByRole('button', { name: 'Выбрать модель из HF' }));
     fireEvent.change(screen.getByRole('textbox', { name: 'Поиск моделей Hugging Face' }), { target: { value: 'Qwen' } });
     fireEvent.click(screen.getByRole('button', { name: 'Найти' }));
 
@@ -32,6 +45,7 @@ describe('HuggingFaceModelSearch', () => {
   it('shows empty state', async () => {
     searchHuggingFaceModels.mockResolvedValue([]);
     render(<HuggingFaceModelSearch />);
+    fireEvent.click(screen.getByRole('button', { name: 'Выбрать модель из HF' }));
     fireEvent.change(screen.getByRole('textbox', { name: 'Поиск моделей Hugging Face' }), { target: { value: 'missing' } });
     fireEvent.click(screen.getByRole('button', { name: 'Найти' }));
     await waitFor(() => expect(screen.getByText('Модели не найдены.')).toBeInTheDocument());
@@ -40,6 +54,7 @@ describe('HuggingFaceModelSearch', () => {
   it('shows API errors', async () => {
     searchHuggingFaceModels.mockRejectedValue(Object.assign(new Error('rate limited'), { status: 429 }));
     render(<HuggingFaceModelSearch />);
+    fireEvent.click(screen.getByRole('button', { name: 'Выбрать модель из HF' }));
     fireEvent.change(screen.getByRole('textbox', { name: 'Поиск моделей Hugging Face' }), { target: { value: 'llama' } });
     fireEvent.click(screen.getByRole('button', { name: 'Найти' }));
     expect(await screen.findByRole('alert')).toHaveTextContent('Hugging Face временно ограничил запросы');
