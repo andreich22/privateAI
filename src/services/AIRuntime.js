@@ -1,5 +1,5 @@
 import { Wllama } from '@wllama/wllama';
-import { validateGenerationSettings } from './generationSettings';
+import { DEFAULT_GENERATION_SETTINGS, validateGenerationSettings } from './generationSettings';
 
 const MODEL_CONTEXT = 4096;
 
@@ -36,11 +36,9 @@ export class AIRuntime {
     return this.#loadModel(async (signal) => {
       const file = await fileHandle.getFile();
       if (signal.aborted) throw createAbortError();
-
       const header = new Uint8Array(await file.slice(0, 4).arrayBuffer());
       const isGguf = header[0] === 0x47 && header[1] === 0x47 && header[2] === 0x55 && header[3] === 0x46;
       if (!isGguf) throw new Error(`Invalid GGUF magic: ${Array.from(header).join(' ')}`);
-
       onProgress?.(20);
       await this.#loadWllama([file], signal);
     }, onProgress);
@@ -54,32 +52,26 @@ export class AIRuntime {
       const response = await fetch(hfUrl, { signal });
       if (!response.ok) throw new Error(`HF HTTP ${response.status}`);
       if (!response.body) throw new Error('HF response body is unavailable');
-
       const total = Number(response.headers.get('content-length')) || 0;
       const reader = response.body.getReader();
       let loaded = 0;
       let writable = null;
       const chunks = fileHandle ? null : [];
-
       try {
         if (fileHandle) writable = await fileHandle.createWritable();
-
         while (true) {
           const { done, value } = await reader.read();
           if (done) break;
           if (signal.aborted) throw createAbortError();
-
           if (chunks) chunks.push(value);
           if (writable) await writable.write(value);
           loaded += value.byteLength;
           if (total) onProgress?.(10 + Math.round((loaded / total) * 60));
         }
-
         if (writable) {
           await writable.close();
           writable = null;
         }
-
         const model = fileHandle ? await fileHandle.getFile() : new Blob(chunks, { type: 'application/x-gguf' });
         await this.#loadWllama([model], signal);
         return { fileHandle };
@@ -95,11 +87,9 @@ export class AIRuntime {
 
   async #loadModel(loadSource, onProgress) {
     if (this.loadAbortController) throw new Error('Model loading is already in progress');
-
     const controller = new AbortController();
     this.loadAbortController = controller;
     onProgress?.(5);
-
     try {
       await loadSource(controller.signal);
       if (controller.signal.aborted) throw createAbortError();
@@ -135,7 +125,6 @@ export class AIRuntime {
   async streamChat(messages, onToken, settings) {
     this.#assertLoaded();
     if (this.generationAbortController) throw new Error('Generation is already in progress');
-
     const controller = new AbortController();
     this.generationAbortController = controller;
     const operation = (async () => {
@@ -145,7 +134,6 @@ export class AIRuntime {
         ...createGenerationOptions(settings),
         abortSignal: controller.signal,
       });
-
       let fullText = '';
       for await (const chunk of response) {
         if (controller.signal.aborted) throw createAbortError();
@@ -157,7 +145,6 @@ export class AIRuntime {
       }
       return fullText;
     })();
-
     this.generationPromise = operation;
     try {
       return await operation;
@@ -170,17 +157,16 @@ export class AIRuntime {
   async simpleCompletion(prompt, onToken, settings) {
     this.#assertLoaded();
     if (this.generationAbortController) throw new Error('Generation is already in progress');
-
     const controller = new AbortController();
     this.generationAbortController = controller;
+    const options = settings ? createGenerationOptions(settings) : { ...DEFAULT_GENERATION_SETTINGS, max_tokens: 64 };
     const operation = (async () => {
       const response = await this.wllama.createCompletion({
         prompt,
         stream: true,
-        ...createGenerationOptions(settings),
+        ...options,
         abortSignal: controller.signal,
       });
-
       let fullText = '';
       for await (const chunk of response) {
         if (controller.signal.aborted) throw createAbortError();
@@ -192,7 +178,6 @@ export class AIRuntime {
       }
       return fullText;
     })();
-
     this.generationPromise = operation;
     try {
       return await operation;
