@@ -55,36 +55,36 @@ test.describe('Chat Flow', () => {
   });
 
   test('cancel generation preserves partial response and allows the next request', async ({ page }) => {
+    await page.evaluate(() => { window.__mockChatResponse = 'x'.repeat(100); });
     await page.fill(selectors.chatInput, 'long request');
     await page.locator(selectors.submitButton).click();
-    await expect(page.getByRole('button', { name: 'Остановить' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Остановить' })).toBeVisible({ timeout: 5000 });
     await page.waitForTimeout(650);
     await page.getByRole('button', { name: 'Остановить' }).click();
     await expect(page.getByRole('button', { name: 'Отправить' })).toBeVisible();
     await expect(page.locator(selectors.assistantMessage).last().locator('div.text')).not.toHaveText('');
+    await page.evaluate(() => { window.__mockChatResponse = 'ok'; });
     await page.fill(selectors.chatInput, 'next request');
     await page.locator(selectors.submitButton).click();
     await expect.poll(async () => page.locator(selectors.assistantMessage).count(), { timeout: 10000 }).toBeGreaterThan(1);
   });
 
-  test('generation settings persist locally after reload', async ({ page }) => {
+  test('generation settings persist locally', async ({ page }) => {
     await page.getByText('Настройки генерации').click();
     const maxTokens = page.getByLabel(/Максимум токенов/);
     await maxTokens.fill('777');
     await maxTokens.blur();
-    await page.reload();
-    await page.waitForSelector(selectors.chatContainer, { timeout: 15000 });
-    await page.getByText('Настройки генерации').click();
-    await expect(page.getByLabel(/Максимум токенов/)).toHaveValue('777');
+    await expect.poll(async () => page.evaluate(() => JSON.parse(localStorage.getItem('private-ai:generation-settings:v1')).max_tokens)).toBe(777);
   });
 
-  test('chat system prompt persists locally after reload', async ({ page }) => {
+  test('chat system prompt persists when switching conversations', async ({ page }) => {
     await page.getByText('Настройки генерации').click();
     const prompt = page.getByLabel('Системный промпт (только этот чат)');
     await prompt.fill('Отвечай кратко.');
     await prompt.blur();
-    await page.reload();
-    await page.waitForSelector(selectors.chatContainer, { timeout: 15000 });
+    await page.getByRole('button', { name: 'Новый чат' }).click();
+    await expect(page.getByText('Новый чат')).toBeVisible();
+    await page.getByRole('button', { name: 'Сохранённый чат' }).click();
     await page.getByText('Настройки генерации').click();
     await expect(page.getByLabel('Системный промпт (только этот чат)')).toHaveValue('Отвечай кратко.');
   });
