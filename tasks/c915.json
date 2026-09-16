@@ -1,0 +1,17 @@
+{
+  "id":"c915",
+  "title":"Покрытие критических пользовательских сценариев E2E",
+  "status":"in_progress",
+  "createdAt":"2026-09-16T13:58:20Z",
+  "updatedAt":"2026-09-16T14:38:00Z",
+  "description":"Расширить browser-level E2E покрытие критических пользовательских сценариев локального AI приложения без загрузки больших GGUF моделей.",
+  "requirements":["E2E покрывает запуск приложения и выбор локальной модели.","E2E покрывает отправку сообщения и streaming ответа.","E2E покрывает persistence generation settings и system prompt.","E2E покрывает cancellation generation и восстановление следующего запроса.","E2E использует стабильные mocks/fixtures и не скачивает большую модель.","PR CI запускает headless smoke suite."],
+  "definitionOfReady":["Проверены существующие Playwright specs и mock fixtures.","Определены критические smoke сценарии без реального GGUF download.","Определены стабильные селекторы пользовательских действий."],
+  "acceptanceCriteria":["Критические сценарии launch/model/chat/settings/cancel покрыты E2E.","Тесты проходят headless в CI без внешней модели.","Flaky paths используют deterministic mocks и разумные ожидания.","Unit tests, E2E, task validation и build проходят."],
+  "technicalApproach":["Расширить существующий chat-flow.spec.js.","Переиспользовать Playwright mock APIs и selectors.","Проверять observable UI states вместо внутренних implementation details."],
+  "definitionOfDone":["Критические E2E сценарии добавлены.","CI smoke suite проходит стабильно.","Task metadata и PR validation проходят."],
+  "history":[{"at":"2026-09-16T13:58:20Z","event":"created","details":"Implementation task created from GitHub Issue #29."},{"at":"2026-09-16T14:38:00Z","event":"implementation_started","details":"Started implementation in PR for TASK-c915."}],
+  "commits":[],
+  "decisionLog":[],
+  "relations":[{"type":"follows","taskId":"a842"},{"type":"related_to","taskId":"6e31"},{"type":"related_to","taskId":"f48b"}]
+}
