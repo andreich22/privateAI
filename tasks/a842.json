@@ -1,0 +1,17 @@
+{
+  "id":"a842",
+  "title":"Отмена генерации и управление долгими операциями",
+  "status":"in_progress",
+  "createdAt":"2026-09-16T13:58:10Z",
+  "updatedAt":"2026-09-16T14:33:00Z",
+  "description":"Дать пользователю возможность безопасно отменять долгую генерацию, сохранить уже полученный частичный ответ и продолжить работу без перезагрузки runtime.",
+  "requirements":["UI предоставляет явную отмену активной генерации.","Отмена проходит от UI через AIRuntime AbortController до wllama.","Частично полученный ответ не теряется при отмене.","После отмены следующая генерация возможна без перезагрузки модели.","Отмена, runtime error и другие ошибки различаются в пользовательском состоянии и debug log.","Добавлены tests cancellation, partial response и recovery."],
+  "definitionOfReady":["Проверен текущий generationAbortController в AIRuntime.","Определён формат сохранения частичного assistant message.","Определено UI-состояние во время активной генерации."],
+  "acceptanceCriteria":["Во время генерации кнопка Отправить заменяется на Остановить.","Остановить вызывает cancelGeneration и корректно завершает текущую операцию.","Частичный ответ сохраняется в истории с признаком cancelled.","После отмены поле ввода и следующая генерация снова доступны.","Ошибки runtime не маскируются под cancellation.","Unit tests покрывают UI cancel, partial persistence и recovery.","CI, task validation и build проходят."],
+  "technicalApproach":["Использовать существующий AbortController AIRuntime для cancellation.","Сохранять накопленный текст через ref и при AbortError добавлять assistant message с generationStatus=cancelled.","Не создавать error message для ожидаемой отмены.","Разблокировать UI после завершения/отмены генерации."],
+  "definitionOfDone":["Cancellation доступен в ChatWorkspace.","Partial response сохраняется локально.","Следующая генерация работает после cancellation.","Tests и полный CI проходят."],
+  "history":[{"at":"2026-09-16T13:58:10Z","event":"created","details":"Implementation task created from GitHub Issue #28."},{"at":"2026-09-16T14:33:00Z","event":"implementation_started","details":"Started implementation in PR for TASK-a842."}],
+  "commits":[],
+  "decisionLog":[],
+  "relations":[{"type":"follows","taskId":"6e31"},{"type":"related_to","taskId":"f48b"}]
+}
