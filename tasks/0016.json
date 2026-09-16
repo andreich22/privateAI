@@ -3,7 +3,7 @@
   "title": "Настроить версионирование приложения",
   "status": "in_progress",
   "createdAt": "2026-09-14T14:36:10Z",
-  "updatedAt": "2026-09-16T17:11:00Z",
+  "updatedAt": "2026-09-16T17:19:10Z",
   "description": "Ввести единый механизм версионирования privateAI на основе Semantic Versioning. Версия должна иметь один источник истины, попадать в production build и быть доступна приложению для отображения/диагностики. Изменение версии должно оставлять явную историю в Git. После каждого успешно смерженного PR в master версия приложения должна автоматически увеличиваться на PATCH и для новой версии должен создаваться GitHub Release/tag.",
   "requirements": [
     "Использовать SemVer MAJOR.MINOR.PATCH.",
@@ -46,14 +46,16 @@
     "Запускать version check в CI.",
     "Использовать workflow pull_request/closed для merged PR в master.",
     "Сериализовать post-merge bump через GitHub Actions concurrency, чтобы последовательные merge не получили одну и ту же версию.",
-    "Выполнять npm version patch --no-git-tag-version, коммитить package.json и package-lock.json одним commit и отправлять его в master.",
-    "Создавать Release/tag после version bump; workflow слушает только закрытие PR, поэтому собственный commit не создаёт новый bump."
+    "Выполнять автоматический PATCH bump непосредственно в PR до merge, если PR ещё не изменил версию; это соблюдает repository rules и гарантирует новую версию после merge.",
+    "Не изменять вручную выбранную MAJOR/MINOR версию, если PR уже содержит version bump.",
+    "Создавать Release/tag после merge только если версия действительно увеличилась."
   ],
   "definitionOfDone": [
     "Версия зарегистрирована в task registry.",
     "Версионирование реализовано и документировано.",
     "CI проверяет согласованность package.json и package-lock.json.",
-    "Каждый merged PR автоматически увеличивает PATCH версию и создаёт Release/tag.",
+    "Каждый merged PR автоматически получает новую версию PATCH либо сохраняет явно выбранный MAJOR/MINOR bump.",
+    "Для изменённой версии создаётся GitHub Release/tag.",
     "PR проходит task validation и проектные проверки."
   ],
   "history": [
@@ -61,7 +63,8 @@
     {"date": "2026-09-14T14:36:10Z", "status": "ready", "action": "requirements-defined"},
     {"date": "2026-09-14T14:37:29Z", "status": "in_progress", "action": "implementation-started", "details": "PR #8"},
     {"date": "2026-09-14T14:52:00Z", "status": "in_progress", "action": "ci-failure-diagnosed", "details": "Task registry was missing 0016 and branch naming did not match PR validator."},
-    {"date": "2026-09-16T17:11:00Z", "status": "in_progress", "action": "post-merge-auto-bump-defined", "details": "Every merged PR in master must trigger exactly one PATCH version bump and Release/tag."}
+    {"date": "2026-09-16T17:11:00Z", "status": "in_progress", "action": "post-merge-auto-bump-defined", "details": "Every merged PR in master must trigger exactly one PATCH version bump and Release/tag."},
+    {"date": "2026-09-16T17:19:10Z", "status": "in_progress", "action": "automatic-pr-version-bump-implemented", "details": "Version is bumped in the PR itself so branch protection remains enforced; release is created after merge."}
   ],
   "relations": []
 }
