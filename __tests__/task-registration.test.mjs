@@ -52,11 +52,73 @@ describe('register-task-from-issue', () => {
     expect(task.title).toBe('Pipe task title');
   });
 
+  it.each([
+    'TASK-a1b2: Colon separator',
+    'TASK-a1b2 - Dash separator',
+    'TASK-a1b2 Space separator',
+    'TASK-a1b2    |    Pipe with spaces'
+  ])('accepts supported Task Issue title separator: %s', (title) => {
+    const fixture = createFixture({ title });
+    run(fixture);
+
+    const task = JSON.parse(fs.readFileSync(path.join(fixture.root, 'tasks/a1b2.json'), 'utf8'));
+    expect(task.title).not.toMatch(/^TASK-/);
+    expect(task.title.length).toBeGreaterThan(0);
+  });
+
+  it('extracts section content when the heading is followed by a newline', () => {
+    const fixture = createFixture({
+      body: '## Requirements\n- First requirement\n- Second requirement\n\n## Definition of Done\n- Tests pass.'
+    });
+
+    run(fixture);
+
+    const task = JSON.parse(fs.readFileSync(path.join(fixture.root, 'tasks/a1b2.json'), 'utf8'));
+    expect(task.requirements).toEqual(['First requirement', 'Second requirement']);
+    expect(task.definitionOfDone).toEqual(['Tests pass.']);
+  });
+
   it('rejects a conflicting task file instead of overwriting it', () => {
     const fixture = createFixture({ title: 'TASK-a1b2 Another task' });
     fs.writeFileSync(path.join(fixture.root, 'tasks/a1b2.json'), JSON.stringify({ id: 'a1b2', title: 'Existing task' }));
 
     expect(() => run(fixture)).toThrow();
+  });
+
+  it('rejects an index entry when its task file is missing', () => {
+    const fixture = createFixture({ title: 'TASK-a1b2 Example task' });
+    fs.writeFileSync(path.join(fixture.root, 'tasks/index.json'), JSON.stringify({
+      version: 1,
+      tasks: [{ id: 'a1b2', title: 'Example task', status: 'draft' }]
+    }, null, 2));
+
+    expect(() => run(fixture)).toThrow(/registry entry a1b2 exists.*missing/);
+  });
+
+  it('rejects a task file when its index entry is missing', () => {
+    const fixture = createFixture({ title: 'TASK-a1b2 Example task' });
+    fs.writeFileSync(path.join(fixture.root, 'tasks/a1b2.json'), JSON.stringify({
+      id: 'a1b2',
+      title: 'Example task',
+      status: 'draft'
+    }, null, 2));
+
+    expect(() => run(fixture)).toThrow(/task file .* exists but registry entry a1b2 is missing/);
+  });
+
+  it('rejects an already registered task when index and task file IDs disagree', () => {
+    const fixture = createFixture({ title: 'TASK-a1b2 Example task' });
+    fs.writeFileSync(path.join(fixture.root, 'tasks/index.json'), JSON.stringify({
+      version: 1,
+      tasks: [{ id: 'a1b2', title: 'Example task', status: 'draft' }]
+    }, null, 2));
+    fs.writeFileSync(path.join(fixture.root, 'tasks/a1b2.json'), JSON.stringify({
+      id: 'c3d4',
+      title: 'Example task',
+      status: 'draft'
+    }, null, 2));
+
+    expect(() => run(fixture)).toThrow(/task file ID mismatch/);
   });
 
   it('rejects an already registered task when index and task file disagree', () => {
