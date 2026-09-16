@@ -131,7 +131,7 @@ function writePairedState(taskFilePath, taskFile, registryFilePath, registryFile
 
 function extractSection(markdown, ...names) {
   const heading = names.map(escapeRegExp).join('|');
-  const match = markdown.match(new RegExp(`^##[ \\t]+(?:${heading})[ \\t]*\\r?\\n([\\s\\S]*?)(?=^##[ \\t]+|$)`, 'im'));
+  const match = markdown.match(new RegExp(`^##[ \\t]+(?:${heading})[ \\t]*\\r?\\n([\\s\\S]*?)(?=^##[ \\t]+|(?![\\s\\S]))`, 'im'));
   if (!match) return [];
   return match[1]
     .split('\n')
