@@ -1,0 +1,47 @@
+{
+  "id": "6e31",
+  "title": "Управление памятью и жизненным циклом AI runtime",
+  "status": "draft",
+  "createdAt": "2026-09-16T13:58:07.066Z",
+  "updatedAt": "2026-09-16T13:58:07.066Z",
+  "issue": {
+    "number": 27,
+    "url": "https://github.com/andreich22/privateAI/issues/27",
+    "title": "TASK-6e31 Управление памятью и жизненным циклом AI runtime"
+  },
+  "description": "## Цель\nСделать загрузку и выгрузку GGUF-моделей предсказуемой и безопасной для памяти браузера.\n\n## Требования\n- Явно разделить состояния runtime: unloaded/loading/ready/generating/error/unloading.\n- Освобождать ресурсы wllama при смене/выгрузке модели.\n- Предотвращать параллельную загрузку или генерацию при несовместимых переходах.\n- Показывать пользователю состояние памяти/ресурсов там, где это доступно браузеру.\n- Корректно восстанавливаться после ошибки загрузки или генерации.\n\n## Definition of Ready\n- Инвентаризированы lifecycle API текущей версии wllama.\n- Определены допустимые переходы состояния runtime.\n- Определено поведение отмены генерации и смены модели.\n\n## Acceptance Criteria\n- [ ] Runtime имеет явную state machine или эквивалентную защиту переходов.\n- [ ] Выгрузка модели освобождает runtime-ресурсы.\n- [ ] Повторная загрузка после ошибки работает без reload страницы.\n- [ ] Некорректные конкурентные операции блокируются/отклоняются предсказуемо.\n- [ ] Добавлены unit/integration tests lifecycle и error paths.\n- [ ] CI, task validation и build проходят.\n\n## Definition of Done\nLifecycle runtime реализован, интегрирован в UI и покрыт тестами.\n\n## Relations\n- Связан с Model Registry TASK-d72e и текущим chat flow.",
+  "requirements": [
+    "Явно разделить состояния runtime: unloaded/loading/ready/generating/error/unloading.",
+    "Освобождать ресурсы wllama при смене/выгрузке модели.",
+    "Предотвращать параллельную загрузку или генерацию при несовместимых переходах.",
+    "Показывать пользователю состояние памяти/ресурсов там, где это доступно браузеру.",
+    "Корректно восстанавливаться после ошибки загрузки или генерации."
+  ],
+  "definitionOfReady": [
+    "Инвентаризированы lifecycle API текущей версии wllama.",
+    "Определены допустимые переходы состояния runtime.",
+    "Определено поведение отмены генерации и смены модели."
+  ],
+  "acceptanceCriteria": [
+    "Runtime имеет явную state machine или эквивалентную защиту переходов.",
+    "Выгрузка модели освобождает runtime-ресурсы.",
+    "Повторная загрузка после ошибки работает без reload страницы.",
+    "Некорректные конкурентные операции блокируются/отклоняются предсказуемо.",
+    "Добавлены unit/integration tests lifecycle и error paths.",
+    "CI, task validation и build проходят."
+  ],
+  "technicalApproach": [],
+  "definitionOfDone": [
+    "Lifecycle runtime реализован, интегрирован в UI и покрыт тестами."
+  ],
+  "history": [
+    {
+      "at": "2026-09-16T13:58:07.066Z",
+      "event": "created_from_issue",
+      "details": "Automatically registered from GitHub Issue #27."
+    }
+  ],
+  "commits": [],
+  "decisionLog": [],
+  "relations": []
+}
