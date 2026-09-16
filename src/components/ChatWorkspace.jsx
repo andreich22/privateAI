@@ -21,6 +21,7 @@ export default function ChatWorkspace({ runtime, fileName, onUnload }) {
   const [currentTokens, setCurrentTokens] = useState('');
   const [debugInfo, setDebugInfo] = useState('');
   const generationRef = useRef(false);
+  const partialResponseRef = useRef('');
   const chatEndRef = useRef(null);
 
   const messages = conversation?.messages || [];
@@ -100,6 +101,12 @@ export default function ChatWorkspace({ runtime, fileName, onUnload }) {
     setInput('');
   };
 
+  const handleCancelGeneration = () => {
+    if (!generationRef.current) return;
+    appendDebug('CANCEL: stopping generation');
+    runtime?.cancelGeneration?.();
+  };
+
   const handleSend = async (e) => {
     e.preventDefault();
     if (!input.trim() || generationRef.current || !runtime?.isLoaded?.() || !conversation) return;
@@ -108,6 +115,7 @@ export default function ChatWorkspace({ runtime, fileName, onUnload }) {
     setInput('');
     setIsGenerating(true);
     generationRef.current = true;
+    partialResponseRef.current = '';
     setCurrentTokens('');
     appendDebug(`USER: ${userText}`);
 
@@ -125,6 +133,7 @@ export default function ChatWorkspace({ runtime, fileName, onUnload }) {
         : nextMessages.map(({ role, content }) => ({ role, content }));
       await runtime.streamChat(promptMessage, (token) => {
         fullAssistantText += token;
+        partialResponseRef.current = fullAssistantText;
         setCurrentTokens(fullAssistantText);
       }, loadGenerationSettings());
 
@@ -135,16 +144,36 @@ export default function ChatWorkspace({ runtime, fileName, onUnload }) {
       await saveConversation(completed);
       await refreshConversations();
     } catch (err) {
-      appendDebug(`CHAT ERROR: ${err.message}`);
-      const errorMessage = { id: crypto.randomUUID(), role: 'assistant', content: `[Ошибка чата: ${err.message}]`, createdAt: Date.now() };
-      const failed = { ...pending, messages: [...nextMessages, errorMessage] };
-      setConversation(failed);
-      await saveConversation(failed);
-      await refreshConversations();
+      const wasCancelled = err?.name === 'AbortError';
+      if (wasCancelled) {
+        const partial = partialResponseRef.current;
+        appendDebug(`CANCELLED: ${partial ? `preserved ${partial.length} chars` : 'no generated text'}`);
+        if (partial) {
+          const partialMessage = {
+            id: crypto.randomUUID(),
+            role: 'assistant',
+            content: partial,
+            createdAt: Date.now(),
+            generationStatus: 'cancelled',
+          };
+          const cancelledConversation = { ...pending, messages: [...nextMessages, partialMessage] };
+          setConversation(cancelledConversation);
+          await saveConversation(cancelledConversation);
+          await refreshConversations();
+        }
+      } else {
+        appendDebug(`CHAT ERROR: ${err.message}`);
+        const errorMessage = { id: crypto.randomUUID(), role: 'assistant', content: `[Ошибка чата: ${err.message}]`, createdAt: Date.now() };
+        const failed = { ...pending, messages: [...nextMessages, errorMessage] };
+        setConversation(failed);
+        await saveConversation(failed);
+        await refreshConversations();
+      }
     } finally {
       generationRef.current = false;
       setIsGenerating(false);
       setCurrentTokens('');
+      partialResponseRef.current = '';
     }
   };
 
@@ -210,7 +239,11 @@ export default function ChatWorkspace({ runtime, fileName, onUnload }) {
           <form onSubmit={handleSend} className="input-form">
             <input value={input} onChange={(e) => setInput(e.target.value)}
               placeholder={isGenerating ? 'Генерация...' : '1+1 = ?'} disabled={isGenerating || !conversation} />
-            <button type="submit" disabled={isGenerating || !input.trim() || !conversation}>Отправить</button>
+            {isGenerating ? (
+              <button type="button" onClick={handleCancelGeneration}>Остановить</button>
+            ) : (
+              <button type="submit" disabled={!input.trim() || !conversation}>Отправить</button>
+            )}
           </form>
         </main>
       </div>
