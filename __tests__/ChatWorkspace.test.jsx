@@ -195,6 +195,72 @@ describe('ChatWorkspace local chat history', () => {
     expect(saved[1].messages[1]).toMatchObject({ role: 'assistant', content: 'Ответ' });
   });
 
+  it('sends the complete existing conversation on the next turn', async () => {
+    const conversation = makeConversation({
+      messages: [
+        { id: 'm1', role: 'user', content: 'Меня зовут Андрей.', createdAt: 300 },
+        { id: 'm2', role: 'assistant', content: 'Приятно познакомиться, Андрей.', createdAt: 301 },
+      ],
+    });
+    getConversation.mockResolvedValue(conversation);
+    const runtime = {
+      isLoaded: () => true,
+      streamChat: vi.fn(async (_messages, onToken) => onToken('Вас зовут Андрей.')),
+    };
+
+    render(<ChatWorkspace runtime={runtime} fileName="model.gguf" onUnload={vi.fn()} />);
+    await screen.findByText('Меня зовут Андрей.');
+
+    const input = screen.getByPlaceholderText('1+1 = ?');
+    fireEvent.change(input, { target: { value: 'Как меня зовут?' } });
+    fireEvent.submit(input.closest('form'));
+
+    await waitFor(() => expect(screen.getByText('Вас зовут Андрей.')).toBeInTheDocument());
+    expect(runtime.streamChat).toHaveBeenCalledWith(
+      [
+        { role: 'user', content: 'Меня зовут Андрей.' },
+        { role: 'assistant', content: 'Приятно познакомиться, Андрей.' },
+        { role: 'user', content: 'Как меня зовут?' },
+      ],
+      expect.any(Function),
+      expect.anything(),
+    );
+  });
+
+  it('sends system prompt before the complete conversation history', async () => {
+    const conversation = makeConversation({
+      systemPrompt: 'Отвечай кратко.',
+      messages: [
+        { id: 'm1', role: 'user', content: 'Первый вопрос', createdAt: 300 },
+        { id: 'm2', role: 'assistant', content: 'Первый ответ', createdAt: 301 },
+      ],
+    });
+    getConversation.mockResolvedValue(conversation);
+    const runtime = {
+      isLoaded: () => true,
+      streamChat: vi.fn(async (_messages, onToken) => onToken('Второй ответ')),
+    };
+
+    render(<ChatWorkspace runtime={runtime} fileName="model.gguf" onUnload={vi.fn()} />);
+    await screen.findByText('Первый вопрос');
+
+    const input = screen.getByPlaceholderText('1+1 = ?');
+    fireEvent.change(input, { target: { value: 'Второй вопрос' } });
+    fireEvent.submit(input.closest('form'));
+
+    await waitFor(() => expect(screen.getByText('Второй ответ')).toBeInTheDocument());
+    expect(runtime.streamChat).toHaveBeenCalledWith(
+      [
+        { role: 'system', content: 'Отвечай кратко.' },
+        { role: 'user', content: 'Первый вопрос' },
+        { role: 'assistant', content: 'Первый ответ' },
+        { role: 'user', content: 'Второй вопрос' },
+      ],
+      expect.any(Function),
+      expect.anything(),
+    );
+  });
+
   it('cancels generation and persists the partial assistant response', async () => {
     let rejectGeneration;
     const runtime = {

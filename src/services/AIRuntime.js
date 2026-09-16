@@ -1,7 +1,7 @@
 import { Wllama } from '@wllama/wllama';
 import { DEFAULT_GENERATION_SETTINGS, validateGenerationSettings } from './generationSettings';
 
-const MODEL_CONTEXT = 4096;
+export const MODEL_CONTEXT = 8192;
 export const RUNTIME_STATES = Object.freeze({
   UNLOADED: 'unloaded',
   LOADING: 'loading',

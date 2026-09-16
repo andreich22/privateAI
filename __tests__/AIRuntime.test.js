@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { AIRuntime, RUNTIME_STATES } from '../src/services/AIRuntime.js';
+import { AIRuntime, MODEL_CONTEXT, RUNTIME_STATES } from '../src/services/AIRuntime.js';
 
 function createFileHandle(bytes = [0x47, 0x47, 0x55, 0x46, 0, 0, 0, 0]) {
   return {
@@ -32,14 +32,15 @@ describe('AIRuntime', () => {
     expect(first).toBe(second);
   });
 
-  it('loads GGUF without explicitly disabling GPU', async () => {
+  it('loads GGUF with enough context for multi-turn local chats', async () => {
     await runtime.loadModelFromFile(createFileHandle());
     const { Wllama } = await import('@wllama/wllama');
     const instance = Wllama.getFreshInstance();
     expect(instance.loadModel).toHaveBeenCalledWith(
       [expect.any(File)],
-      expect.objectContaining({ n_ctx: 4096, signal: expect.any(Object) })
+      expect.objectContaining({ n_ctx: MODEL_CONTEXT, signal: expect.any(Object) })
     );
+    expect(MODEL_CONTEXT).toBe(8192);
     expect(instance.loadModel.mock.calls[0][1]).not.toHaveProperty('n_gpu_layers');
   });
 
@@ -85,6 +86,25 @@ describe('AIRuntime', () => {
     expect(result).toBe('test response');
     expect(onToken).toHaveBeenCalledWith('test response');
     expect(runtime.getRuntimeState()).toBe(RUNTIME_STATES.READY);
+  });
+
+  it('passes the complete multi-turn message history to Wllama', async () => {
+    await runtime.loadModelFromFile(createFileHandle());
+    const { Wllama } = await import('@wllama/wllama');
+    const instance = Wllama.getFreshInstance();
+    const history = [
+      { role: 'system', content: 'Отвечай кратко.' },
+      { role: 'user', content: 'Меня зовут Андрей.' },
+      { role: 'assistant', content: 'Приятно познакомиться, Андрей.' },
+      { role: 'user', content: 'Как меня зовут?' },
+    ];
+
+    await runtime.streamChat(history, vi.fn());
+
+    expect(instance.createChatCompletion).toHaveBeenCalledWith(expect.objectContaining({
+      messages: history,
+      stream: true,
+    }));
   });
 
   it('passes validated generation parameters to Wllama', async () => {
