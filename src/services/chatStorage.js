@@ -46,7 +46,7 @@ export async function getConversation(id) {
 
 export async function createConversation(title = 'Новый чат') {
   const now = Date.now();
-  const conversation = { id: id(), title, createdAt: now, updatedAt: now };
+  const conversation = { id: id(), title, systemPrompt: '', createdAt: now, updatedAt: now };
   const db = await getDB();
   await db.put(CONVERSATIONS, conversation);
   await db.put(META, { key: 'activeConversationId', value: conversation.id });
@@ -56,7 +56,13 @@ export async function createConversation(title = 'Новый чат') {
 export async function saveConversation(conversation) {
   const db = await getDB();
   const now = Date.now();
-  await db.put(CONVERSATIONS, { id: conversation.id, title: conversation.title, createdAt: conversation.createdAt, updatedAt: now });
+  await db.put(CONVERSATIONS, {
+    id: conversation.id,
+    title: conversation.title,
+    systemPrompt: conversation.systemPrompt || '',
+    createdAt: conversation.createdAt,
+    updatedAt: now,
+  });
   const tx = db.transaction(MESSAGES, 'readwrite');
   const existing = await tx.store.index('conversationId').getAll(conversation.id);
   const keep = new Set((conversation.messages || []).map((message) => message.id));
