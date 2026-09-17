@@ -3,9 +3,9 @@
   "title": "Исправить перезагрузку модели после изменения CPU/GPU слоёв",
   "status": "in_progress",
   "createdAt": "2026-09-17T12:26:52.000Z",
-  "updatedAt": "2026-09-17T12:31:00.000Z",
+  "updatedAt": "2026-09-17T13:42:44.000Z",
   "issue": {"number": 64, "url": "https://github.com/andreich22/privateAI/issues/64", "title": "Исправить перезагрузку модели после изменения CPU/GPU слоёв"},
-  "description": "Устранить ошибку loadModel() is not yet called, возникающую при перезагрузке модели после изменения количества слоёв CPU/GPU.",
+  "description": "Устранить ошибки, возникающие при перезагрузке модели после изменения количества слоёв CPU/GPU.",
   "requirements": [
     "Безопасно получать информацию о контексте во время unload/reload.",
     "Перезагрузка модели после изменения n_gpu_layers должна завершаться без ошибки.",
@@ -19,11 +19,13 @@
   "acceptanceCriteria": [
     "Нажатие Применить и перезагрузить после изменения GPU layers не приводит к ошибке loadModel() is not yet called.",
     "После reload модель находится в состоянии ready и доступна для генерации.",
-    "Настройка CPU/GPU layers сохраняется."
+    "Настройка CPU/GPU layers сохраняется.",
+    "Если GPU layers недоступны в текущем runtime, рабочая модель не выгружается и пользователь получает понятную ошибку."
   ],
   "technicalApproach": [
     "Безопасно обрабатывать запросы контекста в момент unload, когда Wllama ещё не загрузил новую модель.",
     "Сохранять выбранные execution settings и применять их только при следующей загрузке модели.",
+    "Проверять фактическую поддержку WebGPU до controlled unload/reload при выборе положительного количества GPU layers.",
     "Покрыть regression-сценарий тестом безопасного доступа к контексту после unload."
   ],
   "definitionOfDone": [
@@ -34,8 +36,10 @@
   ],
   "history": [
     {"at": "2026-09-17T12:26:52.000Z", "event": "created", "details": "Task создан для исправления регрессии в d7e4."},
-    {"at": "2026-09-17T12:31:00.000Z", "event": "validated-failure", "details": "CI run 35221156259: unit tests и E2E прошли, Validate task metadata отклонил task из-за несовместимого формата полей metadata."}
+    {"at": "2026-09-17T12:31:00.000Z", "event": "validated-failure", "details": "CI run 35221156259: unit tests и E2E прошли, Validate task metadata отклонил task из-за несовместимого формата полей metadata."},
+    {"at": "2026-09-17T13:42:44.000Z", "event": "implemented", "details": "Перед controlled unload/reload добавлена проверка фактической поддержки WebGPU для положительного n_gpu_layers."},
+    {"at": "2026-09-17T13:42:44.000Z", "event": "pr-opened", "details": "PR #65 открыт для проверки исправления."}
   ],
-  "commits": ["8f096db89fb1b4cf5b8fd4733795baec90f56c29"],
+  "commits": ["8f096db89fb1b4cf5b8fd4733795baec90f56c29", "e8345ade8a78910b0ac5f6257dda77b12007b8df"],
   "relations": [{"type": "parent", "taskId": "d7e4"}]
 }
