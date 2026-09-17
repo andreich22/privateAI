@@ -1,0 +1,31 @@
+{
+  "id": "e31a",
+  "title": "Исправить перезагрузку модели после изменения CPU/GPU слоёв",
+  "status": "in_progress",
+  "description": "Устранить ошибку loadModel() is not yet called, возникающую при перезагрузке модели после изменения количества слоёв CPU/GPU.",
+  "requirements": [
+    "Безопасно получать информацию о контексте во время unload/reload.",
+    "Перезагрузка модели после изменения n_gpu_layers должна завершаться без ошибки.",
+    "Не ломать отображение настроек и runtime status.",
+    "Добавить или обновить тесты на сценарий unload и последующий reload."
+  ],
+  "ready_for_development": [
+    "Причина ошибки локализована.",
+    "Изменение ограничено runtime/UI поведением, связанным с execution settings."
+  ],
+  "done_when": [
+    "Тесты проходят.",
+    "CI проходит.",
+    "PR с task ID проходит проверки workflow.",
+    "После merge master CI проходит."
+  ],
+  "acceptance_criteria": [
+    "Нажатие Применить и перезагрузить после изменения GPU layers не приводит к ошибке loadModel() is not yet called.",
+    "После reload модель находится в состоянии ready и доступна для генерации.",
+    "Настройка CPU/GPU layers сохраняется."
+  ],
+  "relations": {"issue": 64, "parent_task": "d7e4"},
+  "history": [
+    {"status": "in_progress", "reason": "Task создан для исправления регрессии в d7e4"}
+  ]
+}
