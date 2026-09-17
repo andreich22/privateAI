@@ -70,12 +70,19 @@ describe('AIRuntime', () => {
     expect(runtime.getRuntimeState()).toBe(RUNTIME_STATES.UNLOADED);
   });
 
+  it('returns null for context info when the model is unavailable or already unloaded', async () => {
+    expect(runtime.getContextInfo()).toBeNull();
+    runtime.wllama = { getLoadedContextInfo: vi.fn(() => { throw new Error('loadModel() is not yet called'); }) };
+    expect(runtime.getContextInfo()).toBeNull();
+  });
+
   it('unloads the model and clears runtime state', async () => {
     await runtime.loadModelFromFile(createFileHandle());
     expect(runtime.isLoaded()).toBe(true);
     await runtime.unloadModel();
     expect(runtime.isLoaded()).toBe(false);
     expect(runtime.getRuntimeState()).toBe(RUNTIME_STATES.UNLOADED);
+    expect(runtime.getContextInfo()).toBeNull();
   });
 
   it('streams chat responses and returns token usage metadata', async () => {
