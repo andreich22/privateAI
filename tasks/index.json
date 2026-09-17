@@ -1,23 +1,100 @@
 {
   "version": 1,
   "tasks": [
-    {"id": "7c2a", "title": "Внедрить систему задач и связей для AI-разработки", "status": "done"},
-    {"id": "b6e1", "title": "Добавить универсальный Skill для task-driven AI development", "status": "done"},
-    {"id": "c4d8", "title": "Ввести защищённый Git workflow для AI-агентов", "status": "in_progress"},
-    {"id": "0016", "title": "Настроить версионирование приложения", "status": "in_progress"},
-    {"id": "9a7f", "title": "Автоматическая регистрация Task ID при создании Issue", "status": "in_progress"},
-    {"id": "4e6c", "title": "Атомарная проверка task registry в registration workflow", "status": "in_progress"},
-    {"id": "5f21", "title": "Автоматическое создание GitHub Release и tag при merge PR с изменением версии", "status": "done"},
-    {"id": "a13c", "title": "История и управление локальными чатами", "status": "in_progress"},
-    {"id": "f48b", "title": "Настройки генерации и системный промпт", "status": "in_progress"},
-    {"id": "2b7c", "title": "Надёжность хранения и восстановления локальных данных", "status": "done"},
-    {"id": "6e31", "title": "Управление памятью и жизненным циклом AI runtime", "status": "done"},
-    {"id": "a842", "title": "Отмена генерации и управление долгими операциями", "status": "done"},
-    {"id": "c915", "title": "Покрытие критических пользовательских сценариев E2E", "status": "in_progress"},
-    {"id": "e6d2", "title": "Редактирование и удаление сообщений в чате", "status": "in_progress"},
-    {"id": "c3d1", "title": "Контекст всего чата при генерации ответа", "status": "in_progress"},
-    {"id": "d42a", "title": "Интеграция поиска моделей Hugging Face", "status": "done"},
-    {"id": "7b3e", "title": "Явная кнопка выбора модели из HF", "status": "in_progress"},
-    {"id": "6f9a", "title": "Статистика потребления токенов в дополнении контекста", "status": "done"}
+    {
+      "id": "7c2a",
+      "title": "Внедрить систему задач и связей для AI-разработки",
+      "status": "done"
+    },
+    {
+      "id": "b6e1",
+      "title": "Добавить универсальный Skill для task-driven AI development",
+      "status": "done"
+    },
+    {
+      "id": "c4d8",
+      "title": "Ввести защищённый Git workflow для AI-агентов",
+      "status": "in_progress"
+    },
+    {
+      "id": "0016",
+      "title": "Настроить версионирование приложения",
+      "status": "in_progress"
+    },
+    {
+      "id": "9a7f",
+      "title": "Автоматическая регистрация Task ID при создании Issue",
+      "status": "in_progress"
+    },
+    {
+      "id": "4e6c",
+      "title": "Атомарная проверка task registry в registration workflow",
+      "status": "in_progress"
+    },
+    {
+      "id": "5f21",
+      "title": "Автоматическое создание GitHub Release и tag при merge PR с изменением версии",
+      "status": "done"
+    },
+    {
+      "id": "a13c",
+      "title": "История и управление локальными чатами",
+      "status": "in_progress"
+    },
+    {
+      "id": "f48b",
+      "title": "Настройки генерации и системный промпт",
+      "status": "in_progress"
+    },
+    {
+      "id": "2b7c",
+      "title": "Надёжность хранения и восстановления локальных данных",
+      "status": "done"
+    },
+    {
+      "id": "6e31",
+      "title": "Управление памятью и жизненным циклом AI runtime",
+      "status": "done"
+    },
+    {
+      "id": "a842",
+      "title": "Отмена генерации и управление долгими операциями",
+      "status": "done"
+    },
+    {
+      "id": "c915",
+      "title": "Покрытие критических пользовательских сценариев E2E",
+      "status": "in_progress"
+    },
+    {
+      "id": "e6d2",
+      "title": "Редактирование и удаление сообщений в чате",
+      "status": "in_progress"
+    },
+    {
+      "id": "c3d1",
+      "title": "Контекст всего чата при генерации ответа",
+      "status": "in_progress"
+    },
+    {
+      "id": "d42a",
+      "title": "Интеграция поиска моделей Hugging Face",
+      "status": "done"
+    },
+    {
+      "id": "7b3e",
+      "title": "Явная кнопка выбора модели из HF",
+      "status": "in_progress"
+    },
+    {
+      "id": "6f9a",
+      "title": "Статистика потребления токенов в дополнении контекста",
+      "status": "done"
+    },
+    {
+      "id": "3d7e",
+      "title": "Показывать статус работы модели в чате",
+      "status": "draft"
+    }
   ]
 }
