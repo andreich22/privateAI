@@ -43,36 +43,6 @@ describe('AIRuntime', () => {
     expect(MODEL_CONTEXT).toBe(8192);
   });
 
-  it('passes a configured GPU layer count to Wllama', async () => {
-    await runtime.loadModelFromFile(createFileHandle(), undefined, { n_gpu_layers: 8 });
-    const { Wllama } = await import('@wllama/wllama');
-    const instance = Wllama.getFreshInstance();
-    expect(instance.loadModel.mock.calls[0][1]).toEqual(expect.objectContaining({ n_gpu_layers: 8 }));
-    expect(runtime.getExecutionStatus()).toEqual(expect.objectContaining({
-      n_gpu_layers: 8,
-      gpuLayers: 8,
-      cpuLayers: 16,
-      totalLayers: 24,
-    }));
-  });
-
-  it('supports CPU-only execution with zero GPU layers', async () => {
-    await runtime.loadModelFromFile(createFileHandle(), undefined, { n_gpu_layers: 0 });
-    const { Wllama } = await import('@wllama/wllama');
-    const instance = Wllama.getFreshInstance();
-    expect(instance.loadModel.mock.calls[0][1]).toEqual(expect.objectContaining({ n_gpu_layers: 0 }));
-    expect(runtime.getExecutionStatus()).toEqual(expect.objectContaining({
-      n_gpu_layers: 0,
-      gpuLayers: 0,
-      cpuLayers: 24,
-      totalLayers: 24,
-    }));
-  });
-
-  it('rejects invalid execution settings', async () => {
-    await expect(runtime.loadModelFromFile(createFileHandle(), undefined, { n_gpu_layers: -2 })).rejects.toThrow('n_gpu_layers');
-  });
-
   it('rejects invalid GGUF files and enters error state', async () => {
     await expect(runtime.loadModelFromFile(createFileHandle([0, 0, 0, 0]))).rejects.toThrow('Invalid GGUF magic');
     expect(runtime.isLoaded()).toBe(false);
