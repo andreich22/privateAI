@@ -1,5 +1,6 @@
 import { Wllama } from '@wllama/wllama';
 import { DEFAULT_GENERATION_SETTINGS, validateGenerationSettings } from './generationSettings';
+import { mergeTokenUsage, normalizeTokenUsage } from './tokenUsage';
 
 export const MODEL_CONTEXT = 8192;
 export const RUNTIME_STATES = Object.freeze({
@@ -166,24 +167,42 @@ export class AIRuntime {
     return { temperature: true, top_p: true, max_tokens: true };
   }
 
-  async streamChat(messages, onToken, settings) {
+  async getCachedTokenCount() {
+    if (!this.wllama || !this.isLoaded() || typeof this.wllama.getCachedTokens !== 'function') return null;
+    try {
+      const tokens = await this.wllama.getCachedTokens();
+      return Array.isArray(tokens) ? tokens.length : null;
+    } catch {
+      return null;
+    }
+  }
+
+  async streamChat(messages, onToken, settings, onUsage) {
     return this.#generate(async (controller) => {
+      const cachedBeforeRequest = await this.getCachedTokenCount();
+      let usage = normalizeTokenUsage(null, cachedBeforeRequest);
+      onUsage?.(usage);
       const response = await this.wllama.createChatCompletion({
         messages,
         stream: true,
+        cache_prompt: true,
         ...createGenerationOptions(settings),
         abortSignal: controller.signal,
       });
       let fullText = '';
       for await (const chunk of response) {
         if (controller.signal.aborted) throw createAbortError();
+        if (chunk?.usage) {
+          usage = mergeTokenUsage(usage, normalizeTokenUsage(chunk.usage, cachedBeforeRequest));
+          onUsage?.(usage);
+        }
         const content = chunk.choices?.[0]?.delta?.content;
         if (content) {
           fullText += content;
           onToken(content);
         }
       }
-      return fullText;
+      return { text: fullText, usage };
     });
   }
 
