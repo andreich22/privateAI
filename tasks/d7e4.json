@@ -1,9 +1,9 @@
 {
   "id": "d7e4",
   "title": "Настройка слоёв выполнения модели на CPU и GPU",
-  "status": "in_progress",
+  "status": "done",
   "createdAt": "2026-09-17T10:46:14.000Z",
-  "updatedAt": "2026-09-17T10:55:00.000Z",
+  "updatedAt": "2026-09-17T11:02:00.000Z",
   "issue": {"number": 54, "url": "https://github.com/andreich22/privateAI/issues/54", "title": "TASK-d7e4 Настройка слоёв выполнения модели на CPU и GPU"},
   "description": "Добавить пользователю настройку распределения слоёв локальной модели между CPU и GPU.",
   "requirements": [
@@ -28,11 +28,16 @@
     "Получать n_layer из LoadedContextInfo и показывать CPU/GPU распределение в UI.",
     "Применять изменение через controlled unload/reload модели."
   ],
-  "definitionOfDone": ["Код, unit/UI tests и CI проходят; PR связан с Issue #54."],
+  "definitionOfDone": ["Код, unit/UI tests и CI проходят; PR #62 связан с Issue #54 и смержен."],
   "history": [
-    {"at": "2026-09-17T10:46:14.000Z", "event": "created", "details": "Registered from GitHub Issue #54."}
+    {"at": "2026-09-17T10:46:14.000Z", "event": "created", "details": "Registered from GitHub Issue #54."},
+    {"at": "2026-09-17T11:00:15.000Z", "event": "implemented", "details": "CPU/GPU layer configuration implemented and merged via PR #62."},
+    {"at": "2026-09-17T11:01:34.000Z", "event": "validated", "details": "CI on master passed after merge."},
+    {"at": "2026-09-17T11:02:00.000Z", "event": "completed", "details": "Acceptance criteria completed."}
   ],
-  "commits": [],
-  "decisionLog": [],
+  "commits": ["0df49609ea490abb857638bb72ccfcb387cb475f0"],
+  "decisionLog": [
+    {"at": "2026-09-17T11:00:15.000Z", "decision": "Use Wllama n_gpu_layers and compute CPU layers as total model layers minus GPU layers."}
+  ],
   "relations": []
 }
