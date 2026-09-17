@@ -159,9 +159,7 @@ export class AIRuntime {
   }
   getBackendInfo() { return { webgpuSupported: Boolean(this.wllama?.isSupportWebGPU?.() ?? navigator.gpu), mode: 'auto' }; }
   getGenerationCapabilities() { return { temperature: true, top_p: true, max_tokens: true }; }
-  getExecutionCapabilities() {
-    return { gpuLayerOffload: true, cpuLayerOffload: true, requiresReload: true };
-  }
+  getExecutionCapabilities() { return { gpuLayerOffload: true, cpuLayerOffload: true, requiresReload: true }; }
   async getCachedTokenCount() {
     if (!this.wllama || !this.isLoaded() || typeof this.wllama.getCachedTokens !== 'function') return null;
     try { const tokens = await this.wllama.getCachedTokens(); return Array.isArray(tokens) ? tokens.length : null; } catch { return null; }
@@ -217,7 +215,10 @@ export class AIRuntime {
   isLoadPending() { return Boolean(this.loadPromise); }
   isGenerationPending() { return Boolean(this.generationPromise); }
   isLoaded() { return this.modelLoaded && Boolean(this.wllama?.isModelLoaded?.()); }
-  getContextInfo() { return this.wllama?.getLoadedContextInfo?.() ?? null; }
+  getContextInfo() {
+    if (!this.wllama || !this.isLoaded() || typeof this.wllama.getLoadedContextInfo !== 'function') return null;
+    try { return this.wllama.getLoadedContextInfo() ?? null; } catch { return null; }
+  }
   async unloadModel() {
     this.#setState(RUNTIME_STATES.UNLOADING);
     this.cancelLoad(); this.cancelGeneration();
