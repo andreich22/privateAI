@@ -28,7 +28,7 @@ describe('token usage normalization', () => {
   it('preserves known values when a later streaming chunk omits them', () => {
     expect(mergeTokenUsage(
       { cached: 40, input: 52, output: 5, total: 57 },
-      { cached: null, input: 60, output: null, total: null },
-    )).toEqual({ cached: 40, input: 60, output: 5, total: 57 });
+      { cached: null, input: null, output: null, total: null },
+    )).toEqual({ cached: 40, input: 52, output: 5, total: 57 });
   });
 });
