@@ -19,6 +19,6 @@
     {"id": "d42a", "title": "Интеграция поиска моделей Hugging Face", "status": "done"},
     {"id": "7b3e", "title": "Явная кнопка выбора модели из HF", "status": "in_progress"},
     {"id": "6f9a", "title": "Статистика потребления токенов в дополнении контекста", "status": "done"},
-    {"id": "d7e4", "title": "Настройка слоёв выполнения модели на CPU и GPU", "status": "in_progress"}
+    {"id": "d7e4", "title": "Настройка слоёв выполнения модели на CPU и GPU", "status": "done"}
   ]
 }
