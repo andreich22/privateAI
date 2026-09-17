@@ -42,7 +42,7 @@ export default function HuggingFaceModelSearch({ onSelect, initiallyOpen = false
   return (
     <section className="hf-search-container" aria-label="Выбор модели из Hugging Face">
       {!isOpen && (
-        <button type="button" onClick={openSearch} className="btn-main hf-picker-button">
+        <button type="button" onClick={openSearch} className="btn-sub hf-picker-button">
           Выбрать модель из HF
         </button>
       )}
