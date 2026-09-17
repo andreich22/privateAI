@@ -177,11 +177,10 @@ export class AIRuntime {
     }
   }
 
-  async streamChat(messages, onToken, settings, onUsage) {
+  async streamChat(messages, onToken, settings) {
     return this.#generate(async (controller) => {
       const cachedBeforeRequest = await this.getCachedTokenCount();
       let usage = normalizeTokenUsage(null, cachedBeforeRequest);
-      onUsage?.(usage);
       const response = await this.wllama.createChatCompletion({
         messages,
         stream: true,
@@ -194,7 +193,6 @@ export class AIRuntime {
         if (controller.signal.aborted) throw createAbortError();
         if (chunk?.usage) {
           usage = mergeTokenUsage(usage, normalizeTokenUsage(chunk.usage, cachedBeforeRequest));
-          onUsage?.(usage);
         }
         const content = chunk.choices?.[0]?.delta?.content;
         if (content) {
