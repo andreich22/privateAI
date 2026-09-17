@@ -79,11 +79,14 @@ describe('AIRuntime', () => {
     expect(runtime.getRuntimeState()).toBe(RUNTIME_STATES.UNLOADED);
   });
 
-  it('streams chat responses through the runtime instance', async () => {
+  it('streams chat responses and returns token usage metadata', async () => {
     await runtime.loadModelFromFile(createFileHandle());
     const onToken = vi.fn();
     const result = await runtime.streamChat([{ role: 'user', content: 'Hello' }], onToken);
-    expect(result).toBe('test response');
+    expect(result).toEqual({
+      text: 'test response',
+      usage: { cached: null, input: null, output: null, total: null },
+    });
     expect(onToken).toHaveBeenCalledWith('test response');
     expect(runtime.getRuntimeState()).toBe(RUNTIME_STATES.READY);
   });
@@ -104,6 +107,7 @@ describe('AIRuntime', () => {
     expect(instance.createChatCompletion).toHaveBeenCalledWith(expect.objectContaining({
       messages: history,
       stream: true,
+      cache_prompt: true,
     }));
   });
 
@@ -121,6 +125,7 @@ describe('AIRuntime', () => {
       top_p: 0.8,
       max_tokens: 1024,
       stream: true,
+      cache_prompt: true,
       messages: [{ role: 'user', content: 'Hello' }],
     }));
   });

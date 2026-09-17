@@ -16,10 +16,10 @@ describe('WelcomeScreen', () => {
     expect(html).toContain('Локальный ИИ Чат');
   });
 
-  it('renders 2 buttons', () => {
+  it('renders 3 buttons', () => {
     const html = renderComponent(WelcomeScreen, { onSelect: () => {}, onHF: () => {} });
     const buttons = (html.match(/<button/g) || []).length;
-    expect(buttons).toBe(2);
+    expect(buttons).toBe(3);
   });
 
   it('renders error message when provided', () => {

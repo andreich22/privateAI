@@ -29,9 +29,9 @@ test.describe('Model Load Flow', () => {
   });
 
   test('load from HuggingFace -> loading -> chat', async ({ page }) => {
-    await expect(page.locator('button.btn-sub')).toContainText(buttonText.downloadHF);
-
-    await page.locator('button.btn-sub').first().click();
+    const downloadButton = page.getByRole('button', { name: buttonText.downloadHF, exact: true });
+    await expect(downloadButton).toBeVisible();
+    await downloadButton.click();
 
     await page.waitForSelector(selectors.loadingScreen, { timeout: 10000 });
     await expect(page.locator(selectors.progressText)).toBeVisible();
@@ -60,7 +60,8 @@ test.describe('Model Load Flow', () => {
   });
 
   test('HF load shows loading screen with progress text', async ({ page }) => {
-    await page.locator('button.btn-sub').first().click();
+    const downloadButton = page.getByRole('button', { name: buttonText.downloadHF, exact: true });
+    await downloadButton.click();
 
     await page.waitForSelector(selectors.loadingScreen, { timeout: 10000 });
 
