@@ -1,5 +1,6 @@
 import { Wllama } from '@wllama/wllama';
 import { DEFAULT_GENERATION_SETTINGS, validateGenerationSettings } from './generationSettings';
+import { DEFAULT_EXECUTION_SETTINGS, resolveGpuLayerCount, validateExecutionSettings } from './executionSettings';
 import { mergeTokenUsage, normalizeTokenUsage } from './tokenUsage';
 
 export const MODEL_CONTEXT = 8192;
@@ -28,6 +29,7 @@ export class AIRuntime {
     this.modelLoaded = false;
     this.runtimeState = RUNTIME_STATES.UNLOADED;
     this.runtimeError = null;
+    this.executionSettings = { ...DEFAULT_EXECUTION_SETTINGS };
     this.listeners = new Set();
   }
   async init() {
@@ -43,14 +45,33 @@ export class AIRuntime {
     return () => this.listeners.delete(listener);
   }
   getRuntimeState() { return this.runtimeState; }
-  getRuntimeStatus() { return { state: this.runtimeState, error: this.runtimeError, loaded: this.isLoaded() }; }
+  getRuntimeStatus() { return { state: this.runtimeState, error: this.runtimeError, loaded: this.isLoaded(), execution: this.getExecutionStatus() }; }
   #setState(state, error = null) {
     this.runtimeState = state;
     this.runtimeError = error;
     const status = this.getRuntimeStatus();
     for (const listener of this.listeners) { try { listener(status); } catch { /* listener errors must not affect runtime */ } }
   }
-  async loadModelFromFile(fileHandle, onProgress) {
+  getExecutionSettings() { return { ...this.executionSettings }; }
+  getExecutionStatus() {
+    const context = this.getContextInfo();
+    const layerCount = Number.isInteger(context?.n_layer) ? context.n_layer : null;
+    const gpuLayers = this.executionSettings.n_gpu_layers === -1
+      ? layerCount
+      : this.executionSettings.n_gpu_layers;
+    return {
+      n_gpu_layers: this.executionSettings.n_gpu_layers,
+      gpuLayers,
+      cpuLayers: layerCount === null || gpuLayers === null ? null : Math.max(0, layerCount - gpuLayers),
+      totalLayers: layerCount,
+    };
+  }
+  setExecutionSettings(settings = {}) {
+    const layerCount = this.getContextInfo()?.n_layer ?? null;
+    this.executionSettings = validateExecutionSettings(settings, layerCount);
+    return this.getExecutionSettings();
+  }
+  async loadModelFromFile(fileHandle, onProgress, executionSettings = this.executionSettings) {
     return this.#loadModel(async (signal) => {
       const file = await fileHandle.getFile();
       if (signal.aborted) throw createAbortError();
@@ -58,10 +79,10 @@ export class AIRuntime {
       const isGguf = header[0] === 0x47 && header[1] === 0x47 && header[2] === 0x55 && header[3] === 0x46;
       if (!isGguf) throw new Error(`Invalid GGUF magic: ${Array.from(header).join(' ')}`);
       onProgress?.(20);
-      await this.#loadWllama([file], signal);
-    }, onProgress);
+      await this.#loadWllama([file], signal, executionSettings);
+    }, onProgress, executionSettings);
   }
-  async loadModelFromHF(onProgress, fileHandle) {
+  async loadModelFromHF(onProgress, fileHandle, executionSettings = this.executionSettings) {
     return this.#loadModel(async (signal) => {
       const repo = 'empero-ai/Qwen3.8-2B-GGUF';
       const filename = 'Qwen3.8-2B-Q4_K_M.gguf';
@@ -87,16 +108,16 @@ export class AIRuntime {
         }
         if (writable) { await writable.close(); writable = null; }
         const model = fileHandle ? await fileHandle.getFile() : new Blob(chunks, { type: 'application/x-gguf' });
-        await this.#loadWllama([model], signal);
+        await this.#loadWllama([model], signal, executionSettings);
         return { fileHandle };
       } catch (error) {
         try { await reader.cancel(); } catch { /* ignore */ }
         if (writable) { try { await writable.abort(); } catch { /* ignore */ } }
         throw error;
       }
-    }, onProgress);
+    }, onProgress, executionSettings);
   }
-  async #loadModel(loadSource, onProgress) {
+  async #loadModel(loadSource, onProgress, executionSettings) {
     if (this.loadPromise) throw new Error('Model loading is already in progress');
     if (this.runtimeState === RUNTIME_STATES.UNLOADING) throw new Error('Model unloading is in progress');
     const controller = new AbortController();
@@ -108,6 +129,7 @@ export class AIRuntime {
         await loadSource(controller.signal);
         if (controller.signal.aborted) throw createAbortError();
         this.modelLoaded = true;
+        this.executionSettings = validateExecutionSettings(executionSettings);
         this.#setState(RUNTIME_STATES.READY);
         onProgress?.(100);
       } catch (error) {
@@ -124,14 +146,22 @@ export class AIRuntime {
     this.loadPromise = operation;
     return operation;
   }
-  async #loadWllama(files, signal) {
+  async #loadWllama(files, signal, executionSettings = this.executionSettings) {
     const wllama = await this.init();
     if (signal.aborted) throw createAbortError();
-    await wllama.loadModel(files, { n_ctx: MODEL_CONTEXT, signal });
+    const requested = validateExecutionSettings(executionSettings).n_gpu_layers;
+    await wllama.loadModel(files, {
+      n_ctx: MODEL_CONTEXT,
+      n_gpu_layers: requested === -1 ? 99999 : requested,
+      signal,
+    });
     if (!wllama.isModelLoaded()) throw new Error('Model not loaded');
   }
   getBackendInfo() { return { webgpuSupported: Boolean(this.wllama?.isSupportWebGPU?.() ?? navigator.gpu), mode: 'auto' }; }
   getGenerationCapabilities() { return { temperature: true, top_p: true, max_tokens: true }; }
+  getExecutionCapabilities() {
+    return { gpuLayerOffload: true, cpuLayerOffload: true, requiresReload: true };
+  }
   async getCachedTokenCount() {
     if (!this.wllama || !this.isLoaded() || typeof this.wllama.getCachedTokens !== 'function') return null;
     try { const tokens = await this.wllama.getCachedTokens(); return Array.isArray(tokens) ? tokens.length : null; } catch { return null; }
@@ -199,4 +229,4 @@ export class AIRuntime {
   }
 }
 
-export { createGenerationOptions };
+export { createGenerationOptions, resolveGpuLayerCount };
