@@ -38,10 +38,9 @@ describe('AIRuntime', () => {
     const instance = Wllama.getFreshInstance();
     expect(instance.loadModel).toHaveBeenCalledWith(
       [expect.any(File)],
-      expect.objectContaining({ n_ctx: MODEL_CONTEXT, signal: expect.any(Object) })
+      expect.objectContaining({ n_ctx: MODEL_CONTEXT, n_gpu_layers: 99999, signal: expect.any(Object) })
     );
     expect(MODEL_CONTEXT).toBe(8192);
-    expect(instance.loadModel.mock.calls[0][1]).not.toHaveProperty('n_gpu_layers');
   });
 
   it('rejects invalid GGUF files and enters error state', async () => {

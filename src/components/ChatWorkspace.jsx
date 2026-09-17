@@ -10,6 +10,7 @@ import {
 } from '../services/chatStorage';
 import { loadGenerationSettings } from '../services/generationSettings';
 import GenerationSettings from './GenerationSettings';
+import ExecutionSettings from './ExecutionSettings';
 
 const DEFAULT_CAPABILITIES = { temperature: true, top_p: true, max_tokens: true };
 const EMPTY_TOKEN_USAGE = { cached: null, input: null, output: null, total: null };
@@ -18,7 +19,7 @@ function formatTokenCount(value) {
   return value === null || value === undefined ? '—' : value.toLocaleString('ru-RU');
 }
 
-export default function ChatWorkspace({ runtime, fileName, onUnload }) {
+export default function ChatWorkspace({ runtime, fileName, onUnload, onApplyExecutionSettings }) {
   const [conversation, setConversation] = useState(null);
   const [conversations, setConversations] = useState([]);
   const [input, setInput] = useState('');
@@ -264,6 +265,11 @@ export default function ChatWorkspace({ runtime, fileName, onUnload }) {
             onConversationChange={updateConversation}
             disabled={isGenerating}
             supported={runtime?.getGenerationCapabilities?.() || DEFAULT_CAPABILITIES}
+          />
+          <ExecutionSettings
+            runtime={runtime}
+            disabled={isGenerating}
+            onApply={onApplyExecutionSettings}
           />
           <div style={{ padding: '7px 15px', borderBottom: '1px solid #333', background: '#111', color: '#aaa', fontSize: 12 }} aria-label="Статистика токенов">
             <strong style={{ color: '#ddd', marginRight: 12 }}>Токены</strong>

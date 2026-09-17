@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { getSavedFileHandle, verifyPermission, selectAndSaveFile, saveFilePicker, saveFileHandle } from './services/fileStorage';
 import { AIRuntime } from './services/AIRuntime';
+import { loadExecutionSettings } from './services/executionSettings';
 import { APP_VERSION } from './version';
 import WelcomeScreen from './components/WelcomeScreen';
 import AccessScreen from './components/AccessScreen';
@@ -54,6 +55,8 @@ export default function App() {
     };
   }, [runtime]);
 
+  const getExecutionSettings = () => loadExecutionSettings();
+
   const handleSelectFile = async () => {
     setError('');
     const handle = await selectAndSaveFile();
@@ -74,7 +77,7 @@ export default function App() {
     setStatus('loading');
     setProgress(0);
     try {
-      const result = await runtime.loadModelFromHF(setProgress, handle);
+      const result = await runtime.loadModelFromHF(setProgress, handle, getExecutionSettings());
       if (result?.fileHandle) await saveFileHandle(result.fileHandle);
       setStatus('chat');
     } catch (err) {
@@ -91,7 +94,7 @@ export default function App() {
     }
   };
 
-  const handleStartModel = async (handle = fileHandle) => {
+  const handleStartModel = async (handle = fileHandle, executionSettings = getExecutionSettings()) => {
     setError('');
     if (!handle) return;
     try {
@@ -102,7 +105,7 @@ export default function App() {
       }
       setStatus('loading');
       setProgress(0);
-      await runtime.loadModelFromFile(handle, setProgress);
+      await runtime.loadModelFromFile(handle, setProgress, executionSettings);
       setStatus('chat');
     } catch (err) {
       if (err.name === 'AbortError') {
@@ -121,6 +124,13 @@ export default function App() {
   const handleUnload = async () => {
     await runtime.unloadModel();
     setStatus(fileHandle ? 'access' : 'welcome');
+  };
+
+  const handleApplyExecutionSettings = async (settings) => {
+    if (!fileHandle) throw new Error('Файл модели недоступен для перезагрузки');
+    if (runtime.isGenerationPending?.() || runtime.isLoadPending?.()) throw new Error('Дождитесь завершения текущей операции');
+    await runtime.unloadModel();
+    await handleStartModel(fileHandle, settings);
   };
 
   const handleCancel = () => {
@@ -149,6 +159,6 @@ export default function App() {
   if (status === 'welcome') return <div>{envBanner}<WelcomeScreen onSelect={handleSelectFile} onHF={handleLoadFromHF} error={error} /></div>;
   if (status === 'access') return <div>{envBanner}<AccessScreen fileName={fileName} onConfirm={() => handleStartModel()} onReset={handleSelectFile} onHF={handleLoadFromHF} error={error} /></div>;
   if (status === 'loading') return <div>{envBanner}<LoadingScreen progress={progress} fileName={fileName} error={error} onCancel={isCancelling ? undefined : handleCancel} /></div>;
-  if (status === 'chat') return <div>{envBanner}<ChatWorkspace runtime={runtime} fileName={fileName} onUnload={handleUnload} /></div>;
+  if (status === 'chat') return <div>{envBanner}<ChatWorkspace runtime={runtime} fileName={fileName} onUnload={handleUnload} onApplyExecutionSettings={handleApplyExecutionSettings} /></div>;
   return null;
 }
