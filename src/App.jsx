@@ -129,6 +129,11 @@ export default function App() {
   const handleApplyExecutionSettings = async (settings) => {
     if (!fileHandle) throw new Error('Файл модели недоступен для перезагрузки');
     if (runtime.isGenerationPending?.() || runtime.isLoadPending?.()) throw new Error('Дождитесь завершения текущей операции');
+    const requestedGpuLayers = Number(settings?.n_gpu_layers);
+    const gpuSupported = runtime.getBackendInfo?.()?.webgpuSupported;
+    if (Number.isInteger(requestedGpuLayers) && requestedGpuLayers > 0 && !gpuSupported) {
+      throw new Error('GPU-слои недоступны: WebGPU не поддерживается в текущей среде');
+    }
     await runtime.unloadModel();
     await handleStartModel(fileHandle, settings);
   };
