@@ -11,6 +11,11 @@ describe('token usage normalization', () => {
     })).toEqual({ cached: 80, input: 200, output: 30, total: 230 });
   });
 
+  it('reads cache, prompt and predicted counts from llama.cpp timings', () => {
+    expect(normalizeTokenUsage({}, null, { cache_n: 80, prompt_n: 120, predicted_n: 30 }))
+      .toEqual({ cached: 80, input: 200, output: 30, total: 230 });
+  });
+
   it('uses runtime cache size when the response has no cached_tokens field', () => {
     expect(normalizeTokenUsage({ prompt_tokens: 12, completion_tokens: 5 }, 40))
       .toEqual({ cached: 40, input: 52, output: 5, total: 57 });
