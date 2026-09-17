@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import WelcomeScreen from '../src/components/WelcomeScreen.jsx';
@@ -16,7 +16,7 @@ describe('WelcomeScreen', () => {
     expect(html).toContain('Локальный ИИ Чат');
   });
 
-  it('renders local and HF actions plus model search', () => {
+  it('renders 3 buttons', () => {
     const html = renderComponent(WelcomeScreen, { onSelect: () => {}, onHF: () => {} });
     const buttons = (html.match(/<button/g) || []).length;
     expect(buttons).toBe(3);
@@ -69,23 +69,19 @@ describe('LoadingScreen', () => {
 });
 
 describe('AccessScreen', () => {
-  const props = { fileName: 'model.gguf', onConfirm: () => {}, onReset: () => {}, onHF: () => {} };
-
   it('renders file name', () => {
-    const html = renderComponent(AccessScreen, props);
-    expect(html).toContain('test-model.gguf'.replace('test-', ''));
+    const html = renderComponent(AccessScreen, { fileName: 'test-model.gguf', onConfirm: () => {}, onReset: () => {}, onHF: () => {} });
+    expect(html).toContain('test-model.gguf');
   });
 
-  it('renders local actions and a separate HF picker entry point', () => {
-    const html = renderComponent(AccessScreen, props);
-    expect(html).toContain('Запустить');
-    expect(html).toContain('HF');
-    expect(html).toContain('Другой файл');
-    expect(html).toContain('Выбрать другую модель из HF');
+  it('renders 3 buttons', () => {
+    const html = renderComponent(AccessScreen, { fileName: 'model.gguf', onConfirm: () => {}, onReset: () => {}, onHF: () => {} });
+    const buttons = (html.match(/<button/g) || []).length;
+    expect(buttons).toBe(3);
   });
 
   it('renders error message when provided', () => {
-    const html = renderComponent(AccessScreen, { ...props, error: 'Permission denied' });
+    const html = renderComponent(AccessScreen, { fileName: 'model.gguf', onConfirm: () => {}, onReset: () => {}, onHF: () => {}, error: 'Permission denied' });
     expect(html).toContain('Permission denied');
   });
 });

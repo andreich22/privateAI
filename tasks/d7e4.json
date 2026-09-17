@@ -1,0 +1,44 @@
+{
+  "id": "d7e4",
+  "title": "Настройка слоёв выполнения модели на CPU и GPU",
+  "status": "done",
+  "createdAt": "2026-09-17T10:46:14.000Z",
+  "updatedAt": "2026-09-17T11:03:00.000Z",
+  "issue": {"number": 54, "url": "https://github.com/andreich22/privateAI/issues/54", "title": "TASK-d7e4 Настройка слоёв выполнения модели на CPU и GPU"},
+  "description": "Добавить пользователю настройку распределения слоёв локальной модели между CPU и GPU.",
+  "requirements": [
+    "Показывать количество слоёв, выполняемых на GPU, и вычисляемое количество слоёв на CPU.",
+    "Поддерживать CPU-only, GPU-only и смешанный режимы.",
+    "Передавать конфигурацию до runtime backend без потери значения.",
+    "Валидировать значение с учётом количества слоёв модели.",
+    "Сохранять настройку для повторной загрузки модели.",
+    "Добавить unit/integration тесты для валидации и применения конфигурации."
+  ],
+  "definitionOfReady": ["Issue содержит описание, требования и критерии готовности."],
+  "acceptanceCriteria": [
+    "В интерфейсе чата доступна настройка CPU/GPU слоёв.",
+    "Изменение настройки приводит к перезагрузке модели с новым количеством GPU-слоёв.",
+    "CPU-only использует 0 GPU-слоёв, GPU-only использует все слои, смешанный режим распределяет остаток на CPU.",
+    "Некорректные значения отклоняются до сохранения конфигурации.",
+    "Все существующие тесты и CI проходят."
+  ],
+  "technicalApproach": [
+    "Использовать параметр Wllama n_gpu_layers как backend mapping.",
+    "Хранить настройку в localStorage через отдельный executionSettings service.",
+    "Получать n_layer из LoadedContextInfo и показывать CPU/GPU распределение в UI.",
+    "Применять изменение через controlled unload/reload модели."
+  ],
+  "definitionOfDone": ["Код, unit/UI tests и CI проходят; PR #62 связан с Issue #54 и смержен."],
+  "history": [
+    {"at": "2026-09-17T10:46:14.000Z", "event": "created", "details": "Registered from GitHub Issue #54."},
+    {"at": "2026-09-17T11:00:15.000Z", "event": "implemented", "details": "CPU/GPU layer configuration implemented and merged via PR #62."},
+    {"at": "2026-09-17T11:01:34.000Z", "event": "validated", "details": "CI on master passed after merge."},
+    {"at": "2026-09-17T11:02:00.000Z", "event": "completed", "details": "Acceptance criteria completed."},
+    {"at": "2026-09-17T11:03:00.000Z", "event": "versioned", "details": "Application version is v0.0.9 on completion metadata PR."}
+  ],
+  "commits": ["0df49609ea490abb857638bb72ccfcb387cb475f0"],
+  "decisionLog": [
+    {"at": "2026-09-17T11:00:15.000Z", "decision": "Use Wllama n_gpu_layers and compute CPU layers as total model layers minus GPU layers."}
+  ],
+  "relations": []
+}

@@ -1,0 +1,41 @@
+{
+  "id": "e31a",
+  "title": "Исправить перезагрузку модели после изменения CPU/GPU слоёв",
+  "status": "in_progress",
+  "createdAt": "2026-09-17T12:26:52.000Z",
+  "updatedAt": "2026-09-17T12:31:00.000Z",
+  "issue": {"number": 64, "url": "https://github.com/andreich22/privateAI/issues/64", "title": "Исправить перезагрузку модели после изменения CPU/GPU слоёв"},
+  "description": "Устранить ошибку loadModel() is not yet called, возникающую при перезагрузке модели после изменения количества слоёв CPU/GPU.",
+  "requirements": [
+    "Безопасно получать информацию о контексте во время unload/reload.",
+    "Перезагрузка модели после изменения n_gpu_layers должна завершаться без ошибки.",
+    "Не ломать отображение настроек и runtime status.",
+    "Добавить или обновить тесты на сценарий unload и последующий reload."
+  ],
+  "definitionOfReady": [
+    "Причина ошибки локализована.",
+    "Изменение ограничено runtime/UI поведением, связанным с execution settings."
+  ],
+  "acceptanceCriteria": [
+    "Нажатие Применить и перезагрузить после изменения GPU layers не приводит к ошибке loadModel() is not yet called.",
+    "После reload модель находится в состоянии ready и доступна для генерации.",
+    "Настройка CPU/GPU layers сохраняется."
+  ],
+  "technicalApproach": [
+    "Безопасно обрабатывать запросы контекста в момент unload, когда Wllama ещё не загрузил новую модель.",
+    "Сохранять выбранные execution settings и применять их только при следующей загрузке модели.",
+    "Покрыть regression-сценарий тестом безопасного доступа к контексту после unload."
+  ],
+  "definitionOfDone": [
+    "Тесты проходят.",
+    "CI проходит.",
+    "PR с task ID проходит проверки workflow.",
+    "После merge master CI проходит."
+  ],
+  "history": [
+    {"at": "2026-09-17T12:26:52.000Z", "event": "created", "details": "Task создан для исправления регрессии в d7e4."},
+    {"at": "2026-09-17T12:31:00.000Z", "event": "validated-failure", "details": "CI run 35221156259: unit tests и E2E прошли, Validate task metadata отклонил task из-за несовместимого формата полей metadata."}
+  ],
+  "commits": ["8f096db89fb1b4cf5b8fd4733795baec90f56c29"],
+  "relations": [{"type": "parent", "taskId": "d7e4"}]
+}

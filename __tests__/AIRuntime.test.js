@@ -38,10 +38,9 @@ describe('AIRuntime', () => {
     const instance = Wllama.getFreshInstance();
     expect(instance.loadModel).toHaveBeenCalledWith(
       [expect.any(File)],
-      expect.objectContaining({ n_ctx: MODEL_CONTEXT, signal: expect.any(Object) })
+      expect.objectContaining({ n_ctx: MODEL_CONTEXT, n_gpu_layers: 99999, signal: expect.any(Object) })
     );
     expect(MODEL_CONTEXT).toBe(8192);
-    expect(instance.loadModel.mock.calls[0][1]).not.toHaveProperty('n_gpu_layers');
   });
 
   it('rejects invalid GGUF files and enters error state', async () => {
@@ -71,19 +70,29 @@ describe('AIRuntime', () => {
     expect(runtime.getRuntimeState()).toBe(RUNTIME_STATES.UNLOADED);
   });
 
+  it('returns null for context info when the model is unavailable or already unloaded', async () => {
+    expect(runtime.getContextInfo()).toBeNull();
+    runtime.wllama = { getLoadedContextInfo: vi.fn(() => { throw new Error('loadModel() is not yet called'); }) };
+    expect(runtime.getContextInfo()).toBeNull();
+  });
+
   it('unloads the model and clears runtime state', async () => {
     await runtime.loadModelFromFile(createFileHandle());
     expect(runtime.isLoaded()).toBe(true);
     await runtime.unloadModel();
     expect(runtime.isLoaded()).toBe(false);
     expect(runtime.getRuntimeState()).toBe(RUNTIME_STATES.UNLOADED);
+    expect(runtime.getContextInfo()).toBeNull();
   });
 
-  it('streams chat responses through the runtime instance', async () => {
+  it('streams chat responses and returns token usage metadata', async () => {
     await runtime.loadModelFromFile(createFileHandle());
     const onToken = vi.fn();
     const result = await runtime.streamChat([{ role: 'user', content: 'Hello' }], onToken);
-    expect(result).toBe('test response');
+    expect(result).toEqual({
+      text: 'test response',
+      usage: { cached: null, input: null, output: null, total: null },
+    });
     expect(onToken).toHaveBeenCalledWith('test response');
     expect(runtime.getRuntimeState()).toBe(RUNTIME_STATES.READY);
   });
@@ -104,6 +113,7 @@ describe('AIRuntime', () => {
     expect(instance.createChatCompletion).toHaveBeenCalledWith(expect.objectContaining({
       messages: history,
       stream: true,
+      cache_prompt: true,
     }));
   });
 
@@ -121,6 +131,7 @@ describe('AIRuntime', () => {
       top_p: 0.8,
       max_tokens: 1024,
       stream: true,
+      cache_prompt: true,
       messages: [{ role: 'user', content: 'Hello' }],
     }));
   });

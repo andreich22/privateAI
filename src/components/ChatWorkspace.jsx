@@ -10,16 +10,23 @@ import {
 } from '../services/chatStorage';
 import { loadGenerationSettings } from '../services/generationSettings';
 import GenerationSettings from './GenerationSettings';
+import ExecutionSettings from './ExecutionSettings';
 
 const DEFAULT_CAPABILITIES = { temperature: true, top_p: true, max_tokens: true };
+const EMPTY_TOKEN_USAGE = { cached: null, input: null, output: null, total: null };
 
-export default function ChatWorkspace({ runtime, fileName, onUnload }) {
+function formatTokenCount(value) {
+  return value === null || value === undefined ? '—' : value.toLocaleString('ru-RU');
+}
+
+export default function ChatWorkspace({ runtime, fileName, onUnload, onApplyExecutionSettings }) {
   const [conversation, setConversation] = useState(null);
   const [conversations, setConversations] = useState([]);
   const [input, setInput] = useState('');
   const [editingMessageId, setEditingMessageId] = useState(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [currentTokens, setCurrentTokens] = useState('');
+  const [tokenUsage, setTokenUsage] = useState(EMPTY_TOKEN_USAGE);
   const [debugInfo, setDebugInfo] = useState('');
   const generationRef = useRef(false);
   const partialResponseRef = useRef('');
@@ -68,6 +75,7 @@ export default function ChatWorkspace({ runtime, fileName, onUnload }) {
       await saveConversation(next);
       await refreshConversations();
       setCurrentTokens('');
+      setTokenUsage(EMPTY_TOKEN_USAGE);
       setEditingMessageId(null);
       setInput('');
     }
@@ -79,6 +87,7 @@ export default function ChatWorkspace({ runtime, fileName, onUnload }) {
     setConversation(next);
     await refreshConversations();
     setCurrentTokens('');
+    setTokenUsage(EMPTY_TOKEN_USAGE);
     setInput('');
     setEditingMessageId(null);
   };
@@ -102,6 +111,7 @@ export default function ChatWorkspace({ runtime, fileName, onUnload }) {
     setConversation(active);
     await refreshConversations();
     setCurrentTokens('');
+    setTokenUsage(EMPTY_TOKEN_USAGE);
     setInput('');
     setEditingMessageId(null);
   };
@@ -153,6 +163,7 @@ export default function ChatWorkspace({ runtime, fileName, onUnload }) {
     generationRef.current = true;
     partialResponseRef.current = '';
     setCurrentTokens('');
+    setTokenUsage(EMPTY_TOKEN_USAGE);
     appendDebug(`USER: ${userText}`);
 
     const userMessage = { id: crypto.randomUUID(), role: 'user', content: userText, createdAt: Date.now() };
@@ -167,12 +178,13 @@ export default function ChatWorkspace({ runtime, fileName, onUnload }) {
       const promptMessage = conversation.systemPrompt?.trim()
         ? [{ role: 'system', content: conversation.systemPrompt.trim() }, ...nextMessages.map(({ role, content }) => ({ role, content }))]
         : nextMessages.map(({ role, content }) => ({ role, content }));
-      await runtime.streamChat(promptMessage, (token) => {
+      const result = await runtime.streamChat(promptMessage, (token) => {
         fullAssistantText += token;
         partialResponseRef.current = fullAssistantText;
         setCurrentTokens(fullAssistantText);
       }, loadGenerationSettings());
 
+      if (result?.usage) setTokenUsage(result.usage);
       appendDebug(`DONE: ${fullAssistantText}`);
       const assistantMessage = { id: crypto.randomUUID(), role: 'assistant', content: fullAssistantText, createdAt: Date.now() };
       const completed = { ...pending, messages: [...nextMessages, assistantMessage] };
@@ -254,6 +266,18 @@ export default function ChatWorkspace({ runtime, fileName, onUnload }) {
             disabled={isGenerating}
             supported={runtime?.getGenerationCapabilities?.() || DEFAULT_CAPABILITIES}
           />
+          <ExecutionSettings
+            runtime={runtime}
+            disabled={isGenerating}
+            onApply={onApplyExecutionSettings}
+          />
+          <div style={{ padding: '7px 15px', borderBottom: '1px solid #333', background: '#111', color: '#aaa', fontSize: 12 }} aria-label="Статистика токенов">
+            <strong style={{ color: '#ddd', marginRight: 12 }}>Токены</strong>
+            <span style={{ marginRight: 12 }}>Кэш: {formatTokenCount(tokenUsage.cached)}</span>
+            <span style={{ marginRight: 12 }}>Отправлено: {formatTokenCount(tokenUsage.input)}</span>
+            <span style={{ marginRight: 12 }}>Получено: {formatTokenCount(tokenUsage.output)}</span>
+            <span>Всего: {formatTokenCount(tokenUsage.total)}</span>
+          </div>
           <div className="messages-box">
             {messages.map((msg) => (
               <div key={msg.id} className={`message ${msg.role}`}>
