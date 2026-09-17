@@ -181,9 +181,7 @@ export default function ChatWorkspace({ runtime, fileName, onUnload }) {
         fullAssistantText += token;
         partialResponseRef.current = fullAssistantText;
         setCurrentTokens(fullAssistantText);
-      }, loadGenerationSettings(), (usage) => {
-        setTokenUsage(usage || EMPTY_TOKEN_USAGE);
-      });
+      }, loadGenerationSettings());
 
       if (result?.usage) setTokenUsage(result.usage);
       appendDebug(`DONE: ${fullAssistantText}`);
