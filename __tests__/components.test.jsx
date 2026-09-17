@@ -74,10 +74,10 @@ describe('AccessScreen', () => {
     expect(html).toContain('test-model.gguf');
   });
 
-  it('renders 3 buttons', () => {
+  it('renders 4 buttons including the alternative HF model picker', () => {
     const html = renderComponent(AccessScreen, { fileName: 'model.gguf', onConfirm: () => {}, onReset: () => {}, onHF: () => {} });
     const buttons = (html.match(/<button/g) || []).length;
-    expect(buttons).toBe(3);
+    expect(buttons).toBe(4);
   });
 
   it('renders error message when provided', () => {

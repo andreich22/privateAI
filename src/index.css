@@ -41,4 +41,9 @@ header { display: flex; flex: 0 0 auto; justify-content: space-between; align-it
 .hf-model-actions { display: flex; flex-direction: column; gap: 8px; flex: 0 0 auto; }
 .hf-model-actions a, .hf-model-actions button { color: #89b4fa; background: transparent; border: 1px solid #45475a; border-radius: 6px; padding: 6px 10px; cursor: pointer; text-decoration: none; white-space: nowrap; }
 .hf-selected { max-width: 760px; margin-top: 15px; }
+.hf-picker { width: min(760px, 100%); margin-top: 20px; }
+.hf-picker-open { margin: 0; }
+.hf-picker-cancel { margin-top: 10px; }
+.hf-selected-access { width: min(760px, 100%); margin-top: 12px; padding: 12px 16px; background: #313244; border-radius: 8px; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: center; }
+.hf-selected-access a { color: #89b4fa; }
 @keyframes blink { from, to { opacity: 1; } 50% { opacity: 0; } }
