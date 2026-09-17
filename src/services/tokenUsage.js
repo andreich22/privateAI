@@ -12,10 +12,11 @@ function finiteTokenCount(value) {
 export function normalizeTokenUsage(usage, fallbackCached = null) {
   const promptDetails = usage?.prompt_tokens_details;
   const cached = finiteTokenCount(promptDetails?.cached_tokens) ?? finiteTokenCount(fallbackCached);
-  const input = finiteTokenCount(usage?.prompt_tokens);
+  const promptTokens = finiteTokenCount(usage?.prompt_tokens);
   const output = finiteTokenCount(usage?.completion_tokens);
-  const total = input !== null && output !== null && cached !== null
-    ? input + output + cached
+  const input = promptTokens !== null && cached !== null ? promptTokens + cached : promptTokens;
+  const total = input !== null && output !== null
+    ? input + output
     : finiteTokenCount(usage?.total_tokens);
 
   return { cached, input, output, total };
