@@ -1,0 +1,38 @@
+{
+  "id": "d7e4",
+  "title": "Настройка слоёв выполнения модели на CPU и GPU",
+  "status": "in_progress",
+  "createdAt": "2026-09-17T10:46:14.000Z",
+  "updatedAt": "2026-09-17T10:55:00.000Z",
+  "issue": {"number": 54, "url": "https://github.com/andreich22/privateAI/issues/54", "title": "TASK-d7e4 Настройка слоёв выполнения модели на CPU и GPU"},
+  "description": "Добавить пользователю настройку распределения слоёв локальной модели между CPU и GPU.",
+  "requirements": [
+    "Показывать количество слоёв, выполняемых на GPU, и вычисляемое количество слоёв на CPU.",
+    "Поддерживать CPU-only, GPU-only и смешанный режимы.",
+    "Передавать конфигурацию до runtime backend без потери значения.",
+    "Валидировать значение с учётом количества слоёв модели.",
+    "Сохранять настройку для повторной загрузки модели.",
+    "Добавить unit/integration тесты для валидации и применения конфигурации."
+  ],
+  "definitionOfReady": ["Issue содержит описание, требования и критерии готовности."],
+  "acceptanceCriteria": [
+    "В интерфейсе чата доступна настройка CPU/GPU слоёв.",
+    "Изменение настройки приводит к перезагрузке модели с новым количеством GPU-слоёв.",
+    "CPU-only использует 0 GPU-слоёв, GPU-only использует все слои, смешанный режим распределяет остаток на CPU.",
+    "Некорректные значения отклоняются до сохранения конфигурации.",
+    "Все существующие тесты и CI проходят."
+  ],
+  "technicalApproach": [
+    "Использовать параметр Wllama n_gpu_layers как backend mapping.",
+    "Хранить настройку в localStorage через отдельный executionSettings service.",
+    "Получать n_layer из LoadedContextInfo и показывать CPU/GPU распределение в UI.",
+    "Применять изменение через controlled unload/reload модели."
+  ],
+  "definitionOfDone": ["Код, unit/UI tests и CI проходят; PR связан с Issue #54."],
+  "history": [
+    {"at": "2026-09-17T10:46:14.000Z", "event": "created", "details": "Registered from GitHub Issue #54."}
+  ],
+  "commits": [],
+  "decisionLog": [],
+  "relations": []
+}
