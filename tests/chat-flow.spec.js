@@ -77,7 +77,7 @@ test.describe('Chat Flow', () => {
   });
 
   test('new chat gets an isolated system prompt', async ({ page }) => {
-    const prompt = page.getByLabel('Системный промпт (только этот чат)');
+    const prompt = page.getByLabel(/Системный промпт/);
     await prompt.fill('Отвечай кратко.');
     await prompt.blur();
     await page.getByRole('button', { name: 'Новый чат' }).click();
