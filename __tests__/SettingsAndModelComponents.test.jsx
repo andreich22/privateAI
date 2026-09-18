@@ -79,7 +79,7 @@ describe('settings and model selection components', () => {
       subscribe: vi.fn(() => vi.fn()),
     };
     render(<ExecutionSettings runtime={runtime} onApply={vi.fn()} />);
-    expect(await screen.findByText(/24 / 24/)).toBeInTheDocument();
+    expect(await screen.findByText(/24 \/ 24/)).toBeInTheDocument();
     fireEvent.change(screen.getByRole('slider'), { target: { value: '8' } });
     expect(screen.getByText(/CPU 16/)).toBeInTheDocument();
     expect(screen.getByText(/GPU 8/)).toBeInTheDocument();
