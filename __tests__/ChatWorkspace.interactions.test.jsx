@@ -195,7 +195,8 @@ describe('ChatWorkspace interactions', () => {
     render(<ChatWorkspace runtime={createRuntime()} fileName="model.gguf" />);
     await screen.findByText('remove me');
 
-    fireEvent.click(screen.getByRole('button', { name: 'Удалить' }));
+    const deleteButtons = screen.getAllByRole('button', { name: 'Удалить' });
+    fireEvent.click(deleteButtons[deleteButtons.length - 1]);
 
     await waitFor(() => expect(storage.saveConversation).toHaveBeenCalledWith(expect.objectContaining({
       messages: [],
