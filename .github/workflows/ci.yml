@@ -36,7 +36,7 @@ jobs:
         run: npm run test:run
 
       - name: Install coverage provider
-        run: npm install --no-save --package-lock=false @vitest/coverage-v8@4.1.11
+        run: npm install --no-save --package-lock=false --force @vitest/coverage-v8@4.1.11
 
       - name: Test coverage
         run: npm run test:coverage
@@ -48,7 +48,7 @@ jobs:
           trap 'git worktree remove --force /tmp/privateAI-base' EXIT
           cd /tmp/privateAI-base
           npm ci
-          npm install --no-save --package-lock=false @vitest/coverage-v8@4.1.11
+          npm install --no-save --package-lock=false --force @vitest/coverage-v8@4.1.11
           npx vitest run --coverage --coverage.reporter=json-summary
           cd -
           node scripts/check-coverage.mjs coverage/coverage-summary.json /tmp/privateAI-base/coverage/coverage-summary.json
