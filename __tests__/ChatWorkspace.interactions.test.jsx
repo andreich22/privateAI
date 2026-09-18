@@ -59,8 +59,10 @@ function createRuntime(overrides = {}) {
 }
 
 describe('ChatWorkspace interactions', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     vi.clearAllMocks();
+    const mocked = await import('../src/services/chatStorage');
+    Object.assign(storage, mocked);
     const initial = conversation();
     storage.getActiveConversationId.mockResolvedValue('c1');
     storage.getConversation.mockResolvedValue(initial);
