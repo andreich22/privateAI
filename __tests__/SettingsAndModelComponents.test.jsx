@@ -30,6 +30,7 @@ import GenerationSettings from '../src/components/GenerationSettings.jsx';
 import ExecutionSettings from '../src/components/ExecutionSettings.jsx';
 import HFModelPicker from '../src/components/HFModelPicker.jsx';
 import WelcomeScreen from '../src/components/WelcomeScreen.jsx';
+import * as generationSettings from '../src/services/generationSettings';
 
 describe('settings and model selection components', () => {
   beforeEach(() => vi.clearAllMocks());
@@ -66,10 +67,8 @@ describe('settings and model selection components', () => {
   });
 
   it('shows validation errors from generation settings', () => {
-    const settings = screen;
     render(<GenerationSettings conversation={{ id: 'c1', systemPrompt: '' }} onConversationChange={vi.fn()} supported={{ temperature: true, top_p: true, max_tokens: true }} />);
-    const service = require('../src/services/generationSettings');
-    service.validateGenerationSettings.mockImplementationOnce(() => { throw new Error('bad setting'); });
+    generationSettings.validateGenerationSettings.mockImplementationOnce(() => { throw new Error('bad setting'); });
     fireEvent.change(screen.getAllByRole('slider')[0], { target: { value: '2' } });
     expect(screen.getByRole('alert')).toHaveTextContent('bad setting');
   });
