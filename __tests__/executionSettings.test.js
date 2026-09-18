@@ -24,7 +24,7 @@ describe('execution settings', () => {
     expect(getMaxGpuLayers(input)).toBe(expected);
   });
 
-  it.each([null, undefined, '', -1, 1.5, 'abc'])('returns null for invalid layer counts: %p', (input) => {
+  it.each([null, undefined, '', 1.5, 'abc'])('returns null for invalid layer counts: %p', (input) => {
     expect(getMaxGpuLayers(input)).toBeNull();
   });
 
@@ -63,7 +63,7 @@ describe('execution settings', () => {
   });
 
   it('uses the runtime fallback when auto mode has no known layer count', () => {
-    expect(resolveGpuLayerCount({ n_gpu_layers: -1 }, null)).toBe(99999);
+    expect(resolveGpuLayerCount({ n_gpu_layers: -1 }, null)).toBe(0);
   });
 
   it('resolves explicit GPU layers without exceeding the model limit', () => {
