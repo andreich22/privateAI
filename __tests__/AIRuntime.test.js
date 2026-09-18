@@ -262,6 +262,14 @@ describe('AIRuntime', () => {
   });
 
   it('handles Hugging Face downloads and persists the supplied file handle', async () => {
+    globalThis.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      headers: { get: () => '8' },
+      body: { getReader: () => ({ read: vi.fn()
+        .mockResolvedValueOnce({ done: false, value: new Uint8Array([1, 2, 3, 4, 5]) })
+        .mockResolvedValueOnce({ done: true }) }) },
+    });
     const fileHandle = createFileHandle();
     fileHandle.createWritable = vi.fn().mockResolvedValue({ write: vi.fn(), close: vi.fn() });
     const progress = vi.fn();
@@ -269,8 +277,8 @@ describe('AIRuntime', () => {
     const result = await runtime.loadModelFromHF(progress, fileHandle, { n_gpu_layers: 3 });
 
     expect(result).toEqual({ fileHandle });
-    expect(progress).toHaveBeenCalledWith(5);
-    expect(progress).toHaveBeenCalledWith(10);
+    expect(progress).toHaveBeenCalledWith(62.5);
+    expect(progress).toHaveBeenCalledWith(100);
     expect(progress).toHaveBeenLastCalledWith(100);
     expect(runtime.isLoaded()).toBe(true);
 
