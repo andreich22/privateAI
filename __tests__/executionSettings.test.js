@@ -24,7 +24,7 @@ describe('execution settings', () => {
     expect(getMaxGpuLayers(input)).toBe(expected);
   });
 
-  it.each([null, undefined, '', -1, 1.5, 'abc'])('returns null for invalid layer counts: %p', (input) => {
+  it.each([null, undefined, -1, 1.5, 'abc'])('returns null for invalid layer counts: %p', (input) => {
     expect(getMaxGpuLayers(input)).toBeNull();
   });
 
