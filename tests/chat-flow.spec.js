@@ -44,13 +44,13 @@ test.describe('Chat Flow', () => {
   test('submit button changes to stop while generating', async ({ page }) => {
     await page.fill(selectors.chatInput, 'test');
     await page.locator(selectors.submitButton).click();
-    await expect(page.getByRole('button', { name: 'Остановить' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Остановить генерацию' })).toBeVisible();
   });
 
   test('input placeholder shows generation state', async ({ page }) => {
     await page.locator(selectors.chatInput).fill('test');
     await page.locator(selectors.submitButton).click();
-    await expect(page.locator(selectors.chatInput)).toHaveAttribute('placeholder', 'Генерация...');
+    await expect(page.locator(selectors.chatInput)).toHaveAttribute('placeholder', 'Модель генерирует ответ…');
     await expect(page.locator(selectors.chatInput)).toBeDisabled();
   });
 
@@ -58,9 +58,9 @@ test.describe('Chat Flow', () => {
     await page.evaluate(() => { window.__mockChatResponse = 'x'.repeat(100); });
     await page.fill(selectors.chatInput, 'long request');
     await page.locator(selectors.submitButton).click();
-    await expect(page.getByRole('button', { name: 'Остановить' })).toBeVisible({ timeout: 5000 });
+    await expect(page.getByRole('button', { name: 'Остановить генерацию' })).toBeVisible({ timeout: 5000 });
     await page.waitForTimeout(650);
-    await page.getByRole('button', { name: 'Остановить' }).click();
+    await page.getByRole('button', { name: 'Остановить генерацию' }).click();
     await expect(page.getByRole('button', { name: 'Отправить' })).toBeVisible();
     await expect(page.locator(selectors.assistantMessage).last().locator('div.text')).not.toHaveText('');
     await page.evaluate(() => { window.__mockChatResponse = 'ok'; });
@@ -70,7 +70,6 @@ test.describe('Chat Flow', () => {
   });
 
   test('generation settings persist locally', async ({ page }) => {
-    await page.getByText('Настройки генерации').click();
     const maxTokens = page.getByLabel(/Максимум токенов/);
     await maxTokens.fill('777');
     await maxTokens.blur();
@@ -78,17 +77,15 @@ test.describe('Chat Flow', () => {
   });
 
   test('new chat gets an isolated system prompt', async ({ page }) => {
-    await page.getByText('Настройки генерации').click();
     const prompt = page.getByLabel('Системный промпт (только этот чат)');
     await prompt.fill('Отвечай кратко.');
     await prompt.blur();
     await page.getByRole('button', { name: 'Новый чат' }).click();
-    await expect(page.getByRole('main').getByText('Новый чат', { exact: true })).toBeVisible();
-    await page.getByText('Настройки генерации').click();
+    await expect(page.locator('main').getByText('Новый чат', { exact: true })).toBeVisible();
     await expect(page.getByLabel('Системный промпт (только этот чат)')).toHaveValue('');
   });
 
   test('chat header shows model filename', async ({ page }) => {
-    await expect(page.locator('header').locator('strong')).toContainText('test-model.gguf');
+    await expect(page.locator('.model-name')).toContainText('test-model.gguf');
   });
 });
