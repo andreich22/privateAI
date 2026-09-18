@@ -497,6 +497,30 @@ button:focus-visible, input:focus-visible, textarea:focus-visible {
 .cursor { animation: blink .7s step-end infinite; }
 @keyframes blink { from, to { opacity: 1; } 50% { opacity: 0; } }
 
+.progress-bar-container {
+  width: min(520px, 80vw);
+  height: 8px;
+  overflow: hidden;
+  margin-top: 18px;
+  border-radius: 999px;
+  background: #27272a;
+}
+
+.progress-bar-fill {
+  display: block;
+  height: 100%;
+  min-width: 1px;
+  border-radius: inherit;
+  background: #f4f4f5;
+  transition: width .12s ease;
+}
+
+.progress-text {
+  margin-top: 8px;
+  color: #a1a1aa;
+  font-size: 12px;
+}
+
 .screen { min-height: 100vh; display: grid; place-items: center; padding: 30px; background: #0b0b0f; }
 .screen h1 { margin: 0 0 10px; color: #f4f4f5; }
 .screen p { color: #71717a; }
