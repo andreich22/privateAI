@@ -1,0 +1,45 @@
+{
+  "id": "c6a1",
+  "title": "Отслеживание test coverage и запрет регрессии покрытия",
+  "status": "in_progress",
+  "createdAt": "2026-09-18T18:15:00Z",
+  "updatedAt": "2026-09-18T18:15:00Z",
+  "description": "Добавить в CI отдельный шаг измерения покрытия unit-тестами, выводить текущие метрики и не допускать снижения покрытия в pull request относительно master.",
+  "requirements": [
+    "CI отдельно запускает измерение test coverage и отображает текущие метрики.",
+    "Для pull request coverage сравнивается с текущим master.",
+    "Снижение coverage по lines, statements, functions или branches блокирует CI.",
+    "Результат сравнения явно показывает текущее значение, baseline и изменение в процентных пунктах."
+  ],
+  "definitionOfReady": [
+    "Определён источник baseline: master текущего pull request.",
+    "Определены сравниваемые метрики coverage."
+  ],
+  "acceptanceCriteria": [
+    "В CI есть отдельный шаг Test coverage.",
+    "В PR CI есть отдельная проверка Check coverage regression.",
+    "Coverage не может уменьшиться ни по одной из основных метрик.",
+    "При равном или большем coverage проверка проходит.",
+    "Обычные unit tests, E2E, build и task validation продолжают выполняться."
+  ],
+  "technicalApproach": [
+    "Использовать Vitest coverage с V8 provider.",
+    "Генерировать JSON summary для машинного сравнения.",
+    "На PR отдельно запускать coverage на origin/master и сравнивать с PR coverage."
+  ],
+  "definitionOfDone": [
+    "Coverage отображается в CI.",
+    "Регрессия покрытия блокирует PR.",
+    "CI проверки проходят."
+  ],
+  "history": [
+    {
+      "at": "2026-09-18T18:15:00Z",
+      "event": "created",
+      "details": "Implementation task created for CI test coverage tracking."
+    }
+  ],
+  "commits": [],
+  "decisionLog": [],
+  "relations": []
+}
