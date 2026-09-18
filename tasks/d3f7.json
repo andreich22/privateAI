@@ -1,0 +1,51 @@
+{
+  "id": "d3f7",
+  "title": "Расширить покрытие тестами chatStorage.js",
+  "status": "draft",
+  "createdAt": "2026-09-18T19:43:19.115Z",
+  "updatedAt": "2026-09-18T19:43:19.115Z",
+  "issue": {
+    "number": 71,
+    "url": "https://github.com/andreich22/privateAI/issues/71",
+    "title": "TASK-d3f7 Расширить покрытие тестами chatStorage.js"
+  },
+  "description": "## Goal\n\nРасширить unit-тесты для `src/services/chatStorage.js`, покрыв все ветки кода: null-db degraded paths, exception paths, edge cases.\n\n## Requirements\n\n- Тесты покрывают все экспортируемые функции: `listConversations`, `getConversation`, `createConversation`, `saveConversation`, `renameConversation`, `deleteConversation`, `getActiveConversationId`\n- Каждая функция протестирована при `db = null` (degraded mode)\n- Каждая функция протестирована при исключениях IndexedDB\n- Edge cases: null/undefined messages, malformed messages, fallback title/createdAt, пустой store, UUID format\n- Тесты используют существующий fake DB паттерн из `createFakeDb()`\n- Тесты расположены в `__tests__/chatStorage.test.js`\n\n## Definition of Ready\n\n- Существующий файл `__tests__/chatStorage.test.js` содержит 10 тестов\n- Fake DB паттерн `createFakeDb()` уже реализован и может быть переиспользован\n- Vitest настроен и работает\n\n## Acceptance Criteria\n\n- [ ] Добавлены тесты для null-db degraded paths (7 функций)\n- [ ] Добавлены тесты для exception paths (7 функций + dbPromise reset)\n- [ ] Добавлены тесты для edge cases (≥15 тестов)\n- [ ] Все тесты проходят: `npm run test:run`\n- [ ] `npm run tasks:validate` проходит\n- [ ] Coverage chatStorage.js ≥ 90% statements\n\n## Technical Approach\n\nИспользовать существующий `createFakeDb()` и паттерн `vi.resetModules()` + `vi.doMock()` для изоляции модуля. Для null-db путей мокать `openDB` чтобы возвращал `null`. Для exception путей настраивать `mockRejectedValue` / `mockImplementation` на методах fake DB.\n\n## Definition of Done\n\n- Все acceptance criteria выполнены\n- Commits используют формат `test: d3f7 | <description>`\n- `npm run tasks:validate` проходит\n- История задачи обновлена",
+  "requirements": [
+    "Тесты покрывают все экспортируемые функции: `listConversations`, `getConversation`, `createConversation`, `saveConversation`, `renameConversation`, `deleteConversation`, `getActiveConversationId`",
+    "Каждая функция протестирована при `db = null` (degraded mode)",
+    "Каждая функция протестирована при исключениях IndexedDB",
+    "Edge cases: null/undefined messages, malformed messages, fallback title/createdAt, пустой store, UUID format",
+    "Тесты используют существующий fake DB паттерн из `createFakeDb()`",
+    "Тесты расположены в `__tests__/chatStorage.test.js`"
+  ],
+  "definitionOfReady": [
+    "Существующий файл `__tests__/chatStorage.test.js` содержит 10 тестов",
+    "Fake DB паттерн `createFakeDb()` уже реализован и может быть переиспользован",
+    "Vitest настроен и работает"
+  ],
+  "acceptanceCriteria": [
+    "Добавлены тесты для null-db degraded paths (7 функций)",
+    "Добавлены тесты для exception paths (7 функций + dbPromise reset)",
+    "Добавлены тесты для edge cases (≥15 тестов)",
+    "Все тесты проходят: `npm run test:run`",
+    "`npm run tasks:validate` проходит",
+    "Coverage chatStorage.js ≥ 90% statements"
+  ],
+  "technicalApproach": [],
+  "definitionOfDone": [
+    "Все acceptance criteria выполнены",
+    "Commits используют формат `test: d3f7 | <description>`",
+    "`npm run tasks:validate` проходит",
+    "История задачи обновлена"
+  ],
+  "history": [
+    {
+      "at": "2026-09-18T19:43:19.115Z",
+      "event": "created_from_issue",
+      "details": "Automatically registered from GitHub Issue #71."
+    }
+  ],
+  "commits": [],
+  "decisionLog": [],
+  "relations": []
+}
