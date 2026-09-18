@@ -250,10 +250,6 @@ export default function ChatWorkspace({ runtime, fileName, onUnload, onApplyExec
         </aside>
         <main className="chat-main">
           <div className="chat-titlebar">{conversation?.title || 'Загрузка...'}</div>
-          <div className="settings-strip">
-            <GenerationSettings conversation={conversation} onConversationChange={updateConversation} disabled={isGenerating} supported={runtime?.getGenerationCapabilities?.() || DEFAULT_CAPABILITIES} />
-            <ExecutionSettings runtime={runtime} disabled={isGenerating} onApply={onApplyExecutionSettings} />
-          </div>
           <div className="token-strip" aria-label="Статистика токенов"><strong>Токены</strong><span>Кэш {formatTokenCount(tokenUsage.cached)}</span><span>↑ {formatTokenCount(tokenUsage.input)}</span><span>↓ {formatTokenCount(tokenUsage.output)}</span><span>Всего {formatTokenCount(tokenUsage.total)}</span></div>
           <div className="messages-box">
             {messages.map((msg) => <div key={msg.id} className={`message ${msg.role}`}><div className="sender">{msg.role === 'user' ? 'Вы' : 'privateAI'}</div><div className="text">{msg.content}</div><div className="message-actions">{msg.role === 'user' && <button type="button" onClick={() => handleEditMessage(msg)} disabled={isGenerating}>Изменить</button>}<button type="button" onClick={() => handleDeleteMessage(msg)} disabled={isGenerating}>Удалить</button></div></div>)}
@@ -272,6 +268,16 @@ export default function ChatWorkspace({ runtime, fileName, onUnload, onApplyExec
             </form>
           </div>
         </main>
+        <aside className="settings-sidebar" aria-label="Настройки">
+          <div className="settings-sidebar-header">
+            <div className="settings-sidebar-title">Настройки</div>
+            <div className="settings-sidebar-subtitle">Параметры текущей модели и генерации</div>
+          </div>
+          <div className="settings-sidebar-content">
+            <GenerationSettings conversation={conversation} onConversationChange={updateConversation} disabled={isGenerating} supported={runtime?.getGenerationCapabilities?.() || DEFAULT_CAPABILITIES} />
+            <ExecutionSettings runtime={runtime} disabled={isGenerating} onApply={onApplyExecutionSettings} />
+          </div>
+        </aside>
       </div>
     </div>
   )
