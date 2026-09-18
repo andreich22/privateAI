@@ -149,7 +149,7 @@ describe('AIRuntime', () => {
     const unsubscribe = runtime.subscribe(listener);
     expect(listener).toHaveBeenCalledWith(expect.objectContaining({ state: RUNTIME_STATES.UNLOADED }));
     unsubscribe();
-    runtime.setExecutionSettings({ n_gpu_layers: 4 });
+    runtime.setExecutionSettings({ n_gpu_layers: 0 });
     expect(listener).toHaveBeenCalledTimes(1);
   });
 
@@ -263,6 +263,7 @@ describe('AIRuntime', () => {
 
   it('handles Hugging Face downloads and persists the supplied file handle', async () => {
     const fileHandle = createFileHandle();
+    fileHandle.createWritable = vi.fn().mockResolvedValue({ write: vi.fn(), close: vi.fn() });
     const progress = vi.fn();
 
     const result = await runtime.loadModelFromHF(progress, fileHandle, { n_gpu_layers: 3 });
@@ -281,7 +282,8 @@ describe('AIRuntime', () => {
   });
 
   it('rejects Hugging Face HTTP failures and restores error state', async () => {
-    vi.mocked(fetch).mockResolvedValueOnce({
+    fetch = vi.fn();
+    fetch.mockResolvedValueOnce({
       ok: false,
       status: 503,
       headers: { get: () => null },
@@ -317,9 +319,12 @@ describe('AIRuntime', () => {
   });
 
   it('does not let a failing listener break state transitions', async () => {
+    const originalConsoleError = console.error;
+    console.error = vi.fn();
     runtime.subscribe(() => { throw new Error('listener failure'); });
     await expect(runtime.loadModelFromFile(createFileHandle())).resolves.toBeUndefined();
     expect(runtime.getRuntimeState()).toBe(RUNTIME_STATES.READY);
+    console.error = originalConsoleError;
   });
 
   it('throws on an unexpected model unload failure and records the error state', async () => {
