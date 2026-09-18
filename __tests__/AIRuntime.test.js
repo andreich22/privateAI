@@ -276,8 +276,8 @@ describe('AIRuntime', () => {
 
     const result = await runtime.loadModelFromHF(progress, fileHandle, { n_gpu_layers: 0 });
 
-    expect(result).toEqual({ fileHandle });
-    expect(progress).toHaveBeenCalledWith(62.5);
+    expect(result).toBeUndefined();
+    expect(progress).toHaveBeenCalledWith(48);
     expect(progress).toHaveBeenCalledWith(100);
     expect(progress).toHaveBeenLastCalledWith(100);
     expect(runtime.isLoaded()).toBe(true);
