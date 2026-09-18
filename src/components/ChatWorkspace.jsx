@@ -274,4 +274,5 @@ export default function ChatWorkspace({ runtime, fileName, onUnload, onApplyExec
         </main>
       </div>
     </div>
-  );
+  )
+};
