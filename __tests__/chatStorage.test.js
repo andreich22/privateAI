@@ -187,7 +187,7 @@ describe('chatStorage', () => {
     const storage = await loadChatStorage();
     await storage.listConversations();
     expect(openDB).toHaveBeenCalledWith(
-      'LocalReactAIChat',
+      'private-ai',
       3,
       expect.objectContaining({ upgrade: expect.any(Function) }),
     );
