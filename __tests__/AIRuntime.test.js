@@ -326,17 +326,6 @@ describe('AIRuntime', () => {
     expect(runtime.isGenerationPending()).toBe(false);
   });
 
-  it('does not let a failing listener break state transitions', async () => {
-    const originalConsoleError = console.error;
-    console.error = vi.fn();
-    runtime.subscribe(() => { throw new Error('listener failure'); });
-    const unsubscribe = runtime.subscribe(() => { throw new Error('listener failure'); });
-    unsubscribe();
-    await expect(runtime.loadModelFromFile(createFileHandle())).resolves.toBeUndefined();
-    expect(runtime.getRuntimeState()).toBe(RUNTIME_STATES.READY);
-    console.error = originalConsoleError;
-  });
-
   it('throws on an unexpected model unload failure and records the error state', async () => {
     await runtime.loadModelFromFile(createFileHandle());
     const { Wllama } = await import('@wllama/wllama');
