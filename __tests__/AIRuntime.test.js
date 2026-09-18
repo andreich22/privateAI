@@ -322,6 +322,8 @@ describe('AIRuntime', () => {
     const originalConsoleError = console.error;
     console.error = vi.fn();
     runtime.subscribe(() => { throw new Error('listener failure'); });
+    const unsubscribe = runtime.subscribe(() => { throw new Error('listener failure'); });
+    unsubscribe();
     await expect(runtime.loadModelFromFile(createFileHandle())).resolves.toBeUndefined();
     expect(runtime.getRuntimeState()).toBe(RUNTIME_STATES.READY);
     console.error = originalConsoleError;
