@@ -177,3 +177,48 @@ describe('fileStorage - saveFilePicker', () => {
     expect(result).toBeNull();
   });
 });
+
+describe('fileStorage - remaining persistence operations', () => {
+  it('returns null without touching IndexedDB when no handle is supplied', async () => {
+    const { saveFileHandle } = await import('../src/services/fileStorage.js');
+    await expect(saveFileHandle(null)).resolves.toBeNull();
+    expect(mockDB.put).not.toHaveBeenCalled();
+  });
+
+  it('clears the saved handle from IndexedDB', async () => {
+    const { clearSavedFileHandle } = await import('../src/services/fileStorage.js');
+    await clearSavedFileHandle();
+    expect(mockDB.delete).toHaveBeenCalledWith('FileHandles', 'gguf_model_handle');
+  });
+
+  it('writes a model to disk and persists the resulting handle', async () => {
+    const { saveModelToDisk } = await import('../src/services/fileStorage.js');
+    const file = new File(['gguf'], 'downloaded.gguf', { type: 'application/x-gguf' });
+
+    const result = await saveModelToDisk(file, 'saved.gguf');
+
+    expect(window.showSaveFilePicker).toHaveBeenCalledWith(expect.objectContaining({
+      suggestedName: 'saved.gguf',
+    }));
+    expect(result.name).toBe('model.gguf');
+    expect(mockDB.put).toHaveBeenCalledWith('FileHandles', expect.any(Object), 'gguf_model_handle');
+  });
+
+  it('uses the source file name when no save name is supplied', async () => {
+    const { saveModelToDisk } = await import('../src/services/fileStorage.js');
+    const file = new File(['gguf'], 'source.gguf');
+
+    await saveModelToDisk(file);
+
+    expect(window.showSaveFilePicker).toHaveBeenCalledWith(expect.objectContaining({
+      suggestedName: 'source.gguf',
+    }));
+  });
+
+  it('returns null when saving the model is cancelled', async () => {
+    window.showSaveFilePicker.mockRejectedValueOnce(Object.assign(new Error('cancelled'), { name: 'AbortError' }));
+    const { saveModelToDisk } = await import('../src/services/fileStorage.js');
+
+    await expect(saveModelToDisk(new File(['gguf'], 'model.gguf'), 'model.gguf')).resolves.toBeNull();
+  });
+});
