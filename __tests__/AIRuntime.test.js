@@ -143,4 +143,193 @@ describe('AIRuntime', () => {
     await expect(runtime.streamChat([{ role: 'user', content: 'Hello' }], vi.fn(), { temperature: 3 })).rejects.toThrow('temperature');
     expect(instance.createChatCompletion).not.toHaveBeenCalled();
   });
+  it('ignores non-function subscribers and supports unsubscribe', () => {
+    expect(runtime.subscribe(null)).toBeTypeOf('function');
+    const listener = vi.fn();
+    const unsubscribe = runtime.subscribe(listener);
+    expect(listener).toHaveBeenCalledWith(expect.objectContaining({ state: RUNTIME_STATES.UNLOADED }));
+    unsubscribe();
+    runtime.setExecutionSettings({ n_gpu_layers: 4 });
+    expect(listener).toHaveBeenCalledTimes(1);
+  });
+
+  it('reports execution, backend and generation capabilities', () => {
+    expect(runtime.getBackendInfo()).toEqual({ webgpuSupported: false, mode: 'auto' });
+    expect(runtime.getGenerationCapabilities()).toEqual({
+      temperature: true,
+      top_p: true,
+      max_tokens: true,
+    });
+    expect(runtime.getExecutionCapabilities()).toEqual({
+      gpuLayerOffload: true,
+      cpuLayerOffload: true,
+      requiresReload: true,
+    });
+  });
+
+  it('reports execution status using the loaded context layer count', async () => {
+    expect(runtime.getExecutionStatus()).toEqual({
+      n_gpu_layers: -1,
+      gpuLayers: null,
+      cpuLayers: null,
+      totalLayers: null,
+    });
+
+    await runtime.loadModelFromFile(createFileHandle());
+    expect(runtime.getExecutionStatus()).toEqual({
+      n_gpu_layers: -1,
+      gpuLayers: 24,
+      cpuLayers: 0,
+      totalLayers: 24,
+    });
+
+    expect(runtime.setExecutionSettings({ n_gpu_layers: 7 })).toEqual({ n_gpu_layers: 7 });
+    expect(runtime.getExecutionStatus()).toEqual({
+      n_gpu_layers: 7,
+      gpuLayers: 7,
+      cpuLayers: 17,
+      totalLayers: 24,
+    });
+  });
+
+  it('returns cached token count from the runtime when available', async () => {
+    await runtime.loadModelFromFile(createFileHandle());
+    const { Wllama } = await import('@wllama/wllama');
+    const instance = Wllama.getFreshInstance();
+    instance.getCachedTokens = vi.fn().mockResolvedValue(['a', 'b', 'c']);
+
+    expect(await runtime.getCachedTokenCount()).toBe(3);
+    instance.getCachedTokens.mockResolvedValueOnce('not-an-array');
+    expect(await runtime.getCachedTokenCount()).toBeNull();
+    instance.getCachedTokens.mockRejectedValueOnce(new Error('cache unavailable'));
+    expect(await runtime.getCachedTokenCount()).toBeNull();
+  });
+
+  it('streams a simple completion and restores ready state', async () => {
+    await runtime.loadModelFromFile(createFileHandle());
+    const onToken = vi.fn();
+
+    await expect(runtime.simpleCompletion('Say hello', onToken)).resolves.toBe('completion result');
+    expect(onToken).toHaveBeenCalledWith('completion result');
+    expect(runtime.getRuntimeState()).toBe(RUNTIME_STATES.READY);
+  });
+
+  it('passes custom completion generation settings', async () => {
+    await runtime.loadModelFromFile(createFileHandle());
+    const { Wllama } = await import('@wllama/wllama');
+    const instance = Wllama.getFreshInstance();
+
+    await runtime.simpleCompletion('Say hello', vi.fn(), {
+      temperature: 1.1,
+      top_p: 0.9,
+      max_tokens: 128,
+    });
+
+    expect(instance.createCompletion).toHaveBeenCalledWith(expect.objectContaining({
+      prompt: 'Say hello',
+      stream: true,
+      temperature: 1.1,
+      top_p: 0.9,
+      max_tokens: 128,
+      abortSignal: expect.any(Object),
+    }));
+  });
+
+  it('rejects completion before calling Wllama when the model is unloaded', async () => {
+    await expect(runtime.simpleCompletion('hello', vi.fn())).rejects.toThrow('Модель не загружена');
+  });
+
+  it('rejects overlapping model loads', async () => {
+    await runtime.init();
+    const { Wllama } = await import('@wllama/wllama');
+    const instance = Wllama.getFreshInstance();
+    let resolveLoad;
+    instance.loadModel.mockImplementationOnce(() => new Promise((resolve) => { resolveLoad = resolve; }));
+
+    const first = runtime.loadModelFromFile(createFileHandle());
+    await vi.waitFor(() => expect(instance.loadModel).toHaveBeenCalled());
+    await expect(runtime.loadModelFromFile(createFileHandle())).rejects.toThrow('already in progress');
+
+    resolveLoad();
+    await first;
+  });
+
+  it('rejects loading while the runtime is unloading', async () => {
+    await runtime.loadModelFromFile(createFileHandle());
+    const unloadPromise = runtime.unloadModel();
+    await expect(runtime.loadModelFromFile(createFileHandle())).rejects.toThrow('unloading is in progress');
+    await unloadPromise;
+  });
+
+  it('handles Hugging Face downloads and persists the supplied file handle', async () => {
+    const fileHandle = createFileHandle();
+    const progress = vi.fn();
+
+    const result = await runtime.loadModelFromHF(progress, fileHandle, { n_gpu_layers: 3 });
+
+    expect(result).toEqual({ fileHandle });
+    expect(progress).toHaveBeenCalledWith(5);
+    expect(progress).toHaveBeenCalledWith(16);
+    expect(progress).toHaveBeenLastCalledWith(100);
+    expect(runtime.isLoaded()).toBe(true);
+
+    const { Wllama } = await import('@wllama/wllama');
+    expect(Wllama.getFreshInstance().loadModel).toHaveBeenCalledWith(
+      [expect.any(File)],
+      expect.objectContaining({ n_gpu_layers: 3 }),
+    );
+  });
+
+  it('rejects Hugging Face HTTP failures and restores error state', async () => {
+    vi.mocked(fetch).mockResolvedValueOnce({
+      ok: false,
+      status: 503,
+      headers: { get: () => null },
+      body: null,
+    });
+
+    await expect(runtime.loadModelFromHF(vi.fn())).rejects.toThrow('HF HTTP 503');
+    expect(runtime.getRuntimeState()).toBe(RUNTIME_STATES.ERROR);
+    expect(runtime.isLoaded()).toBe(false);
+  });
+
+  it('rejects Hugging Face responses without a body', async () => {
+    vi.mocked(fetch).mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      headers: { get: () => null },
+      body: null,
+    });
+
+    await expect(runtime.loadModelFromHF(vi.fn())).rejects.toThrow('HF response body is unavailable');
+    expect(runtime.getRuntimeState()).toBe(RUNTIME_STATES.ERROR);
+  });
+
+  it('handles generation errors and returns to error state', async () => {
+    await runtime.loadModelFromFile(createFileHandle());
+    const { Wllama } = await import('@wllama/wllama');
+    const instance = Wllama.getFreshInstance();
+    instance.createCompletion.mockRejectedValueOnce(new Error('generation failed'));
+
+    await expect(runtime.simpleCompletion('hello', vi.fn())).rejects.toThrow('generation failed');
+    expect(runtime.getRuntimeState()).toBe(RUNTIME_STATES.ERROR);
+    expect(runtime.isGenerationPending()).toBe(false);
+  });
+
+  it('does not let a failing listener break state transitions', async () => {
+    runtime.subscribe(() => { throw new Error('listener failure'); });
+    await expect(runtime.loadModelFromFile(createFileHandle())).resolves.toBeUndefined();
+    expect(runtime.getRuntimeState()).toBe(RUNTIME_STATES.READY);
+  });
+
+  it('throws on an unexpected model unload failure and records the error state', async () => {
+    await runtime.loadModelFromFile(createFileHandle());
+    const { Wllama } = await import('@wllama/wllama');
+    const instance = Wllama.getFreshInstance();
+    instance.exit.mockRejectedValueOnce(new Error('exit failed'));
+
+    await expect(runtime.unloadModel()).rejects.toThrow('exit failed');
+    expect(runtime.getRuntimeState()).toBe(RUNTIME_STATES.ERROR);
+  });
+
 });
