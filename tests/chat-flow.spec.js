@@ -36,7 +36,7 @@ test.describe('Chat Flow', () => {
   });
 
   test('unload model -> returns to access screen', async ({ page }) => {
-    await page.locator('button.btn-danger').click();
+    await page.locator('button.danger-button').click();
     await page.waitForSelector('div.screen.centered', { timeout: 10000 });
     await expect(page.locator('button.btn-main')).toContainText('Запустить');
   });
@@ -82,7 +82,7 @@ test.describe('Chat Flow', () => {
     await prompt.blur();
     await page.getByRole('button', { name: 'Новый чат' }).click();
     await expect(page.locator('main').getByText('Новый чат', { exact: true })).toBeVisible();
-    await expect(page.getByLabel('Системный промпт (только этот чат)')).toHaveValue('');
+    await expect(page.getByLabel(/Системный промпт/)).toHaveValue('');
   });
 
   test('chat header shows model filename', async ({ page }) => {
