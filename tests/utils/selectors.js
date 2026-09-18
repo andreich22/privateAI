@@ -18,9 +18,9 @@ export const selectors = {
   messagesBox: 'div.messages-box',
   userMessage: 'div.message.user',
   assistantMessage: 'div.message.assistant',
-  inputForm: 'form.input-form',
-  chatInput: 'form.input-form input',
-  submitButton: 'form.input-form button[type="submit"]',
+  inputForm: 'form.composer',
+  chatInput: 'form.composer textarea[aria-label="Сообщение"]',
+  submitButton: 'form.composer button[aria-label="Отправить"]',
   debugInfo: 'div[style*="monospace"]',
 
   // Error
