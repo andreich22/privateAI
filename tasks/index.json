@@ -110,6 +110,11 @@
       "id": "c6a1",
       "title": "Отслеживание test coverage и запрет регрессии покрытия",
       "status": "in_progress"
+    },
+    {
+      "id": "d3f7",
+      "title": "Расширить покрытие тестами chatStorage.js",
+      "status": "draft"
     }
   ]
 }
