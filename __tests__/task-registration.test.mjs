@@ -17,7 +17,7 @@ const createFixture = ({ title = 'TASK-a1b2 Example task', body = '' } = {}) => 
 
 const run = ({ root, eventPath }) => execFileSync(process.execPath, [script], {
   cwd: root,
-  env: { ...process.env, GITHUB_EVENT_PATH: eventPath },
+  env: { ...process.env, NODE_ENV: 'test', GITHUB_EVENT_PATH: eventPath },
   encoding: 'utf8'
 });
 
