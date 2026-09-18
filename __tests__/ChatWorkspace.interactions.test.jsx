@@ -13,7 +13,10 @@ const storage = {
   saveConversation: vi.fn(),
 };
 
-vi.mock('../src/services/chatStorage', () => storage);
+vi.mock('../src/services/chatStorage', () => ({
+  createConversation: vi.fn(), deleteConversation: vi.fn(), getActiveConversationId: vi.fn(),
+  getConversation: vi.fn(), listConversations: vi.fn(), renameConversation: vi.fn(), saveConversation: vi.fn(),
+}));
 vi.mock('../src/services/generationSettings', () => ({
   loadGenerationSettings: vi.fn(() => ({ temperature: 0.7, top_p: 1, max_tokens: 512 })),
 }));
