@@ -63,7 +63,7 @@ describe('settings and model selection components', () => {
     fireEvent.blur(screen.getByDisplayValue('same'));
     expect(onChange).not.toHaveBeenCalled();
     expect(screen.getByDisplayValue('same')).toBeDisabled();
-    expect(screen.getByRole('slider')).toBeDisabled();
+    expect(screen.getAllByRole('slider')[0]).toBeDisabled();
   });
 
   it('shows validation errors from generation settings', () => {
@@ -81,8 +81,8 @@ describe('settings and model selection components', () => {
     render(<ExecutionSettings runtime={runtime} onApply={vi.fn()} />);
     expect(await screen.findByText(/24 \/ 24/)).toBeInTheDocument();
     fireEvent.change(screen.getByRole('slider'), { target: { value: '8' } });
-    expect(screen.getByText(/CPU 16/)).toBeInTheDocument();
-    expect(screen.getByText(/GPU 8/)).toBeInTheDocument();
+    expect(screen.getByText('16', { selector: 'strong' })).toBeInTheDocument();
+    expect(screen.getByText('8', { selector: 'strong' })).toBeInTheDocument();
   });
 
   it('applies execution settings and handles apply failures', async () => {
