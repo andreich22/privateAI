@@ -131,7 +131,7 @@ describe('ChatWorkspace local chat history', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Изменить' }));
 
-    expect(screen.getByPlaceholderText('Редактирование промта...')).toHaveValue('Старый промт');
+    expect(screen.getByPlaceholderText('Измените сообщение…')).toHaveValue('Старый промт');
     expect(screen.getByText('Старый ответ')).toBeInTheDocument();
   });
 
@@ -152,7 +152,7 @@ describe('ChatWorkspace local chat history', () => {
     await screen.findByText('Старый промт');
     fireEvent.click(screen.getByRole('button', { name: 'Изменить' }));
 
-    const input = screen.getByPlaceholderText('Редактирование промта...');
+    const input = screen.getByPlaceholderText('Измените сообщение…');
     fireEvent.change(input, { target: { value: 'Новый промт' } });
     fireEvent.submit(input.closest('form'));
 
@@ -279,8 +279,8 @@ describe('ChatWorkspace local chat history', () => {
     fireEvent.change(input, { target: { value: 'Долгий вопрос' } });
     fireEvent.submit(input.closest('form'));
 
-    await waitFor(() => expect(screen.getByRole('button', { name: 'Остановить' })).toBeInTheDocument());
-    fireEvent.click(screen.getByRole('button', { name: 'Остановить' }));
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Остановить генерацию' })).toBeInTheDocument());
+    fireEvent.click(screen.getByRole('button', { name: 'Остановить генерацию' }));
 
     await waitFor(() => expect(screen.getByPlaceholderText('Сообщение privateAI…')).toBeInTheDocument());
     expect(runtime.cancelGeneration).toHaveBeenCalledOnce();
