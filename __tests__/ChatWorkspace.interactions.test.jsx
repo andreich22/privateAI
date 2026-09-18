@@ -78,7 +78,7 @@ describe('ChatWorkspace interactions', () => {
   it('restores the active conversation from storage', async () => {
     render(<ChatWorkspace runtime={createRuntime()} fileName="models/test.gguf" onUnload={vi.fn()} />);
 
-    expect(await screen.findByText('Test chat')).toBeInTheDocument();
+    expect(await screen.findAllByText('Test chat')).toBeInTheDocument();
     expect(screen.getByText('Локально · test.gguf')).toBeInTheDocument();
     expect(storage.getActiveConversationId).toHaveBeenCalled();
     expect(storage.getConversation).toHaveBeenCalledWith('c1');
@@ -86,7 +86,7 @@ describe('ChatWorkspace interactions', () => {
 
   it('creates a new chat and refreshes the sidebar', async () => {
     render(<ChatWorkspace runtime={createRuntime()} fileName="model.gguf" />);
-    await screen.findByText('Test chat');
+    await screen.findAllByText('Test chat');
 
     fireEvent.click(screen.getByRole('button', { name: 'Новый чат' }));
 
@@ -97,7 +97,7 @@ describe('ChatWorkspace interactions', () => {
   it('renames the active conversation', async () => {
     window.prompt.mockReturnValue('Renamed');
     render(<ChatWorkspace runtime={createRuntime()} fileName="model.gguf" />);
-    await screen.findByText('Test chat');
+    await screen.findAllByText('Test chat');
 
     fireEvent.click(screen.getByRole('button', { name: 'Переименовать' }));
 
@@ -108,7 +108,7 @@ describe('ChatWorkspace interactions', () => {
   it('ignores rename when the prompt is cancelled', async () => {
     window.prompt.mockReturnValue(null);
     render(<ChatWorkspace runtime={createRuntime()} fileName="model.gguf" />);
-    await screen.findByText('Test chat');
+    await screen.findAllByText('Test chat');
 
     fireEvent.click(screen.getByRole('button', { name: 'Переименовать' }));
     await waitFor(() => expect(window.prompt).toHaveBeenCalled());
@@ -119,7 +119,7 @@ describe('ChatWorkspace interactions', () => {
     storage.deleteConversation.mockResolvedValue(null);
     storage.createConversation.mockResolvedValue(conversation({ id: 'c3', title: 'Replacement' }));
     render(<ChatWorkspace runtime={createRuntime()} fileName="model.gguf" />);
-    await screen.findByText('Test chat');
+    await screen.findAllByText('Test chat');
 
     fireEvent.click(screen.getByRole('button', { name: 'Удалить' }));
 
@@ -131,7 +131,7 @@ describe('ChatWorkspace interactions', () => {
   it('cancels deletion when confirmation is declined', async () => {
     window.confirm.mockReturnValueOnce(false);
     render(<ChatWorkspace runtime={createRuntime()} fileName="model.gguf" />);
-    await screen.findByText('Test chat');
+    await screen.findAllByText('Test chat');
 
     fireEvent.click(screen.getByRole('button', { name: 'Удалить' }));
     await waitFor(() => expect(window.confirm).toHaveBeenCalled());
@@ -141,7 +141,7 @@ describe('ChatWorkspace interactions', () => {
   it('sends a message, streams the assistant reply and stores token usage', async () => {
     const runtime = createRuntime();
     render(<ChatWorkspace runtime={runtime} fileName="model.gguf" />);
-    await screen.findByText('Test chat');
+    await screen.findAllByText('Test chat');
 
     const input = screen.getByRole('textbox', { name: 'Сообщение' });
     fireEvent.change(input, { target: { value: 'Hello' } });
@@ -159,7 +159,7 @@ describe('ChatWorkspace interactions', () => {
     storage.getConversation.mockResolvedValue(conversation({ systemPrompt: '  Be concise  ' }));
     const runtime = createRuntime();
     render(<ChatWorkspace runtime={runtime} fileName="model.gguf" />);
-    await screen.findByText('Test chat');
+    await screen.findAllByText('Test chat');
 
     fireEvent.change(screen.getByRole('textbox', { name: 'Сообщение' }), { target: { value: 'Hi' } });
     fireEvent.click(screen.getByRole('button', { name: 'Отправить' }));
@@ -217,7 +217,7 @@ describe('ChatWorkspace interactions', () => {
       }),
     });
     render(<ChatWorkspace runtime={runtime} fileName="model.gguf" />);
-    await screen.findByText('Test chat');
+    await screen.findAllByText('Test chat');
 
     fireEvent.change(screen.getByRole('textbox', { name: 'Сообщение' }), { target: { value: 'Hello' } });
     fireEvent.click(screen.getByRole('button', { name: 'Отправить' }));
@@ -241,7 +241,7 @@ describe('ChatWorkspace interactions', () => {
       streamChat: vi.fn().mockRejectedValue(new Error('boom')),
     });
     render(<ChatWorkspace runtime={runtime} fileName="model.gguf" />);
-    await screen.findByText('Test chat');
+    await screen.findAllByText('Test chat');
 
     fireEvent.change(screen.getByRole('textbox', { name: 'Сообщение' }), { target: { value: 'Hello' } });
     fireEvent.click(screen.getByRole('button', { name: 'Отправить' }));
@@ -256,7 +256,7 @@ describe('ChatWorkspace interactions', () => {
   it('prevents sending when the runtime is not loaded', async () => {
     const runtime = createRuntime({ isLoaded: vi.fn(() => false) });
     render(<ChatWorkspace runtime={runtime} fileName="model.gguf" />);
-    await screen.findByText('Test chat');
+    await screen.findAllByText('Test chat');
 
     fireEvent.change(screen.getByRole('textbox', { name: 'Сообщение' }), { target: { value: 'Hello' } });
     fireEvent.click(screen.getByRole('button', { name: 'Отправить' }));
@@ -267,7 +267,7 @@ describe('ChatWorkspace interactions', () => {
   it('calls unload when generation is idle', async () => {
     const onUnload = vi.fn().mockResolvedValue(undefined);
     render(<ChatWorkspace runtime={createRuntime()} fileName="model.gguf" onUnload={onUnload} />);
-    await screen.findByText('Test chat');
+    await screen.findAllByText('Test chat');
 
     fireEvent.click(screen.getByRole('button', { name: 'Выгрузить' }));
     await waitFor(() => expect(onUnload).toHaveBeenCalled());
