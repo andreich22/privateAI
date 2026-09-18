@@ -269,7 +269,7 @@ describe('AIRuntime', () => {
 
     expect(result).toEqual({ fileHandle });
     expect(progress).toHaveBeenCalledWith(5);
-    expect(progress).toHaveBeenCalledWith(16);
+    expect(progress).toHaveBeenCalledWith(10);
     expect(progress).toHaveBeenLastCalledWith(100);
     expect(runtime.isLoaded()).toBe(true);
 
