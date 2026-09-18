@@ -41,6 +41,15 @@ jobs:
       - name: Test coverage
         run: npm run test:coverage
 
+      - name: Upload coverage HTML report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-coverage-report
+          path: coverage/
+          if-no-files-found: warn
+          retention-days: 14
+
       - name: Check coverage regression
         if: github.event_name == 'pull_request'
         run: |
