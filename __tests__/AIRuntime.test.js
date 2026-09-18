@@ -274,7 +274,7 @@ describe('AIRuntime', () => {
     fileHandle.createWritable = vi.fn().mockResolvedValue({ write: vi.fn(), close: vi.fn() });
     const progress = vi.fn();
 
-    const result = await runtime.loadModelFromHF(progress, fileHandle, { n_gpu_layers: 3 });
+    const result = await runtime.loadModelFromHF(progress, fileHandle, { n_gpu_layers: 0 });
 
     expect(result).toEqual({ fileHandle });
     expect(progress).toHaveBeenCalledWith(62.5);
@@ -285,7 +285,7 @@ describe('AIRuntime', () => {
     const { Wllama } = await import('@wllama/wllama');
     expect(Wllama.getFreshInstance().loadModel).toHaveBeenCalledWith(
       [expect.any(File)],
-      expect.objectContaining({ n_gpu_layers: 3 }),
+      expect.objectContaining({ n_gpu_layers: 0 }),
     );
   });
 
