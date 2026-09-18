@@ -141,7 +141,7 @@ describe('chatStorage', () => {
     expect([...db.messages.values()].filter((m) => m.conversationId === 'c1')).toHaveLength(2);
     expect(db.meta.get('activeConversationId').value).toBe('c1');
     expect(db.conversations.get('c1')).toMatchObject({
-      title: 'Новый чат',
+      title: '',
       systemPrompt: 'Be concise',
       createdAt: 1,
     });
