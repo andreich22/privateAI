@@ -151,6 +151,7 @@ button:focus-visible, input:focus-visible, textarea:focus-visible {
 .conversation-item.active .conversation-date { color: #71717a; }
 
 .chat-main {
+  position: relative;
   display: flex;
   flex: 1;
   min-width: 0;
@@ -170,9 +171,181 @@ button:focus-visible, input:focus-visible, textarea:focus-visible {
   font-weight: 600;
 }
 
-.settings-strip {
-  border-bottom: 1px solid #1f1f22;
-  background: #0f0f11;
+.settings-sidebar {
+  display: flex;
+  flex: 0 0 320px;
+  flex-direction: column;
+  min-height: 0;
+  border-left: 1px solid #27272a;
+  background: #111113;
+}
+
+.settings-sidebar-header {
+  padding: 18px 16px 14px;
+  border-bottom: 1px solid #27272a;
+}
+
+.settings-sidebar-title {
+  color: #f4f4f5;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.settings-sidebar-subtitle {
+  margin-top: 4px;
+  color: #71717a;
+  font-size: 10px;
+  line-height: 1.45;
+}
+
+.settings-sidebar-content {
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.settings-section {
+  display: grid;
+  gap: 14px;
+  padding: 16px;
+  border-bottom: 1px solid #27272a;
+}
+
+.settings-section-title {
+  color: #d4d4d8;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.settings-field {
+  display: grid;
+  gap: 7px;
+  color: #a1a1aa;
+  font-size: 11px;
+}
+
+.settings-field span {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.settings-field strong {
+  color: #e4e4e7;
+  font-weight: 600;
+}
+
+.settings-field small {
+  color: #52525b;
+  font-size: 9px;
+}
+
+.settings-field textarea,
+.settings-field input[type="number"] {
+  width: 100%;
+  border: 1px solid #3f3f46;
+  border-radius: 9px;
+  background: #18181b;
+  color: #f4f4f5;
+}
+
+.settings-field textarea {
+  min-height: 96px;
+  resize: vertical;
+  padding: 9px 10px;
+  outline: 0;
+  line-height: 1.45;
+  font-size: 11px;
+}
+
+.settings-field input[type="number"] {
+  padding: 8px 9px;
+}
+
+.settings-field input[type="range"] {
+  width: 100%;
+  accent-color: #f4f4f5;
+  cursor: pointer;
+}
+
+.settings-field textarea:focus {
+  border-color: #52525b;
+}
+
+.layer-summary {
+  display: flex;
+  justify-content: space-between;
+  padding: 9px 10px;
+  border: 1px solid #27272a;
+  border-radius: 9px;
+  background: #18181b;
+  color: #71717a;
+  font-size: 10px;
+}
+
+.layer-summary strong {
+  color: #d4d4d8;
+}
+
+.settings-muted,
+.settings-hint {
+  color: #71717a;
+  font-size: 10px;
+  line-height: 1.5;
+}
+
+.settings-hint {
+  color: #52525b;
+}
+
+.settings-error {
+  padding: 8px 9px;
+  border: 1px solid #4a252b;
+  border-radius: 8px;
+  background: #211316;
+  color: #fda4af;
+  font-size: 10px;
+  line-height: 1.4;
+}
+
+.settings-actions {
+  display: grid;
+  gap: 7px;
+}
+
+.settings-primary,
+.settings-reset {
+  width: 100%;
+  border: 1px solid #3f3f46;
+  border-radius: 8px;
+  padding: 8px 10px;
+  cursor: pointer;
+  font-size: 11px;
+}
+
+.settings-primary {
+  background: #f4f4f5;
+  color: #111113;
+  font-weight: 600;
+}
+
+.settings-primary:hover {
+  background: #fff;
+}
+
+.settings-reset {
+  background: #18181b;
+  color: #a1a1aa;
+}
+
+.settings-reset:hover {
+  background: #222225;
+  color: #f4f4f5;
+}
+
+.settings-primary:disabled,
+.settings-reset:disabled {
+  opacity: .4;
+  cursor: not-allowed;
 }
 
 .token-strip {
@@ -247,7 +420,7 @@ button:focus-visible, input:focus-visible, textarea:focus-visible {
   position: absolute;
   right: 0;
   bottom: 0;
-  left: 258px;
+  left: 0;
   padding: 0 20px 18px;
   background: linear-gradient(to bottom, transparent, #0b0b0f 28%);
   pointer-events: none;
@@ -359,12 +532,24 @@ button:focus-visible, input:focus-visible, textarea:focus-visible {
   .conversation-item.active .conversation-title::before { color: #fff; }
   .new-chat { padding: 10px; text-align: center; font-size: 0; }
   .new-chat::before { content: "+"; font-size: 20px; }
-  .composer-wrap { left: 66px; padding: 0 10px 10px; }
+  .settings-sidebar { flex-basis: 280px; }
+  .composer-wrap { left: 0; padding: 0 10px 10px; }
   .messages-box { padding-right: 12px; padding-left: 12px; }
   .message.user { max-width: 94%; }
   .header-actions .ghost-button { display: none; }
   .model-name { max-width: 160px; }
   .token-strip { overflow-x: auto; }
+}
+
+@media (max-width: 900px) {
+  .settings-sidebar { flex-basis: 280px; }
+}
+
+@media (max-width: 680px) {
+  .settings-sidebar { flex-basis: 240px; }
+  .settings-sidebar-header { padding: 14px 12px; }
+  .settings-section { padding: 12px; }
+  .settings-sidebar-subtitle { display: none; }
 }
 
 @media (max-width: 480px) {
