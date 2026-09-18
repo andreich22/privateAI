@@ -181,7 +181,7 @@ describe('ChatWorkspace local chat history', () => {
     render(<ChatWorkspace runtime={runtime} fileName="model.gguf" onUnload={vi.fn()} />);
     await waitFor(() => expect(screen.getAllByText('Сохранённый чат').length).toBeGreaterThan(0));
 
-    const input = screen.getByPlaceholderText('1+1 = ?');
+    const input = screen.getByPlaceholderText('Сообщение privateAI…');
     fireEvent.change(input, { target: { value: 'Вопрос' } });
     fireEvent.submit(input.closest('form'));
 
@@ -211,7 +211,7 @@ describe('ChatWorkspace local chat history', () => {
     render(<ChatWorkspace runtime={runtime} fileName="model.gguf" onUnload={vi.fn()} />);
     await screen.findByText('Меня зовут Андрей.');
 
-    const input = screen.getByPlaceholderText('1+1 = ?');
+    const input = screen.getByPlaceholderText('Сообщение privateAI…');
     fireEvent.change(input, { target: { value: 'Как меня зовут?' } });
     fireEvent.submit(input.closest('form'));
 
@@ -244,7 +244,7 @@ describe('ChatWorkspace local chat history', () => {
     render(<ChatWorkspace runtime={runtime} fileName="model.gguf" onUnload={vi.fn()} />);
     await screen.findByText('Первый вопрос');
 
-    const input = screen.getByPlaceholderText('1+1 = ?');
+    const input = screen.getByPlaceholderText('Сообщение privateAI…');
     fireEvent.change(input, { target: { value: 'Второй вопрос' } });
     fireEvent.submit(input.closest('form'));
 
@@ -275,14 +275,14 @@ describe('ChatWorkspace local chat history', () => {
     render(<ChatWorkspace runtime={runtime} fileName="model.gguf" onUnload={vi.fn()} />);
     await waitFor(() => expect(screen.getAllByText('Сохранённый чат').length).toBeGreaterThan(0));
 
-    const input = screen.getByPlaceholderText('1+1 = ?');
+    const input = screen.getByPlaceholderText('Сообщение privateAI…');
     fireEvent.change(input, { target: { value: 'Долгий вопрос' } });
     fireEvent.submit(input.closest('form'));
 
     await waitFor(() => expect(screen.getByRole('button', { name: 'Остановить' })).toBeInTheDocument());
     fireEvent.click(screen.getByRole('button', { name: 'Остановить' }));
 
-    await waitFor(() => expect(screen.getByPlaceholderText('1+1 = ?')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByPlaceholderText('Сообщение privateAI…')).toBeInTheDocument());
     expect(runtime.cancelGeneration).toHaveBeenCalledOnce();
     const saved = saveConversation.mock.calls.map(([value]) => value);
     expect(saved.at(-1).messages.at(-1)).toMatchObject({
