@@ -1,5 +1,7 @@
 # privateAI
 
+[🇬🇧 English](README.md) · [🇷🇺 Русский](README.ru.md)
+
 A privacy-first local AI chat application that runs entirely in your browser. Models are loaded locally and inference is performed client-side using WebAssembly/WebGPU, so chat data does not need to be sent to a remote AI server.
 
 ## Features
