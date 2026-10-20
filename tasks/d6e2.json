@@ -1,0 +1,90 @@
+{
+  "id": "d6e2",
+  "title": "Предупреждать о поддержке только Chromium-браузеров",
+  "status": "draft",
+  "createdAt": "2026-10-20T13:53:31.084Z",
+  "updatedAt": "2026-10-20T13:53:31.084Z",
+  "issue": {
+    "number": 83,
+    "url": "https://github.com/andreich22/privateAI/issues/83",
+    "title": "TASK-d6e2 Предупреждать о поддержке только Chromium-браузеров"
+  },
+  "description": "## Goal\n\nПоказывать на всех экранах приложения модальное предупреждение, если браузер не основан на Chromium, и дать пользователю возможность скрыть его навсегда через чекбокс «Не показывать снова».\n\n## Context\n\n`privateAI` запускает GGUF-модель локально через Wllama/WebAssembly/WebGPU и рассчитан на современные Chromium-браузеры (Chrome, Edge, Brave, Opera и т. п.). В Firefox, Safari и на iOS приложение не сможет полноценно загрузить и запустить модель, но пользователь может этого не знать. Предупреждение должно объяснить ограничение и не мешать повторно после явного отказа.\n\n## Requirements\n\n### 1. Определение браузера\n\n- Добавить модуль `src/services/browserSupport.js` с функцией `isChromiumBased(navigatorLike?)`.\n- Считать Chromium-браузерами: Chrome, Edge, Brave, Opera, Vivaldi, Arc, Samsung Internet, Android Chrome и другие производные Chromium.\n- Считать не-Chromium: Firefox (desktop/Android), Safari (macOS), все браузеры на iOS/iPadOS (Chrome iOS, Firefox iOS, Edge iOS используют WebKit), а также любые неизвестные браузеры без признаков Chromium.\n- Приоритетная проверка — `navigator.userAgentData.brands` (наличие бренда `Chromium`/`Google Chrome`).\n- Fallback — строка `navigator.userAgent` (`Chrome/`, `Chromium/`), с обязательным исключением iOS/iPadOS.\n- Не использовать наличие `navigator.gpu` как единственный критерий: Chromium без WebGPU остаётся Chromium (для этого уже есть отдельный env-banner).\n- Переиспользовать новый helper в `src/App.jsx` вместо текущей упрощённой проверки (`App.jsx:27-28`), чтобы не было двух расходящихся детекторов. Env-banner может продолжать показывать название браузера.\n- Функция не должна падать при отсутствии `navigator`, `userAgentData` или `userAgent` (тестовая среда, старые браузеры).\n\n### 2. Модальное окно\n\n- Новый компонент `src/components/BrowserWarningModal.jsx`.\n- Рендерится на корневом уровне `App.jsx`, поэтому виден на всех состояниях: `checking`, `welcome`, `access`, `loading`, `chat`.\n- Показывается один раз за загрузку страницы; при переходах между экранами не пересоздаётся и не появляется повторно.\n- Содержимое:\n  - заголовок: «Приложение работает только в Chromium-браузерах»;\n  - текст: «PrivateAI запускает модель прямо в браузере и требует Chromium: Google Chrome, Microsoft Edge, Brave, Opera, Vivaldi и другие. В Firefox, Safari и на iOS приложение не сможет загрузить модель.»;\n  - рекомендация: «Откройте эту страницу в Chromium-браузере на компьютере.»;\n  - чекбокс «Не показывать снова»;\n  - кнопка «Продолжить».\n- Закрытие: кнопка «Продолжить» или `Escape` (обрабатывается так же, как «Продолжить»). Клик по подложке не закрывает окно, чтобы избежать случайного отказа.\n- Доступность: `role=\"dialog\"`, `aria-modal=\"true\"`, `aria-labelledby`/`aria-describedby`, начальный фокус на кнопке, удержание фокуса внутри диалога, возврат фокуса после закрытия. Чекбокс связан с `label` и управляется клавиатурой.\n- Модалка не блокирует загрузку приложения: она оверлей, пользователь может закрыть её и продолжить на свой риск.\n- `z-index` выше существующего env-banner (`9999`), например `10000`.\n- Стили — в `src/index.css`, в стиле текущей тёмной темы; адаптивность для узких экранов; без новых зависимостей.\n\n### 3. Сохранение отказа\n\n- Ключ localStorage: `privateai.browserWarning.dismissed`, значение `\"1\"`.\n- При монтировании читать флаг; если он установлен — модалка не показывается.\n- При нажатии «Продолжить»:\n  - чекбокс отмечен → сохранить флаг;\n  - чекбокс не отмечен → удалить флаг (на случай устаревшего значения).\n- Доступ к `localStorage` оборачивать в проверки/`try..catch` по образцу `src/services/generationSettings.js` (SSR/тестовая среда/приватный режим).\n- Флаг переживает перезагрузку страницы и не зависит от IndexedDB, выбранной модели или истории чатов.\n- Хелперы `isBrowserWarningDismissed()`, `dismissBrowserWarning()`, `resetBrowserWarningDismissal()` держать в `browserSupport.js` (или отдельном модуле рядом), чтобы их можно было покрыть тестами.\n\n### 4. Приватность и безопасность\n\n- Никаких сетевых запросов, телеметрии, аналитики и внешних ссылок/скриптов.\n- Не добавлять зависимости.\n- Текст модалки — статический, без `dangerouslySetInnerHTML`.\n\n## Definition of Ready\n\n- `App.jsx` — корневой компонент, который рендерит все экраны; состояние `checking` возвращается отдельной веткой (`App.jsx:167`), поэтому модалку нужно вынести за пределы веток экранов.\n- Готового модального компонента в проекте нет; стили централизованы в `src/index.css`.\n- Паттерн безопасного доступа к `localStorage` уже есть в `src/services/generationSettings.js` и `src/services/executionSettings.js`.\n- В `App.jsx:27-28` уже есть упрощённое определение браузера (`Firefox`/`Chrome`/`Other`) только для env-banner; его нужно заменить общим helper.\n- Тесты: Vitest + Testing Library в `__tests__/`, Playwright в `tests/`.\n- Фича полностью локальная, бэкенд не нужен.\n\n## Acceptance Criteria\n\n- [ ] В Firefox и Safari (macOS) модалка появляется сразу при загрузке, включая состояние «Проверка среды...», и остаётся доступной при переходе на welcome/access/loading/chat.\n- [ ] На iOS/iPadOS модалка показывается во всех браузерах, включая Chrome/Firefox/Edge для iOS.\n- [ ] В Chrome, Edge, Brave, Opera, Vivaldi, Samsung Internet и других Chromium-браузерах модалка не показывается.\n- [ ] Чекбокс «Не показывать снова» + «Продолжить»: после перезагрузки модалки нет, в localStorage установлен `privateai.browserWarning.dismissed = \"1\"`.\n- [ ] Без чекбокса + «Продолжить»: после перезагрузки модалка появляется снова, флаг отсутствует.\n- [ ] `Escape` закрывает модалку аналогично «Продолжить».\n- [ ] Диалог доступен с клавиатуры и скринридера (`role`, `aria-*`, фокус).\n- [ ] Нет сетевых запросов и новых зависимостей.\n- [ ] `npm run test:run`, `npm run build`, `npm run tasks:validate` проходят.\n- [ ] Добавлены unit/component-тесты; E2E-тест с подменой User-Agent — по возможности.\n\n## Testing\n\n- `__tests__/browserSupport.test.js`:\n  - UA-CH brands с `Chromium` → true; без `Chromium` → false;\n  - UA fallback: Chrome desktop, Edge, Opera, Samsung Internet → true;\n  - Firefox, Safari macOS, Chrome iOS/CriOS, Firefox iOS/FxiOS → false;\n  - отсутствие `navigator`/`userAgentData`/`userAgent` не вызывает исключение;\n  - сохранение/чтение/сброс флага при доступном и недоступном localStorage.\n- `__tests__/BrowserWarningModal.test.jsx`:\n  - рендер при не-Chromium и отсутствии флага;\n  - отсутствие рендера при Chromium или установленном флаге;\n  - установка флага при отмеченном чекбоксе и удаление при снятом;\n  - `Escape`, `aria`-атрибуты, фокус.\n- Интеграционный тест App: модалка видна на `checking` и сохраняется при переходе на следующий экран.\n- Опционально `tests/browser-warning.spec.js`: Playwright `test.use({ userAgent })` для Firefox UA; очистка localStorage между тестами.\n\n## Technical Approach\n\n1. `src/services/browserSupport.js`:\n   - `isChromiumBased(nav = typeof navigator !== 'undefined' ? navigator : undefined)`;\n   - проверка `nav.userAgentData?.brands?.some(({ brand }) => /Chromium|Google Chrome/i.test(brand))`;\n   - fallback: исключить `/iPad|iPhone|iPod/` и `CriOS|FxiOS|EdgiOS`, затем проверить `/Chrome\\/|Chromium\\//`;\n   - storage-хелперы с `STORAGE_KEY = 'privateai.browserWarning.dismissed'`.\n2. `BrowserWarningModal.jsx`: локальный `useState(false)` для чекбокса, `useEffect` для начального фокуса/`keydown` Escape/возврата фокуса; пропсы `onConfirm`.\n3. `App.jsx`: вычислить `isChromium` и `isDismissed` один раз через `useState`-инициализаторы; обернуть все ветки рендера в общий layout и добавить `{showWarning && <BrowserWarningModal ... />}`; не дублировать модалку в каждом экране.\n4. `index.css`: backdrop, карточка, заголовок, текст, чекбокс, кнопка, адаптивность.\n\n## Out of Scope\n\n- Жёсткая блокировка приложения или редирект в Chrome.\n- Ссылки на скачивание браузеров и установка ПО.\n- Проверка WebGPU/COOP/COEP (уже покрыта env-banner и экранными ошибками).\n- Серверная аналитика или сбор статистики браузеров.\n\n## Definition of Done\n\n- Все acceptance criteria выполнены.\n- Добавлены и проходят unit/component-тесты (и E2E, если реализован).\n- `npm run test:run`, `npm run build`, `npm run tasks:validate` проходят.\n- Коммиты в формате `<type>: <task-id> | <description>`.\n- История задачи и PR обновлены, указаны риски и ограничения.",
+  "requirements": [
+    "### 1. Определение браузера",
+    "Добавить модуль `src/services/browserSupport.js` с функцией `isChromiumBased(navigatorLike?)`.",
+    "Считать Chromium-браузерами: Chrome, Edge, Brave, Opera, Vivaldi, Arc, Samsung Internet, Android Chrome и другие производные Chromium.",
+    "Считать не-Chromium: Firefox (desktop/Android), Safari (macOS), все браузеры на iOS/iPadOS (Chrome iOS, Firefox iOS, Edge iOS используют WebKit), а также любые неизвестные браузеры без признаков Chromium.",
+    "Приоритетная проверка — `navigator.userAgentData.brands` (наличие бренда `Chromium`/`Google Chrome`).",
+    "Fallback — строка `navigator.userAgent` (`Chrome/`, `Chromium/`), с обязательным исключением iOS/iPadOS.",
+    "Не использовать наличие `navigator.gpu` как единственный критерий: Chromium без WebGPU остаётся Chromium (для этого уже есть отдельный env-banner).",
+    "Переиспользовать новый helper в `src/App.jsx` вместо текущей упрощённой проверки (`App.jsx:27-28`), чтобы не было двух расходящихся детекторов. Env-banner может продолжать показывать название браузера.",
+    "Функция не должна падать при отсутствии `navigator`, `userAgentData` или `userAgent` (тестовая среда, старые браузеры).",
+    "### 2. Модальное окно",
+    "Новый компонент `src/components/BrowserWarningModal.jsx`.",
+    "Рендерится на корневом уровне `App.jsx`, поэтому виден на всех состояниях: `checking`, `welcome`, `access`, `loading`, `chat`.",
+    "Показывается один раз за загрузку страницы; при переходах между экранами не пересоздаётся и не появляется повторно.",
+    "Содержимое:",
+    "заголовок: «Приложение работает только в Chromium-браузерах»;",
+    "текст: «PrivateAI запускает модель прямо в браузере и требует Chromium: Google Chrome, Microsoft Edge, Brave, Opera, Vivaldi и другие. В Firefox, Safari и на iOS приложение не сможет загрузить модель.»;",
+    "рекомендация: «Откройте эту страницу в Chromium-браузере на компьютере.»;",
+    "чекбокс «Не показывать снова»;",
+    "кнопка «Продолжить».",
+    "Закрытие: кнопка «Продолжить» или `Escape` (обрабатывается так же, как «Продолжить»). Клик по подложке не закрывает окно, чтобы избежать случайного отказа.",
+    "Доступность: `role=\"dialog\"`, `aria-modal=\"true\"`, `aria-labelledby`/`aria-describedby`, начальный фокус на кнопке, удержание фокуса внутри диалога, возврат фокуса после закрытия. Чекбокс связан с `label` и управляется клавиатурой.",
+    "Модалка не блокирует загрузку приложения: она оверлей, пользователь может закрыть её и продолжить на свой риск.",
+    "`z-index` выше существующего env-banner (`9999`), например `10000`.",
+    "Стили — в `src/index.css`, в стиле текущей тёмной темы; адаптивность для узких экранов; без новых зависимостей.",
+    "### 3. Сохранение отказа",
+    "Ключ localStorage: `privateai.browserWarning.dismissed`, значение `\"1\"`.",
+    "При монтировании читать флаг; если он установлен — модалка не показывается.",
+    "При нажатии «Продолжить»:",
+    "чекбокс отмечен → сохранить флаг;",
+    "чекбокс не отмечен → удалить флаг (на случай устаревшего значения).",
+    "Доступ к `localStorage` оборачивать в проверки/`try..catch` по образцу `src/services/generationSettings.js` (SSR/тестовая среда/приватный режим).",
+    "Флаг переживает перезагрузку страницы и не зависит от IndexedDB, выбранной модели или истории чатов.",
+    "Хелперы `isBrowserWarningDismissed()`, `dismissBrowserWarning()`, `resetBrowserWarningDismissal()` держать в `browserSupport.js` (или отдельном модуле рядом), чтобы их можно было покрыть тестами.",
+    "### 4. Приватность и безопасность",
+    "Никаких сетевых запросов, телеметрии, аналитики и внешних ссылок/скриптов.",
+    "Не добавлять зависимости.",
+    "Текст модалки — статический, без `dangerouslySetInnerHTML`."
+  ],
+  "definitionOfReady": [
+    "`App.jsx` — корневой компонент, который рендерит все экраны; состояние `checking` возвращается отдельной веткой (`App.jsx:167`), поэтому модалку нужно вынести за пределы веток экранов.",
+    "Готового модального компонента в проекте нет; стили централизованы в `src/index.css`.",
+    "Паттерн безопасного доступа к `localStorage` уже есть в `src/services/generationSettings.js` и `src/services/executionSettings.js`.",
+    "В `App.jsx:27-28` уже есть упрощённое определение браузера (`Firefox`/`Chrome`/`Other`) только для env-banner; его нужно заменить общим helper.",
+    "Тесты: Vitest + Testing Library в `__tests__/`, Playwright в `tests/`.",
+    "Фича полностью локальная, бэкенд не нужен."
+  ],
+  "acceptanceCriteria": [
+    "В Firefox и Safari (macOS) модалка появляется сразу при загрузке, включая состояние «Проверка среды...», и остаётся доступной при переходе на welcome/access/loading/chat.",
+    "На iOS/iPadOS модалка показывается во всех браузерах, включая Chrome/Firefox/Edge для iOS.",
+    "В Chrome, Edge, Brave, Opera, Vivaldi, Samsung Internet и других Chromium-браузерах модалка не показывается.",
+    "Чекбокс «Не показывать снова» + «Продолжить»: после перезагрузки модалки нет, в localStorage установлен `privateai.browserWarning.dismissed = \"1\"`.",
+    "Без чекбокса + «Продолжить»: после перезагрузки модалка появляется снова, флаг отсутствует.",
+    "`Escape` закрывает модалку аналогично «Продолжить».",
+    "Диалог доступен с клавиатуры и скринридера (`role`, `aria-*`, фокус).",
+    "Нет сетевых запросов и новых зависимостей.",
+    "`npm run test:run`, `npm run build`, `npm run tasks:validate` проходят.",
+    "Добавлены unit/component-тесты; E2E-тест с подменой User-Agent — по возможности."
+  ],
+  "technicalApproach": [],
+  "definitionOfDone": [
+    "Все acceptance criteria выполнены.",
+    "Добавлены и проходят unit/component-тесты (и E2E, если реализован).",
+    "`npm run test:run`, `npm run build`, `npm run tasks:validate` проходят.",
+    "Коммиты в формате `<type>: <task-id> | <description>`.",
+    "История задачи и PR обновлены, указаны риски и ограничения."
+  ],
+  "history": [
+    {
+      "at": "2026-10-20T13:53:31.084Z",
+      "event": "created_from_issue",
+      "details": "Automatically registered from GitHub Issue #83."
+    }
+  ],
+  "commits": [],
+  "decisionLog": [],
+  "relations": []
+}
