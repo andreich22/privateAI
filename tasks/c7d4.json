@@ -62,6 +62,10 @@
     {
       "sha": "b5cab5f",
       "message": "chore: c7d4 | set app port to 5181"
+    },
+    {
+      "sha": "7747430",
+      "message": "fix: c7d4 | align Playwright config with port 5181"
     }
   ],
   "decisionLog": [],
