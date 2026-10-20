@@ -36,6 +36,11 @@ describe('WelcomeScreen', () => {
     const html = renderComponent(WelcomeScreen, { onSelect: () => {}, onHF: () => {} });
     expect(html).toContain('GGUF');
   });
+
+  it('renders a skip action when onSkip is provided', () => {
+    const html = renderComponent(WelcomeScreen, { onSelect: () => {}, onHF: () => {}, onSkip: () => {} });
+    expect(html).toContain('Перейти в чат без модели');
+  });
 });
 
 describe('LoadingScreen', () => {
@@ -83,6 +88,11 @@ describe('AccessScreen', () => {
   it('renders error message when provided', () => {
     const html = renderComponent(AccessScreen, { fileName: 'model.gguf', onConfirm: () => {}, onReset: () => {}, onHF: () => {}, error: 'Permission denied' });
     expect(html).toContain('Permission denied');
+  });
+
+  it('renders a skip action when onSkip is provided', () => {
+    const html = renderComponent(AccessScreen, { fileName: 'model.gguf', onConfirm: () => {}, onReset: () => {}, onHF: () => {}, onSkip: () => {} });
+    expect(html).toContain('Перейти в чат без модели');
   });
 });
 
