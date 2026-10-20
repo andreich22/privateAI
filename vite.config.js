@@ -19,10 +19,14 @@ export default defineConfig({
       }
     : undefined,
   server: {
+    port: 5181,
     headers: {
       'Cross-Origin-Opener-Policy': 'same-origin',
       'Cross-Origin-Embedder-Policy': 'require-corp',
     },
+  },
+  preview: {
+    port: 5181,
   },
   build: {
     target: 'esnext',
