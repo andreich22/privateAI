@@ -8,7 +8,7 @@ export default defineConfig({
   retries: process.env.CI ? 2 : 0,
   workers: process.env.CI ? 1 : undefined,
   use: {
-    baseURL: 'http://localhost:5173',
+    baseURL: 'http://localhost:5181',
     headless: true,
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
@@ -28,7 +28,7 @@ export default defineConfig({
   ],
   webServer: {
     command: 'npm run dev',
-    port: 5173,
+    port: 5181,
     reuseExistingServer: !process.env.CI,
     timeout: 30000,
     env: { PLAYWRIGHT_TEST: '1' },
