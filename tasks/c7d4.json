@@ -3,7 +3,7 @@
   "title": "Изменить порт приложения на 5181",
   "status": "in_progress",
   "createdAt": "2026-10-20T12:56:41.940Z",
-  "updatedAt": "2026-10-20T13:05:00.000Z",
+  "updatedAt": "2026-10-20T13:10:00.000Z",
   "issue": {
     "number": 79,
     "url": "https://github.com/andreich22/privateAI/issues/79",
@@ -46,9 +46,19 @@
       "at": "2026-10-20T13:05:00.000Z",
       "event": "implementation_started",
       "details": "Branch task/c7d4-set-app-port. Set Vite server and preview port to 5181, COOP/COEP preserved."
+    },
+    {
+      "at": "2026-10-20T13:10:00.000Z",
+      "event": "implementation_validated",
+      "details": "Dev server served on port 5181 (HTTP 200). npm run test:run (218 tests), npm run build and npm run tasks:validate pass."
     }
   ],
-  "commits": [],
+  "commits": [
+    {
+      "sha": "b5cab5f",
+      "message": "chore: c7d4 | set app port to 5181"
+    }
+  ],
   "decisionLog": [],
   "relations": []
 }
