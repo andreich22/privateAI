@@ -1,9 +1,9 @@
 {
   "id": "b8f2",
   "title": "Пропуск выбора модели и запуск модели из чата по требованию",
-  "status": "draft",
+  "status": "in_progress",
   "createdAt": "2026-10-20T12:12:39.644Z",
-  "updatedAt": "2026-10-20T12:12:39.644Z",
+  "updatedAt": "2026-10-20T12:40:00.000Z",
   "issue": {
     "number": 75,
     "url": "https://github.com/andreich22/privateAI/issues/75",
@@ -50,9 +50,24 @@
       "at": "2026-10-20T12:12:39.644Z",
       "event": "created_from_issue",
       "details": "Automatically registered from GitHub Issue #75."
+    },
+    {
+      "at": "2026-10-20T12:35:00.000Z",
+      "event": "implementation_started",
+      "details": "Branch task/b8f2-skip-model-selection. Added skip-model actions to Welcome/Access, no-model chat state with model actions, explicit send notice, and tests."
+    },
+    {
+      "at": "2026-10-20T12:40:00.000Z",
+      "event": "implementation_validated",
+      "details": "npm run test:run (218 tests), npm run build and npm run tasks:validate pass."
     }
   ],
-  "commits": [],
+  "commits": [
+    {
+      "sha": "b639227",
+      "message": "feat: b8f2 | allow entering chat without a model and select model on demand"
+    }
+  ],
   "decisionLog": [],
   "relations": []
 }

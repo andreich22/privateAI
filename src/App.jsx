@@ -57,17 +57,26 @@ export default function App() {
 
   const getExecutionSettings = () => loadExecutionSettings();
 
+  const getLoadReturnStatus = () => (status === 'chat' ? 'chat' : 'access');
+
+  const handleSkipModel = () => {
+    setError('');
+    setStatus('chat');
+  };
+
   const handleSelectFile = async () => {
+    const returnStatus = getLoadReturnStatus();
     setError('');
     const handle = await selectAndSaveFile();
     if (handle) {
       setFileHandle(handle);
       setFileName(handle.name);
-      await handleStartModel(handle);
+      await handleStartModel(handle, getExecutionSettings(), returnStatus);
     }
   };
 
   const handleLoadFromHF = async () => {
+    const returnStatus = getLoadReturnStatus();
     setError('');
     const handle = await saveFilePicker('Qwen3.8-2B-Q4_K_M.gguf');
     if (!handle) return;
@@ -82,19 +91,19 @@ export default function App() {
       setStatus('chat');
     } catch (err) {
       if (err.name === 'AbortError') {
-        setStatus('access');
+        setStatus(returnStatus);
         setProgress(0);
         setError('');
       } else {
         setError('HF ошибка: ' + err.message);
-        setStatus('access');
+        setStatus(returnStatus);
       }
     } finally {
       setIsCancelling(false);
     }
   };
 
-  const handleStartModel = async (handle = fileHandle, executionSettings = getExecutionSettings()) => {
+  const handleStartModel = async (handle = fileHandle, executionSettings = getExecutionSettings(), returnStatus = 'access') => {
     setError('');
     if (!handle) return;
     try {
@@ -109,12 +118,12 @@ export default function App() {
       setStatus('chat');
     } catch (err) {
       if (err.name === 'AbortError') {
-        setStatus('access');
+        setStatus(returnStatus);
         setProgress(0);
         setError('');
       } else {
         setError('Ошибка: ' + err.message);
-        setStatus('access');
+        setStatus(returnStatus);
       }
     } finally {
       setIsCancelling(false);
@@ -130,7 +139,7 @@ export default function App() {
     if (!fileHandle) throw new Error('Файл модели недоступен для перезагрузки');
     if (runtime.isGenerationPending?.() || runtime.isLoadPending?.()) throw new Error('Дождитесь завершения текущей операции');
     await runtime.unloadModel();
-    await handleStartModel(fileHandle, settings);
+    await handleStartModel(fileHandle, settings, 'chat');
   };
 
   const handleCancel = () => {
@@ -156,9 +165,9 @@ export default function App() {
   );
 
   if (status === 'checking') return <div className="centered">Проверка среды...</div>;
-  if (status === 'welcome') return <div>{envBanner}<WelcomeScreen onSelect={handleSelectFile} onHF={handleLoadFromHF} error={error} /></div>;
-  if (status === 'access') return <div>{envBanner}<AccessScreen fileName={fileName} onConfirm={() => handleStartModel()} onReset={handleSelectFile} onHF={handleLoadFromHF} error={error} /></div>;
+  if (status === 'welcome') return <div>{envBanner}<WelcomeScreen onSelect={handleSelectFile} onHF={handleLoadFromHF} onSkip={handleSkipModel} error={error} /></div>;
+  if (status === 'access') return <div>{envBanner}<AccessScreen fileName={fileName} onConfirm={() => handleStartModel()} onReset={handleSelectFile} onHF={handleLoadFromHF} onSkip={handleSkipModel} error={error} /></div>;
   if (status === 'loading') return <div>{envBanner}<LoadingScreen progress={progress} fileName={fileName} error={error} onCancel={isCancelling ? undefined : handleCancel} /></div>;
-  if (status === 'chat') return <div>{envBanner}<ChatWorkspace runtime={runtime} fileName={fileName} onUnload={handleUnload} onApplyExecutionSettings={handleApplyExecutionSettings} /></div>;
+  if (status === 'chat') return <div>{envBanner}<ChatWorkspace runtime={runtime} fileName={fileName} onUnload={handleUnload} onApplyExecutionSettings={handleApplyExecutionSettings} onSelectModel={handleSelectFile} onLoadFromHF={handleLoadFromHF} modelError={error} /></div>;
   return null;
 }

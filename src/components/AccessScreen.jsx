@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import HFModelPicker from './HFModelPicker';
 
-export default function AccessScreen({ fileName, onConfirm, onReset, onHF, error }) {
+export default function AccessScreen({ fileName, onConfirm, onReset, onHF, onSkip, error }) {
   const [selectedHFModel, setSelectedHFModel] = useState(null);
 
   return (
@@ -12,6 +12,7 @@ export default function AccessScreen({ fileName, onConfirm, onReset, onHF, error
         <button onClick={onConfirm} className="btn-main">Запустить</button>
         <button onClick={onHF} className="btn-sub">HF</button>
         <button onClick={onReset} className="btn-sub">Другой файл</button>
+        {onSkip && <button onClick={onSkip} className="btn-sub">Перейти в чат без модели</button>}
       </div>
       <HFModelPicker onSelect={setSelectedHFModel} />
       {selectedHFModel && (

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import HuggingFaceModelSearch from './HuggingFaceModelSearch';
 
-export default function WelcomeScreen({ onSelect, onHF, error }) {
+export default function WelcomeScreen({ onSelect, onHF, onSkip, error }) {
   const [selectedModel, setSelectedModel] = useState(null);
 
   const handleSelect = (model) => {
@@ -12,9 +12,10 @@ export default function WelcomeScreen({ onSelect, onHF, error }) {
     <div className="screen centered">
       <h1>Локальный ИИ Чат</h1>
       <p>Загрузите GGUF модель с компьютера или из интернета.</p>
-      <div>
+      <div className="btn-group">
         <button onClick={onSelect} className="btn-main">Выбрать GGUF файл</button>
         <button onClick={onHF} className="btn-sub">Скачать Qwen3.8-2B (HF)</button>
+        {onSkip && <button onClick={onSkip} className="btn-sub">Перейти в чат без модели</button>}
       </div>
       {selectedModel && (
         <p className="hf-selected" role="status">
