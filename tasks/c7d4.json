@@ -3,7 +3,7 @@
   "title": "Изменить порт приложения на 5181",
   "status": "in_progress",
   "createdAt": "2026-10-20T12:56:41.940Z",
-  "updatedAt": "2026-10-20T13:10:00.000Z",
+  "updatedAt": "2026-10-20T13:20:00.000Z",
   "issue": {
     "number": 79,
     "url": "https://github.com/andreich22/privateAI/issues/79",
@@ -51,6 +51,11 @@
       "at": "2026-10-20T13:10:00.000Z",
       "event": "implementation_validated",
       "details": "Dev server served on port 5181 (HTTP 200). npm run test:run (218 tests), npm run build and npm run tasks:validate pass."
+    },
+    {
+      "at": "2026-10-20T13:20:00.000Z",
+      "event": "e2e_config_aligned",
+      "details": "CI E2E timed out because playwright.config.js still used port 5173. Updated baseURL and webServer.port to 5181."
     }
   ],
   "commits": [
