@@ -1,9 +1,9 @@
 {
   "id": "b8f2",
   "title": "Пропуск выбора модели и запуск модели из чата по требованию",
-  "status": "in_progress",
+  "status": "done",
   "createdAt": "2026-10-20T12:12:39.644Z",
-  "updatedAt": "2026-10-20T12:40:00.000Z",
+  "updatedAt": "2026-10-20T12:50:00.000Z",
   "issue": {
     "number": 75,
     "url": "https://github.com/andreich22/privateAI/issues/75",
@@ -60,12 +60,21 @@
       "at": "2026-10-20T12:40:00.000Z",
       "event": "implementation_validated",
       "details": "npm run test:run (218 tests), npm run build and npm run tasks:validate pass."
+    },
+    {
+      "at": "2026-10-20T12:50:00.000Z",
+      "event": "completed",
+      "details": "Implementation PR #77 merged (squash commit 2c1fe3c). All acceptance criteria met; tests, build and task validator pass."
     }
   ],
   "commits": [
     {
       "sha": "b639227",
       "message": "feat: b8f2 | allow entering chat without a model and select model on demand"
+    },
+    {
+      "sha": "2c1fe3c",
+      "message": "feat: b8f2 | allow entering chat without a model and select model on demand (#77)"
     }
   ],
   "decisionLog": [],
