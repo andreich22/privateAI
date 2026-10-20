@@ -3,10 +3,12 @@ import { getSavedFileHandle, verifyPermission, selectAndSaveFile, saveFilePicker
 import { AIRuntime } from './services/AIRuntime';
 import { loadExecutionSettings } from './services/executionSettings';
 import { APP_VERSION } from './version';
+import { isChromiumBased, isBrowserWarningDismissed, dismissBrowserWarning, resetBrowserWarningDismissal } from './services/browserSupport';
 import WelcomeScreen from './components/WelcomeScreen';
 import AccessScreen from './components/AccessScreen';
 import LoadingScreen from './components/LoadingScreen';
 import ChatWorkspace from './components/ChatWorkspace';
+import BrowserWarningModal from './components/BrowserWarningModal';
 
 export default function App() {
   const runtimeRef = useRef(null);
@@ -17,6 +19,10 @@ export default function App() {
   const [error, setError] = useState('');
   const [envInfo, setEnvInfo] = useState({});
   const [isCancelling, setIsCancelling] = useState(false);
+  const [isChromium] = useState(() => isChromiumBased());
+  const [showBrowserWarning, setShowBrowserWarning] = useState(
+    () => !isChromium && !isBrowserWarningDismissed()
+  );
 
   if (!runtimeRef.current) runtimeRef.current = new AIRuntime();
   const runtime = runtimeRef.current;
@@ -25,7 +31,7 @@ export default function App() {
     const gpu = !!navigator.gpu;
     const coop = window.crossOriginIsolated;
     const isFirefox = navigator.userAgent.includes('Firefox');
-    const browser = isFirefox ? 'Firefox' : navigator.userAgent.includes('Chrome') ? 'Chrome' : 'Other';
+    const browser = isFirefox ? 'Firefox' : isChromium ? 'Chromium' : 'Other';
     setEnvInfo({ gpu, coop, isFirefox, browser, cores: navigator.hardwareConcurrency });
 
     let cancelled = false;
@@ -164,10 +170,52 @@ export default function App() {
     </div>
   );
 
-  if (status === 'checking') return <div className="centered">Проверка среды...</div>;
-  if (status === 'welcome') return <div>{envBanner}<WelcomeScreen onSelect={handleSelectFile} onHF={handleLoadFromHF} onSkip={handleSkipModel} error={error} /></div>;
-  if (status === 'access') return <div>{envBanner}<AccessScreen fileName={fileName} onConfirm={() => handleStartModel()} onReset={handleSelectFile} onHF={handleLoadFromHF} onSkip={handleSkipModel} error={error} /></div>;
-  if (status === 'loading') return <div>{envBanner}<LoadingScreen progress={progress} fileName={fileName} error={error} onCancel={isCancelling ? undefined : handleCancel} /></div>;
-  if (status === 'chat') return <div>{envBanner}<ChatWorkspace runtime={runtime} fileName={fileName} onUnload={handleUnload} onApplyExecutionSettings={handleApplyExecutionSettings} onSelectModel={handleSelectFile} onLoadFromHF={handleLoadFromHF} modelError={error} /></div>;
-  return null;
+  const handleBrowserWarningConfirm = (remember) => {
+    if (remember) dismissBrowserWarning();
+    else resetBrowserWarningDismissal();
+    setShowBrowserWarning(false);
+  };
+
+  const browserWarning = showBrowserWarning ? (
+    <BrowserWarningModal onConfirm={handleBrowserWarningConfirm} />
+  ) : null;
+
+  let screen = null;
+  if (status === 'checking') screen = <div className="centered">Проверка среды...</div>;
+  else if (status === 'welcome')
+    screen = (
+      <div>
+        {envBanner}
+        <WelcomeScreen onSelect={handleSelectFile} onHF={handleLoadFromHF} onSkip={handleSkipModel} error={error} />
+      </div>
+    );
+  else if (status === 'access')
+    screen = (
+      <div>
+        {envBanner}
+        <AccessScreen fileName={fileName} onConfirm={() => handleStartModel()} onReset={handleSelectFile} onHF={handleLoadFromHF} onSkip={handleSkipModel} error={error} />
+      </div>
+    );
+  else if (status === 'loading')
+    screen = (
+      <div>
+        {envBanner}
+        <LoadingScreen progress={progress} fileName={fileName} error={error} onCancel={isCancelling ? undefined : handleCancel} />
+      </div>
+    );
+  else if (status === 'chat')
+    screen = (
+      <div>
+        {envBanner}
+        <ChatWorkspace runtime={runtime} fileName={fileName} onUnload={handleUnload} onApplyExecutionSettings={handleApplyExecutionSettings} onSelectModel={handleSelectFile} onLoadFromHF={handleLoadFromHF} modelError={error} />
+      </div>
+    );
+
+  if (!screen && !browserWarning) return null;
+  return (
+    <div>
+      {screen}
+      {browserWarning}
+    </div>
+  );
 }
