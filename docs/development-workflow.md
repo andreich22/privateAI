@@ -1,55 +1,65 @@
 # AI development workflow
 
+## Source of truth
+
+GitHub Issues are the only source of truth for tasks. There is no task registry in the repository: no `tasks/` files, no task index, no relations file, and no registration workflow.
+
+A task is a GitHub Issue titled:
+
+```text
+TASK-<4 lowercase hex-id> <title>
+```
+
+The Issue body must contain:
+
+- Goal;
+- Requirements;
+- Definition of Ready;
+- Acceptance Criteria;
+- Technical Approach;
+- Definition of Done.
+
+Task IDs are exactly four lowercase hexadecimal characters and must be unique. Issue status is the task status: open means planned/in progress, closed means completed or cancelled. Use labels for additional classification when useful.
+
 ## Canonical agent Skill
 
 The repository contains an agent-independent procedural Skill at [`skills/task-driven-development/SKILL.md`](../skills/task-driven-development/SKILL.md).
 
 Agents that support repository Skills SHOULD load it before editing. It is intentionally vendor-neutral and does not depend on a particular AI runtime. If an agent cannot automatically load repository Skills, the rules below and `AGENTS.md` remain fully authoritative.
 
-The Skill is a procedure layer, not a replacement for repository policy. The durable source of truth is the combination of task JSON, relations, validator, Git history, and `AGENTS.md`.
+The Skill is a procedure layer, not a replacement for repository policy. The durable source of truth is the combination of GitHub Issues, Git history, and `AGENTS.md`.
 
 ## Rule 1 — every code change starts with an Issue
 
-AI MUST NOT modify project code, configuration, tests, or documentation without an associated Task ID.
+AI MUST NOT modify project code, configuration, tests, or documentation without an associated Task ID and its GitHub Issue.
 
-For a new task, the first durable artifact is a GitHub Issue with a title such as:
+For a new task, the first durable artifact is a GitHub Issue:
 
 ```text
 TASK-a1b2 Short task title
 ```
 
-The Issue should contain the goal, requirements, Definition of Ready, acceptance criteria, technical approach, and Definition of Done.
+Do not start implementation merely because the Issue exists. First verify that its Definition of Ready is satisfied.
 
-## Rule 2 — Issue registration is a hard gate
+## Rule 2 — no registration gate
 
-Creating the Issue is not enough to start implementation.
+There is no automatic registration PR and no file-based task metadata. The Issue itself is sufficient once:
 
-The `Register task from Issue` GitHub Actions workflow automatically transforms a valid Task Issue into:
+- its title has a valid unique Task ID;
+- its body contains all required sections;
+- its Definition of Ready is satisfied.
 
-- `tasks/<id>.json`;
-- an entry in `tasks/index.json`;
-- a registration Pull Request targeting `master`.
+Do not wait for a registration workflow. Do not create or update `tasks/` files.
 
-The registration PR is intentionally separate from the implementation PR. **The registration PR MUST be merged before the AI agent creates the implementation branch or implementation PR.** This keeps the implementation PR's Task ID resolvable from the default branch and prevents the CI failure caused by an unregistered Task ID.
+## Rule 3 — create a task branch
 
-The workflow is idempotent. Existing matching task metadata is not overwritten. Conflicts between the registry and task file fail loudly instead of being resolved silently.
+Create the implementation branch from the current default branch:
 
-The workflow does not push directly to `master`; normal branch protection remains authoritative.
+```text
+task/<task-id>-<short-name>
+```
 
-## Rule 3 — a task must be ready before implementation
-
-After registration is merged, the task must contain:
-
-- `id`
-- `title`
-- `description`
-- `requirements`
-- `definitionOfReady`
-- `acceptanceCriteria`
-- `technicalApproach`
-- `definitionOfDone`
-
-AI may start implementation only when the Definition of Ready is satisfied.
+Never commit or push directly to `master`. All implementation work happens on the task branch.
 
 ## Rule 4 — commits are linked to tasks
 
@@ -62,58 +72,85 @@ Every commit related to a task MUST use:
 Examples:
 
 ```text
-feat: 7c2a | add task registry
-fix: 7c2a | reject circular dependencies
-test: 7c2a | validate task metadata
+feat: 7c2a | add task issue template
+fix: 7c2a | reject invalid task IDs
+test: 7c2a | cover Issue-only workflow docs
 docs: 7c2a | document AI workflow
 ```
 
 When a task requires multiple commits, every commit MUST contain the same Task ID. Do not mix unrelated tasks in one commit.
 
-## Rule 5 — task relationships
+## Rule 5 — task relationships live in GitHub
 
-Relationships are stored in `tasks/relations.json` so each edge exists only once.
+Use GitHub-native links instead of a repository registry:
 
-Supported relation types:
+- `Depends on #N` — this task cannot be completed correctly without #N;
+- `Blocks #N` — this task blocks #N;
+- `Related to #N` — contextual relationship;
+- GitHub sub-issues — parent/child structure;
+- issue references in comments and PR descriptions for context.
 
-- `parent` — `from` is a child of `to`.
-- `depends_on` — `from` cannot be completed correctly without `to`.
-- `related` — contextual relationship without dependency.
-- `duplicates` — `from` duplicates `to`.
-- `derived_from` — `from` was created from `to`.
-- `replaces` — `from` replaces `to`.
-- `implements` — `from` implements a requirement or part of `to`.
+Do not maintain `tasks/relations.json` or duplicate relationship data anywhere in the repository.
 
-Reverse views such as `blocks` or `child` are derived from the stored direction and are not stored as duplicate edges.
+## Rule 6 — pull requests
 
-AI MUST create a relation when a new task is caused by, depends on, replaces, duplicates, or otherwise materially relates to an existing task.
+Every implementation PR MUST:
 
-## Rule 6 — no hidden scope expansion
+- target `master`;
+- reference the Issue number and Task ID;
+- use `Closes #N` so the merge closes the Issue automatically;
+- explain the change and motivation;
+- summarize requirements and acceptance criteria;
+- list tests/checks that were run;
+- identify known limitations and risks.
 
-If implementation reveals an unrelated change, AI creates a separate Issue and lets the registration workflow create its task metadata before implementation begins.
+Recommended PR title:
 
-## Rule 7 — finish only after verification
+```text
+<type>: <task-id> | <short description>
+```
 
-A task may be marked `done` only after:
+## Rule 7 — no hidden scope expansion
+
+If implementation reveals unrelated work, create a separate GitHub Issue and link it from the current Issue or PR. Do not silently expand the current task.
+
+## Rule 8 — finish only after verification
+
+An Issue may be closed only when:
 
 1. all requirements are implemented;
 2. acceptance criteria are satisfied;
 3. relevant tests pass;
 4. production build is run when applicable;
-5. task history is updated;
+5. decisions, validation, and known limitations are recorded in the Issue and PR;
 6. all related commits contain the Task ID;
-7. `npm run tasks:validate` passes.
+7. the implementation PR is merged through the protected PR path.
 
-## Rule 8 — dependencies must be acyclic
+Prefer `Closes #N` in the PR so the merge closes the Issue automatically. If the Issue is closed manually, verify the PR has been merged first.
 
-`depends_on` and `parent` relations form a dependency graph. Circular dependencies are invalid and must be rejected by the validator.
+## Protected branch policy
+
+AI agents MUST NOT:
+
+- commit directly to `master`;
+- push directly to `master`;
+- force-push `master`;
+- rewrite `master` history;
+- disable or bypass branch protection;
+- merge their own PR without explicit user instruction and repository policy permission.
+
+The human maintainer remains the final merge authority.
 
 ## Repository commands
 
 ```bash
-npm run tasks:validate
 npm run test:run
 npm run build
+npm run version:check
 ```
 
-The task system is deliberately dependency-free and stored in Git so the repository itself remains the source of truth for why changes were made.
+Run relevant E2E tests when the change affects critical user flows:
+
+```bash
+npm run test:e2e
+```

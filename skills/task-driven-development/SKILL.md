@@ -7,96 +7,92 @@ This is the canonical, agent-independent procedure for changing the `privateAI` 
 Repository contract:
 
 - `AGENTS.md` contains mandatory project-wide constraints.
-- `tasks/index.json` is the task registry.
-- `tasks/<id>.json` is the source of truth for an individual task.
-- `tasks/relations.json` is the source of truth for task relationships.
-- `scripts/validate-tasks.mjs` enforces structural integrity.
-- `scripts/register-task-from-issue.mjs` defines the deterministic Issue → task metadata transformation.
-- `.github/workflows/register-task-issue.yml` automates registration from GitHub Issues.
+- GitHub Issues are the single source of truth for tasks, requirements, acceptance criteria, status, and relationships.
 - Git history records implementation changes.
+- `docs/development-workflow.md` describes the same workflow in repository policy form.
+
+There is no task registry in the repository. Do not create or maintain `tasks/` files.
 
 ## Non-negotiable rules
 
-1. Do not modify project code, configuration, tests, or documentation without an associated Task ID.
-2. New tasks MUST start as a GitHub Issue titled `TASK-<4 lowercase hex-id> <title>` (the registration script also accepts `TASK-<id>: <title>` and `TASK-<id>-<title>`).
-3. The Issue registration workflow MUST register `tasks/<id>.json` and `tasks/index.json` before an AI agent creates the implementation PR.
-4. If the registration PR is not merged into `master`, do not create the implementation branch or implementation PR.
-5. Task IDs are exactly four lowercase hexadecimal characters and must be unique.
-6. Do not silently expand the scope of an existing task. Create another task and relate it instead.
+1. Do not modify project code, configuration, tests, or documentation without an associated GitHub Issue.
+2. Every task MUST be a GitHub Issue titled `TASK-<4 lowercase hex-id> <title>`.
+3. The Issue body MUST contain Goal, Requirements, Definition of Ready, Acceptance Criteria, Technical Approach, and Definition of Done.
+4. Task IDs are exactly four lowercase hexadecimal characters and must be unique.
+5. Implementation may start only when the Definition of Ready is satisfied. There is no registration PR or file-based registration gate.
+6. Do not silently expand the scope of an existing task. Create another Issue and link it.
 7. Every commit must use `<type>: <task-id> | <description>`.
 8. All commits belonging to one task use the same ID.
-9. Task relationships belong in `tasks/relations.json`; do not duplicate reverse edges in task files.
-10. `depends_on` and `parent` relationships must not form cycles.
-11. Before setting a task to `done`, run `npm run tasks:validate` and the relevant tests/build.
-12. A task is not done merely because the code compiles: acceptance criteria, task history, commit metadata, and validation must be complete.
+9. Task relationships live in GitHub Issues (`Depends on #N`, `Blocks #N`, `Related to #N`, sub-issues). Do not create a separate relationship registry.
+10. The implementation PR MUST use `Closes #N` so the merge closes the Issue.
+11. A task is not done merely because code compiles: acceptance criteria, validation, PR merge, and Issue closure must be complete.
 
 ## Workflow
 
 ### 1. Understand the request
 
-Determine the smallest concrete change requested by the user. Inspect the repository, tests, documentation, and related tasks before editing. Do not guess about APIs or existing abstractions.
+Determine the smallest concrete change requested by the user. Inspect the repository, tests, documentation, and related Issues before editing. Do not guess about APIs or existing abstractions.
 
-### 2. Create the GitHub Task Issue
+### 2. Create or locate the GitHub Task Issue
 
-If no suitable task exists, create a GitHub Issue first. The Issue should contain the goal, requirements, Definition of Ready, acceptance criteria, technical approach, and Definition of Done.
-
-Example title:
+If no suitable Issue exists, create one with a title such as:
 
 ```text
 TASK-a1b2 Short task title
 ```
 
+The Issue body is the task. Include:
+
+- Goal;
+- Requirements;
+- Definition of Ready;
+- Acceptance Criteria;
+- Technical Approach;
+- Definition of Done.
+
 Do not start implementation merely because the Issue exists.
 
-### 3. Wait for automatic registration
+### 3. Verify the Definition of Ready
 
-The `Register task from Issue` workflow creates a registration PR containing:
+Read the Issue and confirm that all preconditions are satisfied. If the Issue is incomplete or contradictory, update it before starting.
 
-- `tasks/<id>.json`;
-- the corresponding entry in `tasks/index.json`.
+There is no automatic registration step. Do not create task JSON files and do not wait for a registration PR.
 
-The registration PR is deliberately separate from the implementation PR. It must pass normal repository checks and be merged before implementation starts. The workflow never pushes directly to `master`, so branch protection remains authoritative.
+### 4. Create the implementation branch
 
-Registration is idempotent. Existing matching task metadata is not overwritten. A registry/task-file conflict fails loudly.
-
-### 4. Verify registration and Definition of Ready
-
-After registration is merged:
-
-- confirm the Task ID exists in `tasks/index.json`;
-- read `tasks/<id>.json`;
-- verify the Definition of Ready;
-- inspect `tasks/relations.json` and add required relationships.
-
-Move the task to `ready` only when its Definition of Ready is satisfied.
-
-### 5. Create implementation branch
-
-Only after registration is present in `master`, create:
+Create a branch from the current default branch:
 
 ```text
 task/<task-id>-<short-name>
 ```
 
-Never create the implementation PR before registration is merged.
+Never commit or push directly to `master`.
 
-### 6. Implement the smallest change
+### 5. Implement the smallest change
 
-Change only what the task requires. Preserve project invariants from `AGENTS.md`, especially local-first execution, privacy, browser-side inference, memory safety, streaming behavior, and minimal dependencies.
+Change only what the Issue requires. Preserve project invariants from `AGENTS.md`, especially local-first execution, privacy, browser-side inference, memory safety, streaming behavior, and minimal dependencies.
 
-If implementation reveals unrelated work, create a new Issue and let the registration workflow create its task metadata before implementation begins.
+If implementation reveals unrelated work, create a new Issue and link it from the current Issue or PR.
 
-### 7. Validate continuously
+### 6. Validate continuously
 
 Before completion, at minimum:
 
 ```bash
-npm run tasks:validate
+npm run test:run
+npm run build
+npm run version:check
 ```
 
-Also run relevant unit/component/e2e tests and `npm run build` when production compilation can be affected. Do not claim a check passed unless it actually passed or an authoritative CI result confirms it.
+Run relevant E2E tests when the change affects critical user flows:
 
-### 8. Commit with the task ID
+```bash
+npm run test:e2e
+```
+
+Do not claim a check passed unless it actually passed or an authoritative CI result confirms it.
+
+### 7. Commit with the task ID
 
 Every implementation commit must follow:
 
@@ -106,18 +102,36 @@ Every implementation commit must follow:
 
 Use the same Task ID for every commit belonging to the task.
 
-### 9. Update task history
+### 8. Open the implementation PR
 
-Before completion, record final status, relevant commit SHAs/messages, decisions, validation, and known limitations.
+The PR must:
 
-### 10. Complete the task
+- target `master`;
+- reference the Issue number and Task ID;
+- use `Closes #N`;
+- summarize requirements and acceptance criteria;
+- list validation performed;
+- identify known limitations and risks.
 
-Set the task to `done` only after all requirements and acceptance criteria are satisfied, relevant tests/build pass, `npm run tasks:validate` passes, history/commit metadata are complete, and the implementation PR has passed repository checks and is merged through the protected PR path.
+### 9. Record decisions in the Issue
+
+Use Issue comments for durable decisions, validation results, and known limitations. The PR description is also part of the durable history. Do not maintain a separate task history file.
+
+### 10. Complete through merge
+
+The task is complete when:
+
+- all requirements and acceptance criteria are satisfied;
+- relevant tests/build pass;
+- the implementation PR passes repository checks and is merged through the protected PR path;
+- the Issue is closed, preferably automatically by `Closes #N`.
+
+Do not create a separate "mark as done" PR.
 
 ## Scope management
 
-The task is the unit of traceability. If a change is useful but not necessary to satisfy current acceptance criteria, create a separate Issue/task and relate it using `related`, `derived_from`, `parent`, or another appropriate relation.
+The Issue is the unit of traceability. If a change is useful but not necessary to satisfy current acceptance criteria, create a separate Issue and link it using `Related to #N`, `Depends on #N`, `Blocks #N`, or a sub-issue relationship.
 
 ## Agent handoff
 
-The repository should contain enough information to understand what was requested, why, what was implemented, which decisions were made, which tasks are related, which commits implement it, what remains, and which validations were run. The repository, not transient chat history, is the durable project memory.
+GitHub Issues, PR descriptions, and Git history should contain enough information to understand what was requested, why, what was implemented, which decisions were made, which tasks are related, which commits implement the task, what remains, and which validations were run. The repository and its Issues, not transient chat history, are the durable project memory.

@@ -76,19 +76,19 @@ Prefer small, focused changes that follow existing project patterns. Do not rewr
 
 Inspect the repository and existing implementation before using an API, Wllama method, browser API, or project abstraction. If behavior is uncertain, verify it from the installed code/types or authoritative documentation instead of guessing.
 
-## Task-driven AI development
+## Issue-driven AI development
 
 All development work is governed by [`docs/development-workflow.md`](docs/development-workflow.md).
 
-The canonical agent-independent procedural Skill is [`skills/task-driven-development/SKILL.md`](skills/task-driven-development/SKILL.md). Agents that support repository Skills SHOULD load it before editing. The Skill is vendor-neutral; it does not assume a particular AI runtime. If an agent cannot load repository Skills automatically, this file and the validator remain authoritative and the same workflow is still mandatory.
+The canonical agent-independent procedural Skill is [`skills/task-driven-development/SKILL.md`](skills/task-driven-development/SKILL.md). Agents that support repository Skills SHOULD load it before editing. The Skill is vendor-neutral; it does not assume a particular AI runtime. If an agent cannot load repository Skills automatically, this file remains authoritative and the same workflow is still mandatory.
 
-**Mandatory rule:** AI MUST NOT modify project code, configuration, tests, or documentation without an associated Task ID. New tasks MUST begin as a GitHub Issue titled `TASK-<4 lowercase hex-id> <title>` (or an accepted equivalent form). The repository workflow automatically creates a registration PR for the task metadata. AI MUST wait until that registration PR is merged into `master` before creating the implementation branch or implementation PR.
+**Mandatory rule:** AI MUST NOT modify project code, configuration, tests, or documentation without an associated GitHub Issue. Every task MUST start as a GitHub Issue titled `TASK-<4 lowercase hex-id> <title>`. The Issue body is the single source of truth and MUST contain the goal, requirements, Definition of Ready, acceptance criteria, technical approach, and Definition of Done. There is no task file registry and no registration PR: once the Issue exists and its Definition of Ready is satisfied, implementation may start on a task branch.
 
 Task IDs are four lowercase hexadecimal characters. Every commit MUST use `<type>: <task-id> | <description>`. All commits for the same task use the same ID.
 
-Task relationships are stored in `tasks/relations.json`. Use `depends_on` and `parent` for dependency/structure; use `related`, `duplicates`, `derived_from`, `replaces`, and `implements` for other relationships. Do not duplicate reverse edges. Circular dependency graphs are invalid.
+Task relationships live in GitHub Issues: use issue references such as `Depends on #N`, `Blocks #N`, `Related to #N`, or GitHub sub-issues. Do not maintain a separate relationship registry.
 
-Before marking a task `done`, run `npm run tasks:validate` and the relevant tests/build.
+An Issue may be closed only when all requirements and acceptance criteria are satisfied, relevant tests/build pass, and the implementation PR is merged. Prefer `Closes #N` in the PR so the merge closes the Issue automatically. Record decisions, validation, and known limitations as Issue comments and in the PR description; GitHub Issues are the durable task history.
 
 ## Protected Git workflow for AI
 
@@ -97,12 +97,12 @@ The repository default branch is `master`. AI agents MUST NOT commit directly to
 All AI implementation changes MUST follow:
 
 ```text
-Issue → automatic task registration PR → registration merge → task/<task-id>-<short-name> → commits → implementation Pull Request → checks → human merge
+GitHub Issue → task/<task-id>-<short-name> → commits → implementation Pull Request (Closes #N) → checks → human merge → Issue closed
 ```
 
 The canonical vendor-neutral procedure is [`skills/git-workflow/SKILL.md`](skills/git-workflow/SKILL.md). Load it before Git changes when the runtime supports repository Skills.
 
-Every implementation commit MUST use `<type>: <task-id> | <description>`. Every PR MUST reference the Task ID and describe requirements, acceptance criteria, validation, and risks.
+Every implementation commit MUST use `<type>: <task-id> | <description>`. Every PR MUST reference the Issue number and Task ID and describe requirements, acceptance criteria, validation, and risks. Use `Closes #N` so the Issue closes when the PR is merged.
 
 If a tool exposes an administrative bypass, the AI MUST NOT use it. GitHub repository policy is authoritative over agent instructions.
 
@@ -212,7 +212,7 @@ npm run test:e2e
 npm run test:e2e:ui
 npm run test:e2e:debug
 npm run build
-npm run tasks:validate
+npm run version:check
 ```
 
 Use Vitest/Testing Library for unit and component behavior and Playwright for end-to-end flows.
@@ -233,30 +233,28 @@ When changing behavior, update or add tests where practical. Pay particular atte
 Before editing:
 
 1. Load `skills/task-driven-development/SKILL.md` and `skills/git-workflow/SKILL.md` when the runtime supports repository Skills.
-2. Identify the associated GitHub Task Issue.
-3. Wait for the automatic task registration PR to be merged into `master` and verify the task is registered.
-4. Verify the task is `ready` and its Definition of Ready is satisfied.
-5. Create/use a task-specific implementation branch; never edit `master` directly.
-6. Inspect the relevant files and existing implementation.
-7. Search for existing patterns or utilities that solve the same problem.
-8. Identify lifecycle, state, persistence, and browser-API implications.
-9. Make the smallest reasonable change.
-10. Avoid unrelated refactors; create and link another task instead.
-11. Use the task ID in every implementation commit.
-12. Run relevant tests and `npm run tasks:validate`.
-13. Run `npm run build` for changes that can affect production compilation/bundling.
-14. Open/update the implementation Pull Request with the Task ID and validation summary.
-15. Update task history, commits, decisions, and final status.
-16. Review the diff for regressions, privacy issues, memory leaks, and unnecessary dependencies.
+2. Identify the associated GitHub Issue (`TASK-<id>`) and read its body.
+3. Verify that the Definition of Ready is satisfied.
+4. Create/use a task-specific implementation branch; never edit `master` directly.
+5. Inspect the relevant files and existing implementation.
+6. Search for existing patterns or utilities that solve the same problem.
+7. Identify lifecycle, state, persistence, and browser-API implications.
+8. Make the smallest reasonable change.
+9. Avoid unrelated refactors; create and link another Issue instead.
+10. Use the task ID in every implementation commit.
+11. Run relevant tests and `npm run build`.
+12. Open/update the implementation Pull Request with `Closes #N`, the Task ID, and a validation summary.
+13. Record decisions, validation, and known limitations in the Issue and PR.
+14. Review the diff for regressions, privacy issues, memory leaks, and unnecessary dependencies.
 
 After editing, report:
 
-- task ID and title;
+- Task ID and Issue number/title;
 - branch and PR;
 - what changed;
 - which files changed;
-- tests/build/validator commands run;
-- task relationships created or affected;
+- tests/build commands run;
+- links to related Issues, if any;
 - any known limitations or remaining risks.
 
 ## Decision priority
