@@ -1,7 +1,7 @@
 {
   "name": "local-react-ai",
   "private": true,
-  "version": "0.0.25",
+  "version": "0.0.26",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -13,8 +13,6 @@
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:debug": "playwright test --debug",
-    "tasks:validate": "node scripts/validate-tasks.mjs",
-    "tasks:register": "node scripts/register-task-from-issue.mjs",
     "version:check": "node scripts/validate-version.mjs",
     "version:patch": "npm version patch --no-git-tag-version",
     "version:minor": "npm version minor --no-git-tag-version",

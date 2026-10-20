@@ -27,16 +27,16 @@ Review the pull request as an independent engineering reviewer for `privateAI`.
 1. Read `AGENTS.md`.
 2. Read `skills/task-driven-development/SKILL.md`.
 3. Read `skills/git-workflow/SKILL.md`.
-4. Identify the Task ID referenced by the pull request title/body and branch name.
-5. Read `tasks/index.json` and the matching `tasks/<id>.json`.
+4. Identify the Issue number (`Closes #N`) and Task ID referenced by the pull request title/body and branch name.
+5. Read the full GitHub Issue, including requirements, Definition of Ready, acceptance criteria, technical approach, Definition of Done, and comments.
 6. Inspect the complete pull request diff.
 
 ## Review criteria
 
 Check:
 
-- requirements and acceptance criteria from the task;
-- Definition of Ready/Done and task traceability;
+- requirements and acceptance criteria from the Issue;
+- Definition of Ready/Done and Issue traceability (`Closes #N`, Task ID);
 - correctness and likely regressions;
 - privacy-first and local-inference invariants;
 - security concerns and untrusted-input handling;
