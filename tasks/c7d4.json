@@ -1,0 +1,49 @@
+{
+  "id": "c7d4",
+  "title": "Изменить порт приложения на 5181",
+  "status": "draft",
+  "createdAt": "2026-10-20T12:56:41.940Z",
+  "updatedAt": "2026-10-20T12:56:41.940Z",
+  "issue": {
+    "number": 79,
+    "url": "https://github.com/andreich22/privateAI/issues/79",
+    "title": "TASK-c7d4 Изменить порт приложения на 5181"
+  },
+  "description": "## Goal\n\nЗафиксировать порт приложения `5181` в конфигурации Vite, чтобы dev-сервер не выбирал случайный свободный порт (5173/5174/…), а всегда использовал 5181.\n\n## Requirements\n\n- В `vite.config.js` задать `server.port: 5181`.\n- Задать `preview.port: 5181`, чтобы `npm run preview` также использовал этот порт.\n- Сохранить существующие заголовки `Cross-Origin-Opener-Policy` и `Cross-Origin-Embedder-Policy`.\n- Не менять поведение сборки и тестов.\n- Не добавлять зависимости.\n\n## Definition of Ready\n\n- Конфигурация Vite находится в `vite.config.js`.\n- Сейчас `server.port` не задан, поэтому Vite использует порт по умолчанию и уходит на следующий свободный.\n- Известно, что COOP/COEP обязательны для WebGPU/Wllama.\n\n## Acceptance Criteria\n\n- [ ] `npm run dev` запускается на порту 5181, если он свободен.\n- [ ] `npm run preview` использует порт 5181.\n- [ ] Заголовки COOP/COEP сохранены.\n- [ ] `npm run build` проходит.\n- [ ] `npm run tasks:validate` проходит.\n\n## Technical Approach\n\nДобавить `port: 5181` в секции `server` и `preview` файла `vite.config.js`. `strictPort` не включать, чтобы при занятом порте Vite мог выбрать следующий свободный вместо падения.\n\n## Definition of Done\n\n- Все acceptance criteria выполнены.\n- Commit использует формат `<type>: <task-id> | <description>`.\n- `npm run build` и `npm run tasks:validate` проходят.\n- История задачи обновлена.",
+  "requirements": [
+    "В `vite.config.js` задать `server.port: 5181`.",
+    "Задать `preview.port: 5181`, чтобы `npm run preview` также использовал этот порт.",
+    "Сохранить существующие заголовки `Cross-Origin-Opener-Policy` и `Cross-Origin-Embedder-Policy`.",
+    "Не менять поведение сборки и тестов.",
+    "Не добавлять зависимости."
+  ],
+  "definitionOfReady": [
+    "Конфигурация Vite находится в `vite.config.js`.",
+    "Сейчас `server.port` не задан, поэтому Vite использует порт по умолчанию и уходит на следующий свободный.",
+    "Известно, что COOP/COEP обязательны для WebGPU/Wllama."
+  ],
+  "acceptanceCriteria": [
+    "`npm run dev` запускается на порту 5181, если он свободен.",
+    "`npm run preview` использует порт 5181.",
+    "Заголовки COOP/COEP сохранены.",
+    "`npm run build` проходит.",
+    "`npm run tasks:validate` проходит."
+  ],
+  "technicalApproach": [],
+  "definitionOfDone": [
+    "Все acceptance criteria выполнены.",
+    "Commit использует формат `<type>: <task-id> | <description>`.",
+    "`npm run build` и `npm run tasks:validate` проходят.",
+    "История задачи обновлена."
+  ],
+  "history": [
+    {
+      "at": "2026-10-20T12:56:41.940Z",
+      "event": "created_from_issue",
+      "details": "Automatically registered from GitHub Issue #79."
+    }
+  ],
+  "commits": [],
+  "decisionLog": [],
+  "relations": []
+}
