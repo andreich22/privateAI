@@ -1,6 +1,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { configure, Lang, ThemeProvider } from '@gravity-ui/uikit';
+import '@gravity-ui/uikit/styles/styles.css';
 import '@gravity-ui/aikit/themes/common';
 import '@gravity-ui/aikit/themes/dark';
 import 'highlight.js/styles/github-dark.css';
