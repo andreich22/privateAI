@@ -1,7 +1,8 @@
 import React from 'react';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import ChatWorkspace from '../src/components/ChatWorkspace';
+import { renderWithProviders } from './helpers/renderWithProviders';
 import {
   createConversation,
   deleteConversation,
@@ -33,6 +34,10 @@ const makeConversation = (overrides = {}) => ({
 
 const remainingConversation = makeConversation({ id: 'chat-3', title: 'Оставшийся чат' });
 
+function openHeaderMenu() {
+  fireEvent.click(screen.getByTestId('private-ai-header-menu-button'));
+}
+
 describe('ChatWorkspace local chat history', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -54,7 +59,7 @@ describe('ChatWorkspace local chat history', () => {
     });
     getConversation.mockResolvedValue(conversation);
 
-    render(<ChatWorkspace runtime={{ isLoaded: () => true }} fileName="model.gguf" onUnload={vi.fn()} />);
+    renderWithProviders(<ChatWorkspace runtime={{ isLoaded: () => true }} fileName="model.gguf" onUnload={vi.fn()} />);
 
     expect(await screen.findByText('Привет')).toBeInTheDocument();
     expect(screen.getAllByText('Сохранённый чат').length).toBeGreaterThan(0);
@@ -63,35 +68,37 @@ describe('ChatWorkspace local chat history', () => {
   });
 
   it('creates a new chat without reloading the page', async () => {
-    render(<ChatWorkspace runtime={{ isLoaded: () => true }} fileName="model.gguf" onUnload={vi.fn()} />);
+    renderWithProviders(<ChatWorkspace runtime={{ isLoaded: () => true }} fileName="model.gguf" onUnload={vi.fn()} />);
     await waitFor(() => expect(screen.getAllByText('Сохранённый чат').length).toBeGreaterThan(0));
 
-    fireEvent.click(screen.getByRole('button', { name: 'Новый чат' }));
+    fireEvent.click(screen.getByTestId('private-ai-header-action-newChat'));
 
-    await waitFor(() => expect(screen.getByText('Новый чат')).toBeInTheDocument());
-    expect(createConversation).toHaveBeenCalledOnce();
+    await waitFor(() => expect(createConversation).toHaveBeenCalledOnce());
+    expect(await screen.findByText('Новый чат')).toBeInTheDocument();
   });
 
   it('renames the active chat', async () => {
     window.prompt = vi.fn().mockReturnValue('Переименованный чат');
-    render(<ChatWorkspace runtime={{ isLoaded: () => true }} fileName="model.gguf" onUnload={vi.fn()} />);
+    renderWithProviders(<ChatWorkspace runtime={{ isLoaded: () => true }} fileName="model.gguf" onUnload={vi.fn()} />);
     await waitFor(() => expect(screen.getAllByText('Сохранённый чат').length).toBeGreaterThan(0));
 
-    fireEvent.click(screen.getByRole('button', { name: 'Переименовать' }));
+    openHeaderMenu();
+    fireEvent.click(await screen.findByText('Переименовать'));
 
-    await waitFor(() => expect(screen.getByText('Переименованный чат')).toBeInTheDocument());
-    expect(renameConversation).toHaveBeenCalledWith('chat-1', 'Переименованный чат');
+    await waitFor(() => expect(renameConversation).toHaveBeenCalledWith('chat-1', 'Переименованный чат'));
+    expect(await screen.findByText('Переименованный чат')).toBeInTheDocument();
   });
 
   it('deletes the active chat and switches to another chat', async () => {
     window.confirm = vi.fn().mockReturnValue(true);
-    render(<ChatWorkspace runtime={{ isLoaded: () => true }} fileName="model.gguf" onUnload={vi.fn()} />);
+    renderWithProviders(<ChatWorkspace runtime={{ isLoaded: () => true }} fileName="model.gguf" onUnload={vi.fn()} />);
     await waitFor(() => expect(screen.getAllByText('Сохранённый чат').length).toBeGreaterThan(0));
 
-    fireEvent.click(screen.getByRole('button', { name: 'Удалить' }));
+    openHeaderMenu();
+    fireEvent.click(await screen.findByText('Удалить чат'));
 
-    await waitFor(() => expect(screen.getByText('Оставшийся чат')).toBeInTheDocument());
-    expect(deleteConversation).toHaveBeenCalledWith('chat-1');
+    await waitFor(() => expect(deleteConversation).toHaveBeenCalledWith('chat-1'));
+    expect(await screen.findByText('Оставшийся чат')).toBeInTheDocument();
     expect(getConversation).toHaveBeenCalledWith('chat-3');
   });
 
@@ -105,11 +112,11 @@ describe('ChatWorkspace local chat history', () => {
     });
     getConversation.mockResolvedValue(conversation);
 
-    render(<ChatWorkspace runtime={{ isLoaded: () => true }} fileName="model.gguf" onUnload={vi.fn()} />);
+    renderWithProviders(<ChatWorkspace runtime={{ isLoaded: () => true }} fileName="model.gguf" onUnload={vi.fn()} />);
     expect(await screen.findByText('Удалить меня')).toBeInTheDocument();
 
     const messageDeleteButtons = screen.getAllByRole('button', { name: 'Удалить' });
-    fireEvent.click(messageDeleteButtons[1]);
+    fireEvent.click(messageDeleteButtons[0]);
 
     await waitFor(() => expect(screen.queryByText('Удалить меня')).not.toBeInTheDocument());
     expect(screen.getByText('Останусь')).toBeInTheDocument();
@@ -126,12 +133,12 @@ describe('ChatWorkspace local chat history', () => {
     });
     getConversation.mockResolvedValue(conversation);
 
-    render(<ChatWorkspace runtime={{ isLoaded: () => true }} fileName="model.gguf" onUnload={vi.fn()} />);
+    renderWithProviders(<ChatWorkspace runtime={{ isLoaded: () => true }} fileName="model.gguf" onUnload={vi.fn()} />);
     expect(await screen.findByText('Старый промт')).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: 'Изменить' }));
 
-    expect(screen.getByPlaceholderText('Измените сообщение…')).toHaveValue('Старый промт');
+    expect(await screen.findByPlaceholderText('Сообщение privateAI…')).toHaveValue('Старый промт');
     expect(screen.getByText('Старый ответ')).toBeInTheDocument();
   });
 
@@ -148,13 +155,13 @@ describe('ChatWorkspace local chat history', () => {
       streamChat: vi.fn(async (_messages, onToken) => onToken('Новый ответ')),
     };
 
-    render(<ChatWorkspace runtime={runtime} fileName="model.gguf" onUnload={vi.fn()} />);
+    renderWithProviders(<ChatWorkspace runtime={runtime} fileName="model.gguf" onUnload={vi.fn()} />);
     await screen.findByText('Старый промт');
     fireEvent.click(screen.getByRole('button', { name: 'Изменить' }));
 
-    const input = screen.getByPlaceholderText('Измените сообщение…');
+    const input = await screen.findByPlaceholderText('Сообщение privateAI…');
     fireEvent.change(input, { target: { value: 'Новый промт' } });
-    fireEvent.submit(input.closest('form'));
+    fireEvent.click(screen.getByTestId('private-ai-submit-button'));
 
     await waitFor(() => expect(screen.getByText('Новый ответ')).toBeInTheDocument());
     expect(screen.queryByText('Старый ответ')).not.toBeInTheDocument();
@@ -178,12 +185,12 @@ describe('ChatWorkspace local chat history', () => {
       }),
     };
 
-    render(<ChatWorkspace runtime={runtime} fileName="model.gguf" onUnload={vi.fn()} />);
+    renderWithProviders(<ChatWorkspace runtime={runtime} fileName="model.gguf" onUnload={vi.fn()} />);
     await waitFor(() => expect(screen.getAllByText('Сохранённый чат').length).toBeGreaterThan(0));
 
     const input = screen.getByPlaceholderText('Сообщение privateAI…');
     fireEvent.change(input, { target: { value: 'Вопрос' } });
-    fireEvent.submit(input.closest('form'));
+    fireEvent.click(screen.getByTestId('private-ai-submit-button'));
 
     await waitFor(() => expect(screen.getByText('Ответ')).toBeInTheDocument());
     expect(saveConversation).toHaveBeenCalledTimes(2);
@@ -208,12 +215,12 @@ describe('ChatWorkspace local chat history', () => {
       streamChat: vi.fn(async (_messages, onToken) => onToken('Вас зовут Андрей.')),
     };
 
-    render(<ChatWorkspace runtime={runtime} fileName="model.gguf" onUnload={vi.fn()} />);
+    renderWithProviders(<ChatWorkspace runtime={runtime} fileName="model.gguf" onUnload={vi.fn()} />);
     await screen.findByText('Меня зовут Андрей.');
 
     const input = screen.getByPlaceholderText('Сообщение privateAI…');
     fireEvent.change(input, { target: { value: 'Как меня зовут?' } });
-    fireEvent.submit(input.closest('form'));
+    fireEvent.click(screen.getByTestId('private-ai-submit-button'));
 
     await waitFor(() => expect(screen.getByText('Вас зовут Андрей.')).toBeInTheDocument());
     expect(runtime.streamChat).toHaveBeenCalledWith(
@@ -241,12 +248,12 @@ describe('ChatWorkspace local chat history', () => {
       streamChat: vi.fn(async (_messages, onToken) => onToken('Второй ответ')),
     };
 
-    render(<ChatWorkspace runtime={runtime} fileName="model.gguf" onUnload={vi.fn()} />);
+    renderWithProviders(<ChatWorkspace runtime={runtime} fileName="model.gguf" onUnload={vi.fn()} />);
     await screen.findByText('Первый вопрос');
 
     const input = screen.getByPlaceholderText('Сообщение privateAI…');
     fireEvent.change(input, { target: { value: 'Второй вопрос' } });
-    fireEvent.submit(input.closest('form'));
+    fireEvent.click(screen.getByTestId('private-ai-submit-button'));
 
     await waitFor(() => expect(screen.getByText('Второй ответ')).toBeInTheDocument());
     expect(runtime.streamChat).toHaveBeenCalledWith(
@@ -272,23 +279,21 @@ describe('ChatWorkspace local chat history', () => {
       }),
     };
 
-    render(<ChatWorkspace runtime={runtime} fileName="model.gguf" onUnload={vi.fn()} />);
+    renderWithProviders(<ChatWorkspace runtime={runtime} fileName="model.gguf" onUnload={vi.fn()} />);
     await waitFor(() => expect(screen.getAllByText('Сохранённый чат').length).toBeGreaterThan(0));
 
     const input = screen.getByPlaceholderText('Сообщение privateAI…');
     fireEvent.change(input, { target: { value: 'Долгий вопрос' } });
-    fireEvent.submit(input.closest('form'));
+    fireEvent.click(screen.getByTestId('private-ai-submit-button'));
 
-    await waitFor(() => expect(screen.getByRole('button', { name: 'Остановить генерацию' })).toBeInTheDocument());
-    fireEvent.click(screen.getByRole('button', { name: 'Остановить генерацию' }));
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Остановить' })).toBeInTheDocument());
+    fireEvent.click(screen.getByRole('button', { name: 'Остановить' }));
 
-    await waitFor(() => expect(screen.getByPlaceholderText('Сообщение privateAI…')).toBeInTheDocument());
-    expect(runtime.cancelGeneration).toHaveBeenCalledOnce();
-    const saved = saveConversation.mock.calls.map(([value]) => value);
-    expect(saved.at(-1).messages.at(-1)).toMatchObject({
+    await waitFor(() => expect(saveConversation.mock.calls.at(-1)[0].messages.at(-1)).toMatchObject({
       role: 'assistant',
       content: 'Частичный ответ',
       generationStatus: 'cancelled',
-    });
+    }));
+    expect(runtime.cancelGeneration).toHaveBeenCalledOnce();
   });
 });

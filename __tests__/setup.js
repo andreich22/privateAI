@@ -1,5 +1,10 @@
 import { afterEach } from 'vitest';
 import '@testing-library/jest-dom/vitest';
+import { configure as configureTestLib } from '@testing-library/react';
+import { configure as configureUiKit, Lang } from '@gravity-ui/uikit';
+
+configureUiKit({ lang: Lang.Ru });
+configureTestLib({ testIdAttribute: 'data-qa' });
 
 function createWllamaMock() {
   return {
@@ -128,6 +133,24 @@ if (typeof document !== 'undefined') {
   }
   if (!window.startViewTransition) {
     window.startViewTransition = vi.fn().mockReturnValue({ finished: Promise.resolve() });
+  }
+  if (!window.ResizeObserver) {
+    window.ResizeObserver = class ResizeObserver {
+      observe() {}
+      unobserve() {}
+      disconnect() {}
+    };
+  }
+  if (!window.IntersectionObserver) {
+    window.IntersectionObserver = class IntersectionObserver {
+      observe() {}
+      unobserve() {}
+      disconnect() {}
+      takeRecords() { return []; }
+    };
+  }
+  if (window.Element && !window.Element.prototype.scrollIntoView) {
+    window.Element.prototype.scrollIntoView = () => {};
   }
 }
 

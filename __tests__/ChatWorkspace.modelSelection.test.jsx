@@ -1,7 +1,8 @@
 import React from 'react';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import ChatWorkspace from '../src/components/ChatWorkspace';
+import { renderWithProviders } from './helpers/renderWithProviders';
 
 vi.mock('../src/services/chatStorage', () => ({
   createConversation: vi.fn(),
@@ -34,7 +35,7 @@ const conversation = {
 };
 
 function renderWorkspace(runtime, props = {}) {
-  return render(
+  return renderWithProviders(
     <ChatWorkspace
       runtime={runtime}
       fileName=""
@@ -76,17 +77,16 @@ describe('ChatWorkspace without a selected model', () => {
   it('does not send a message and explains that a model must be selected', async () => {
     const runtime = { isLoaded: () => false, streamChat: vi.fn() };
 
-    const { container } = renderWorkspace(runtime);
+    renderWorkspace(runtime);
     await waitFor(() => expect(screen.getAllByText('Чат без модели').length).toBeGreaterThan(0));
 
     const input = screen.getByPlaceholderText('Сообщение privateAI…');
     fireEvent.change(input, { target: { value: 'Привет' } });
-    fireEvent.submit(input.closest('form'));
+    fireEvent.click(screen.getByTestId('private-ai-submit-button'));
 
     expect(await screen.findByRole('alert')).toHaveTextContent('Модель не выбрана');
     expect(runtime.streamChat).not.toHaveBeenCalled();
     expect(saveConversation).not.toHaveBeenCalled();
-    expect(container.querySelectorAll('.message')).toHaveLength(0);
   });
 
   it('disables unloading when no model is loaded', async () => {

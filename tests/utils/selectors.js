@@ -14,14 +14,17 @@ export const selectors = {
   progressBarFill: 'div.progress-bar-fill',
   progressText: 'div.progress-text',
 
-  // Chat
-  messagesBox: 'div.messages-box',
-  userMessage: 'div.message.user',
-  assistantMessage: 'div.message.assistant',
-  inputForm: 'form.composer',
-  chatInput: 'form.composer textarea[aria-label="Сообщение"]',
-  submitButton: 'form.composer button[aria-label="Отправить"]',
-  debugInfo: 'div[style*="monospace"]',
+  // Chat (Gravity UI AIKit)
+  chatInput: 'textarea[placeholder="Сообщение privateAI…"]',
+  submitButton: '[data-qa="private-ai-submit-button"][data-state="enabled"]',
+  submitButtonAny: '[data-qa="private-ai-submit-button"]',
+  stopButton: '[data-qa="private-ai-submit-button"][data-state="cancelable"]',
+  newChatButton: '[data-qa="private-ai-header-action-newChat"]',
+  historyButton: '[data-qa="private-ai-header-action-history"]',
+  menuButton: '[data-qa="private-ai-header-menu-button"]',
+  messageList: '[data-qa="private-ai-message-list"]',
+  unloadButton: 'button.danger-button',
+  modelName: '.model-name',
 
   // Error
   errorText: 'p[style*="color"]',

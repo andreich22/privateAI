@@ -99,12 +99,12 @@ describe('AccessScreen', () => {
 describe('ChatWorkspace', () => {
   it('renders input field', () => {
     const html = renderComponent(ChatWorkspace, { fileName: 'test-model.gguf', onUnload: () => {} });
-    expect(html).toContain('input');
+    expect(html).toContain('<textarea');
   });
 
   it('renders submit button', () => {
     const html = renderComponent(ChatWorkspace, { fileName: 'test-model.gguf', onUnload: () => {} });
-    expect(html).toContain('Отправить');
+    expect(html).toContain('private-ai-submit-button');
   });
 
   it('renders unload button', () => {
