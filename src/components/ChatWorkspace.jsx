@@ -1,4 +1,5 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { ChatContainer } from '@gravity-ui/aikit';
 import {
   createConversation,
   deleteConversation,
@@ -14,36 +15,58 @@ import ExecutionSettings from './ExecutionSettings';
 
 const DEFAULT_CAPABILITIES = { temperature: true, top_p: true, max_tokens: true };
 const EMPTY_TOKEN_USAGE = { cached: null, input: null, output: null, total: null };
+const STREAMING_PLACEHOLDER_ID = 'streaming-placeholder';
 
 function formatTokenCount(value) {
   return value === null || value === undefined ? '—' : value.toLocaleString('ru-RU');
 }
 
+function toIsoTimestamp(createdAt) {
+  return Number.isFinite(createdAt) ? new Date(createdAt).toISOString() : new Date().toISOString();
+}
+
+function toChatType(conversation) {
+  const lastMessage = conversation.messages?.[conversation.messages.length - 1];
+  return {
+    id: conversation.id,
+    name: conversation.title,
+    createTime: toIsoTimestamp(conversation.createdAt),
+    lastMessage: typeof lastMessage?.content === 'string' ? lastMessage.content.slice(0, 120) : undefined,
+  };
+}
+
+function toAikitMessage(message) {
+  return {
+    id: message.id,
+    role: message.role,
+    content: message.content,
+    timestamp: toIsoTimestamp(message.createdAt),
+  };
+}
+
+function setNativeTextareaValue(textarea, value) {
+  const setter = Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, 'value')?.set;
+  if (setter) setter.call(textarea, value);
+  else textarea.value = value;
+  textarea.dispatchEvent(new Event('input', { bubbles: true }));
+}
+
 export default function ChatWorkspace({ runtime, fileName, onUnload, onApplyExecutionSettings, onSelectModel, onLoadFromHF, modelError }) {
   const [conversation, setConversation] = useState(null);
   const [conversations, setConversations] = useState([]);
-  const [input, setInput] = useState('');
   const [editingMessageId, setEditingMessageId] = useState(null);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [currentTokens, setCurrentTokens] = useState('');
+  const [streamingText, setStreamingText] = useState(null);
   const [tokenUsage, setTokenUsage] = useState(EMPTY_TOKEN_USAGE);
   const [debugInfo, setDebugInfo] = useState('');
   const [sendNotice, setSendNotice] = useState('');
   const generationRef = useRef(false);
   const partialResponseRef = useRef('');
-  const chatEndRef = useRef(null);
+  const inputRef = useRef(null);
 
   const messages = conversation?.messages || [];
   const modelReady = Boolean(runtime?.isLoaded?.());
   const modelShortName = fileName?.split('/').pop() || '';
-
-  useEffect(() => {
-    if (modelReady) setSendNotice('');
-  }, [modelReady]);
-
-  useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, currentTokens]);
 
   useEffect(() => {
     let cancelled = false;
@@ -74,6 +97,17 @@ export default function ChatWorkspace({ runtime, fileName, onUnload, onApplyExec
     await refreshConversations();
   };
 
+  const clearPromptInput = () => {
+    if (inputRef.current) setNativeTextareaValue(inputRef.current, '');
+  };
+
+  const resetChatScratch = () => {
+    setStreamingText(null);
+    setTokenUsage(EMPTY_TOKEN_USAGE);
+    setEditingMessageId(null);
+    setSendNotice('');
+  };
+
   const openConversation = async (id) => {
     if (generationRef.current || id === conversation?.id) return;
     const next = await getConversation(id);
@@ -81,10 +115,7 @@ export default function ChatWorkspace({ runtime, fileName, onUnload, onApplyExec
       setConversation(next);
       await saveConversation(next);
       await refreshConversations();
-      setCurrentTokens('');
-      setTokenUsage(EMPTY_TOKEN_USAGE);
-      setEditingMessageId(null);
-      setInput('');
+      resetChatScratch();
     }
   };
 
@@ -93,10 +124,7 @@ export default function ChatWorkspace({ runtime, fileName, onUnload, onApplyExec
     const next = await createConversation();
     setConversation(next);
     await refreshConversations();
-    setCurrentTokens('');
-    setTokenUsage(EMPTY_TOKEN_USAGE);
-    setInput('');
-    setEditingMessageId(null);
+    resetChatScratch();
   };
 
   const handleRename = async () => {
@@ -110,17 +138,19 @@ export default function ChatWorkspace({ runtime, fileName, onUnload, onApplyExec
     }
   };
 
-  const handleDelete = async () => {
-    if (!conversation || generationRef.current) return;
-    if (!window.confirm(`Удалить чат «${conversation.title}»?`)) return;
-    const next = await deleteConversation(conversation.id);
-    const active = next ? await getConversation(next.id) : await createConversation();
-    setConversation(active);
+  const handleDeleteChat = async (target) => {
+    const chat = target || conversation;
+    if (!chat || generationRef.current) return;
+    const title = chat.title || chat.name || '';
+    if (!window.confirm(`Удалить чат «${title}»?`)) return;
+    const next = await deleteConversation(chat.id);
+    const wasActive = !target || conversation?.id === chat.id;
+    if (wasActive) {
+      const active = next ? await getConversation(next.id) : await createConversation();
+      setConversation(active);
+      resetChatScratch();
+    }
     await refreshConversations();
-    setCurrentTokens('');
-    setTokenUsage(EMPTY_TOKEN_USAGE);
-    setInput('');
-    setEditingMessageId(null);
   };
 
   const handleDeleteMessage = async (message) => {
@@ -133,48 +163,51 @@ export default function ChatWorkspace({ runtime, fileName, onUnload, onApplyExec
     await updateConversation(next);
     if (editingMessageId === message.id) {
       setEditingMessageId(null);
-      setInput('');
+      clearPromptInput();
     }
   };
 
   const handleEditMessage = (message) => {
     if (!conversation || generationRef.current || message?.role !== 'user') return;
     setEditingMessageId(message.id);
-    setInput(message.content);
+    setSendNotice('');
+    const textarea = inputRef.current;
+    if (textarea) {
+      setNativeTextareaValue(textarea, message.content);
+      textarea.focus();
+    }
   };
 
   const handleCancelEdit = () => {
     setEditingMessageId(null);
-    setInput('');
+    clearPromptInput();
   };
 
-  const handleCancelGeneration = () => {
+  const handleCancelGeneration = async () => {
     if (!generationRef.current) return;
     appendDebug('CANCEL: stopping generation');
     runtime?.cancelGeneration?.();
   };
 
-  const handleSend = async (e) => {
-    e.preventDefault();
-    if (!input.trim() || generationRef.current || !conversation) return;
+  const handleSend = async (data) => {
+    const userText = (data?.content || '').trim();
+    if (!userText || generationRef.current || !conversation) return;
     if (!modelReady) {
       setSendNotice('Модель не выбрана. Выберите локальный GGUF-файл или скачайте модель, чтобы отправить сообщение.');
       return;
     }
     setSendNotice('');
 
-    const userText = input.trim();
     const editingIndex = editingMessageId
       ? messages.findIndex((message) => message.id === editingMessageId && message.role === 'user')
       : -1;
     const baseMessages = editingIndex >= 0 ? messages.slice(0, editingIndex) : messages;
 
-    setInput('');
     setEditingMessageId(null);
     setIsGenerating(true);
     generationRef.current = true;
     partialResponseRef.current = '';
-    setCurrentTokens('');
+    setStreamingText('');
     setTokenUsage(EMPTY_TOKEN_USAGE);
     appendDebug(`USER: ${userText}`);
 
@@ -193,7 +226,7 @@ export default function ChatWorkspace({ runtime, fileName, onUnload, onApplyExec
       const result = await runtime.streamChat(promptMessage, (token) => {
         fullAssistantText += token;
         partialResponseRef.current = fullAssistantText;
-        setCurrentTokens(fullAssistantText);
+        setStreamingText(fullAssistantText);
       }, loadGenerationSettings());
 
       if (result?.usage) setTokenUsage(result.usage);
@@ -232,7 +265,7 @@ export default function ChatWorkspace({ runtime, fileName, onUnload, onApplyExec
     } finally {
       generationRef.current = false;
       setIsGenerating(false);
-      setCurrentTokens('');
+      setStreamingText(null);
       partialResponseRef.current = '';
     }
   };
@@ -242,27 +275,49 @@ export default function ChatWorkspace({ runtime, fileName, onUnload, onApplyExec
     await onUnload?.();
   };
 
+  const aikitMessages = useMemo(() => {
+    const mapped = messages.map(toAikitMessage);
+    if (streamingText !== null) {
+      mapped.push({
+        id: STREAMING_PLACEHOLDER_ID,
+        role: 'assistant',
+        content: streamingText,
+        timestamp: new Date().toISOString(),
+      });
+    }
+    return mapped;
+  }, [messages, streamingText]);
+
+  const chatTypeList = useMemo(() => conversations.map(toChatType), [conversations]);
+  const activeChat = useMemo(() => (conversation ? toChatType(conversation) : null), [conversation]);
+
+  const chatStatus = isGenerating ? 'streaming' : 'ready';
+
+  const contextItems = [
+    { id: 'tokens-cache', content: `Кэш ${formatTokenCount(tokenUsage.cached)}` },
+    { id: 'tokens-input', content: `↑ ${formatTokenCount(tokenUsage.input)}` },
+    { id: 'tokens-output', content: `↓ ${formatTokenCount(tokenUsage.output)}` },
+    { id: 'tokens-total', content: `Всего ${formatTokenCount(tokenUsage.total)}` },
+  ];
+
+  const topPanelOpen = Boolean(debugInfo || editingMessageId || sendNotice);
+
+  const userActions = [
+    { type: 'edit', label: 'Изменить', children: 'Изменить', onClick: handleEditMessage },
+    { type: 'delete', label: 'Удалить', children: 'Удалить', onClick: handleDeleteMessage },
+  ];
+  const assistantActions = [
+    { type: 'delete', label: 'Удалить', children: 'Удалить', onClick: handleDeleteMessage },
+  ];
+
+  const modelStatusText = !modelReady
+    ? (fileName ? `Не загружена · ${modelShortName}` : 'Модель не выбрана')
+    : `Локально · ${modelShortName}`;
+
   return (
     <div className="chat-container">
-      <header className="chat-header">
-        <div className="brand"><div className="brand-mark">P</div><div className="brand-copy"><div className="brand-name">privateAI</div><div className="model-name" title={fileName || 'Модель не выбрана'}>{modelReady ? `Локально · ${modelShortName}` : fileName ? `Не загружена · ${modelShortName}` : 'Модель не выбрана'}</div></div></div>
-        <div className="header-actions">
-          <button className="ghost-button" onClick={handleRename} disabled={isGenerating || !conversation}>Переименовать</button>
-          <button className="ghost-button" onClick={handleDelete} disabled={isGenerating || !conversation}>Удалить</button>
-          <button className="danger-button" onClick={handleUnload} disabled={isGenerating || !modelReady}>Выгрузить</button>
-        </div>
-      </header>
       <div className="chat-shell">
-        <aside className="chat-sidebar">
-          <button className="new-chat" onClick={handleNewChat} disabled={isGenerating}>Новый чат</button>
-          <div className="sidebar-label">Ваши чаты</div>
-          <div className="conversation-list">
-            {conversations.map((item) => <button key={item.id} className={`conversation-item ${item.id === conversation?.id ? 'active' : ''}`} onClick={() => openConversation(item.id)} disabled={isGenerating}><div className="conversation-title">{item.title}</div><div className="conversation-date">{new Date(item.updatedAt).toLocaleString()}</div></button>)}
-          </div>
-        </aside>
         <main className="chat-main">
-          <div className="chat-titlebar">{conversation?.title || 'Загрузка...'}</div>
-          <div className="token-strip" aria-label="Статистика токенов"><strong>Токены</strong><span>Кэш {formatTokenCount(tokenUsage.cached)}</span><span>↑ {formatTokenCount(tokenUsage.input)}</span><span>↓ {formatTokenCount(tokenUsage.output)}</span><span>Всего {formatTokenCount(tokenUsage.total)}</span></div>
           {!modelReady && (
             <div className="model-missing-banner" role="status">
               <div className="model-missing-copy">
@@ -276,23 +331,72 @@ export default function ChatWorkspace({ runtime, fileName, onUnload, onApplyExec
               </div>
             </div>
           )}
-          <div className="messages-box">
-            {messages.map((msg) => <div key={msg.id} className={`message ${msg.role}`}><div className="sender">{msg.role === 'user' ? 'Вы' : 'privateAI'}</div><div className="text">{msg.content}</div><div className="message-actions">{msg.role === 'user' && <button type="button" onClick={() => handleEditMessage(msg)} disabled={isGenerating}>Изменить</button>}<button type="button" onClick={() => handleDeleteMessage(msg)} disabled={isGenerating}>Удалить</button></div></div>)}
-            {currentTokens && <div className="message assistant"><div className="sender">privateAI</div><div className="text">{currentTokens}<span className="cursor">|</span></div></div>}
-            <div ref={chatEndRef} />
-          </div>
-          <div className="debug-panel">{debugInfo}</div>
-          <div className="composer-wrap">
-            <form onSubmit={handleSend} className="composer">
-              {editingMessageId && <div className="composer-editing"><span>Редактирование сообщения</span><button type="button" className="ghost-button" onClick={handleCancelEdit}>Отмена</button></div>}
-              {sendNotice && <div className="composer-notice" role="alert">{sendNotice}</div>}
-              <div className="composer-box">
-                <textarea rows={1} value={input} onChange={(e) => { setInput(e.target.value); e.target.style.height = 'auto'; e.target.style.height = `${Math.min(e.target.scrollHeight, 180)}px`; }} onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); e.currentTarget.form?.requestSubmit(); } }} placeholder={editingMessageId ? 'Измените сообщение…' : (isGenerating ? 'Модель генерирует ответ…' : 'Сообщение privateAI…')} disabled={isGenerating || !conversation} aria-label="Сообщение" />
-                {isGenerating ? <button type="button" className="send-button stop" onClick={handleCancelGeneration} aria-label="Остановить генерацию">■</button> : <button type="submit" className="send-button" disabled={!input.trim() || !conversation} aria-label="Отправить">↑</button>}
-              </div>
-              <div className="composer-hint">{modelReady ? 'Enter — отправить · Shift + Enter — новая строка · Данные остаются на устройстве' : 'Модель не выбрана · выберите модель, чтобы отправлять сообщения'}</div>
-            </form>
-          </div>
+          <ChatContainer
+            className="aikit-chat"
+            qa={{ prefix: 'private-ai' }}
+            chats={chatTypeList}
+            activeChat={activeChat}
+            messages={aikitMessages}
+            status={chatStatus}
+            onSendMessage={handleSend}
+            onSelectChat={(chat) => openConversation(chat.id)}
+            onCreateChat={handleNewChat}
+            onDeleteChat={(chat) => handleDeleteChat(chat)}
+            onCancel={handleCancelGeneration}
+            shouldParseIncompleteMarkdown
+            showActionsOnHover
+            contextItems={contextItems}
+            texts={{
+              promptPlaceholder: 'Сообщение privateAI…',
+              submitSendTooltip: 'Отправить',
+              submitCancelTooltip: 'Остановить генерацию',
+              submitButtonCancelableText: 'Остановить',
+              headerNewChatTooltip: 'Новый чат',
+              headerHistoryTooltip: 'История чатов',
+              headerMenuTooltip: 'Ещё',
+              emptyStateTitle: 'Локальный чат с ИИ',
+              emptyStateDescription: 'Модель работает прямо в браузере. Данные не покидают устройство.',
+              historySearchPlaceholder: 'Поиск чатов…',
+              disclaimerText: 'Данные остаются на устройстве',
+            }}
+            messageListConfig={{
+              userActions,
+              assistantActions,
+              showTimestamp: true,
+            }}
+            headerProps={{
+              icon: <div className="brand-mark" aria-hidden="true">P</div>,
+              preview: (
+                <div className="model-name" title={fileName || 'Модель не выбрана'}>{modelStatusText}</div>
+              ),
+              additionalActions: [
+                <button key="unload" type="button" className="danger-button" onClick={handleUnload} disabled={isGenerating || !modelReady}>Выгрузить</button>,
+              ],
+              menuItems: [
+                { id: 'rename', label: 'Переименовать', onClick: handleRename, disabled: isGenerating || !conversation },
+                { id: 'delete-chat', label: 'Удалить чат', onClick: () => handleDeleteChat(), disabled: isGenerating || !conversation },
+              ],
+            }}
+            promptInputProps={{
+              view: 'full',
+              bodyProps: { inputRef },
+              topPanel: {
+                isOpen: topPanelOpen,
+                children: (
+                  <div className="chat-top-panel">
+                    {editingMessageId && (
+                      <div className="composer-editing">
+                        <span>Редактирование сообщения</span>
+                        <button type="button" className="ghost-button" onClick={handleCancelEdit}>Отмена</button>
+                      </div>
+                    )}
+                    {sendNotice && <div className="composer-notice" role="alert">{sendNotice}</div>}
+                    {debugInfo && <div className="debug-panel">{debugInfo}</div>}
+                  </div>
+                ),
+              },
+            }}
+          />
         </main>
         <aside className="settings-sidebar" aria-label="Настройки">
           <div className="settings-sidebar-header">
@@ -306,5 +410,5 @@ export default function ChatWorkspace({ runtime, fileName, onUnload, onApplyExec
         </aside>
       </div>
     </div>
-  )
+  );
 };
