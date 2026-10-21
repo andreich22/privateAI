@@ -11,5 +11,10 @@ export default defineConfig({
     restoreMocks: true,
     include: ['__tests__/**/*.{test,spec}.{js,jsx,ts,tsx,mjs}'],
     exclude: ['node_modules', 'tests'],
+    server: {
+      deps: {
+        inline: [/@gravity-ui\//, /@diplodoc\//],
+      },
+    },
   },
 });

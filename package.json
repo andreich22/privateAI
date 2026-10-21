@@ -19,7 +19,13 @@
     "version:major": "npm version major --no-git-tag-version"
   },
   "dependencies": {
+    "@diplodoc/transform": "^4.64.1",
+    "@gravity-ui/aikit": "^2.24.0",
+    "@gravity-ui/i18n": "^1.8.0",
+    "@gravity-ui/icons": "^2.23.0",
+    "@gravity-ui/uikit": "^7.51.1",
     "@wllama/wllama": "^3.6.0",
+    "highlight.js": "^11.12.0",
     "idb": "^8.0.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0"
