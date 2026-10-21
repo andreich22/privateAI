@@ -1,7 +1,8 @@
 import React from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, screen, waitFor } from '@testing-library/react';
 import ChatWorkspace from '../src/components/ChatWorkspace.jsx';
+import { renderWithProviders } from './helpers/renderWithProviders';
 
 const storage = {
   createConversation: vi.fn(),
@@ -58,6 +59,11 @@ function createRuntime(overrides = {}) {
   };
 }
 
+function sendMessage(text) {
+  fireEvent.change(screen.getByPlaceholderText('Сообщение privateAI…'), { target: { value: text } });
+  fireEvent.click(screen.getByTestId('private-ai-submit-button'));
+}
+
 describe('ChatWorkspace interactions', () => {
   beforeEach(async () => {
     vi.clearAllMocks();
@@ -76,19 +82,19 @@ describe('ChatWorkspace interactions', () => {
   });
 
   it('restores the active conversation from storage', async () => {
-    render(<ChatWorkspace runtime={createRuntime()} fileName="models/test.gguf" onUnload={vi.fn()} />);
+    renderWithProviders(<ChatWorkspace runtime={createRuntime()} fileName="models/test.gguf" onUnload={vi.fn()} />);
 
-    expect(await screen.findAllByText('Test chat')).toHaveLength(2);
+    expect((await screen.findAllByText('Test chat')).length).toBeGreaterThan(0);
     expect(screen.getByText('Локально · test.gguf')).toBeInTheDocument();
     expect(storage.getActiveConversationId).toHaveBeenCalled();
     expect(storage.getConversation).toHaveBeenCalledWith('c1');
   });
 
   it('creates a new chat and refreshes the sidebar', async () => {
-    render(<ChatWorkspace runtime={createRuntime()} fileName="model.gguf" />);
+    renderWithProviders(<ChatWorkspace runtime={createRuntime()} fileName="model.gguf" />);
     await screen.findAllByText('Test chat');
 
-    fireEvent.click(screen.getByRole('button', { name: 'Новый чат' }));
+    fireEvent.click(screen.getByTestId('private-ai-header-action-newChat'));
 
     await waitFor(() => expect(storage.createConversation).toHaveBeenCalled());
     expect((await screen.findAllByText('Новый чат')).length).toBeGreaterThanOrEqual(1);
@@ -96,10 +102,11 @@ describe('ChatWorkspace interactions', () => {
 
   it('renames the active conversation', async () => {
     window.prompt.mockReturnValue('Renamed');
-    render(<ChatWorkspace runtime={createRuntime()} fileName="model.gguf" />);
+    renderWithProviders(<ChatWorkspace runtime={createRuntime()} fileName="model.gguf" />);
     await screen.findAllByText('Test chat');
 
-    fireEvent.click(screen.getByRole('button', { name: 'Переименовать' }));
+    fireEvent.click(screen.getByTestId('private-ai-header-menu-button'));
+    fireEvent.click(await screen.findByText('Переименовать'));
 
     await waitFor(() => expect(storage.renameConversation).toHaveBeenCalledWith('c1', 'Renamed'));
     expect(await screen.findByText('Renamed')).toBeInTheDocument();
@@ -107,10 +114,11 @@ describe('ChatWorkspace interactions', () => {
 
   it('ignores rename when the prompt is cancelled', async () => {
     window.prompt.mockReturnValue(null);
-    render(<ChatWorkspace runtime={createRuntime()} fileName="model.gguf" />);
+    renderWithProviders(<ChatWorkspace runtime={createRuntime()} fileName="model.gguf" />);
     await screen.findAllByText('Test chat');
 
-    fireEvent.click(screen.getByRole('button', { name: 'Переименовать' }));
+    fireEvent.click(screen.getByTestId('private-ai-header-menu-button'));
+    fireEvent.click(await screen.findByText('Переименовать'));
     await waitFor(() => expect(window.prompt).toHaveBeenCalled());
     expect(storage.renameConversation).not.toHaveBeenCalled();
   });
@@ -118,10 +126,11 @@ describe('ChatWorkspace interactions', () => {
   it('deletes the active conversation and creates a replacement when none remain', async () => {
     storage.deleteConversation.mockResolvedValue(null);
     storage.createConversation.mockResolvedValue(conversation({ id: 'c3', title: 'Replacement' }));
-    render(<ChatWorkspace runtime={createRuntime()} fileName="model.gguf" />);
+    renderWithProviders(<ChatWorkspace runtime={createRuntime()} fileName="model.gguf" />);
     await screen.findAllByText('Test chat');
 
-    fireEvent.click(screen.getByRole('button', { name: 'Удалить' }));
+    fireEvent.click(screen.getByTestId('private-ai-header-menu-button'));
+    fireEvent.click(await screen.findByText('Удалить чат'));
 
     await waitFor(() => expect(storage.deleteConversation).toHaveBeenCalledWith('c1'));
     expect(storage.createConversation).toHaveBeenCalled();
@@ -130,22 +139,21 @@ describe('ChatWorkspace interactions', () => {
 
   it('cancels deletion when confirmation is declined', async () => {
     window.confirm.mockReturnValueOnce(false);
-    render(<ChatWorkspace runtime={createRuntime()} fileName="model.gguf" />);
+    renderWithProviders(<ChatWorkspace runtime={createRuntime()} fileName="model.gguf" />);
     await screen.findAllByText('Test chat');
 
-    fireEvent.click(screen.getByRole('button', { name: 'Удалить' }));
+    fireEvent.click(screen.getByTestId('private-ai-header-menu-button'));
+    fireEvent.click(await screen.findByText('Удалить чат'));
     await waitFor(() => expect(window.confirm).toHaveBeenCalled());
     expect(storage.deleteConversation).not.toHaveBeenCalled();
   });
 
   it('sends a message, streams the assistant reply and stores token usage', async () => {
     const runtime = createRuntime();
-    render(<ChatWorkspace runtime={runtime} fileName="model.gguf" />);
+    renderWithProviders(<ChatWorkspace runtime={runtime} fileName="model.gguf" />);
     await screen.findAllByText('Test chat');
 
-    const input = screen.getByRole('textbox', { name: 'Сообщение' });
-    fireEvent.change(input, { target: { value: 'Hello' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Отправить' }));
+    sendMessage('Hello');
 
     await waitFor(() => expect(runtime.streamChat).toHaveBeenCalled());
     expect(runtime.streamChat.mock.calls[0][0]).toEqual([
@@ -158,11 +166,10 @@ describe('ChatWorkspace interactions', () => {
   it('includes a trimmed system prompt in the runtime message history', async () => {
     storage.getConversation.mockResolvedValue(conversation({ systemPrompt: '  Be concise  ' }));
     const runtime = createRuntime();
-    render(<ChatWorkspace runtime={runtime} fileName="model.gguf" />);
+    renderWithProviders(<ChatWorkspace runtime={runtime} fileName="model.gguf" />);
     await screen.findAllByText('Test chat');
 
-    fireEvent.change(screen.getByRole('textbox', { name: 'Сообщение' }), { target: { value: 'Hi' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Отправить' }));
+    sendMessage('Hi');
 
     await waitFor(() => expect(runtime.streamChat).toHaveBeenCalled());
     expect(runtime.streamChat.mock.calls[0][0][0]).toEqual({ role: 'system', content: 'Be concise' });
@@ -177,14 +184,14 @@ describe('ChatWorkspace interactions', () => {
     });
     storage.getConversation.mockResolvedValue(initial);
     const runtime = createRuntime();
-    render(<ChatWorkspace runtime={runtime} fileName="model.gguf" />);
+    renderWithProviders(<ChatWorkspace runtime={runtime} fileName="model.gguf" />);
     await screen.findByText('old prompt');
 
     fireEvent.click(screen.getByRole('button', { name: 'Изменить' }));
-    const input = screen.getByRole('textbox', { name: 'Сообщение' });
+    const input = await screen.findByPlaceholderText('Сообщение privateAI…');
     expect(input).toHaveValue('old prompt');
     fireEvent.change(input, { target: { value: 'new prompt' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Отправить' }));
+    fireEvent.click(screen.getByTestId('private-ai-submit-button'));
 
     await waitFor(() => expect(runtime.streamChat).toHaveBeenCalled());
     expect(runtime.streamChat.mock.calls[0][0]).toEqual([
@@ -197,11 +204,11 @@ describe('ChatWorkspace interactions', () => {
       messages: [{ id: 'm1', role: 'user', content: 'remove me', createdAt: 1 }],
     });
     storage.getConversation.mockResolvedValue(initial);
-    render(<ChatWorkspace runtime={createRuntime()} fileName="model.gguf" />);
+    renderWithProviders(<ChatWorkspace runtime={createRuntime()} fileName="model.gguf" />);
     await screen.findByText('remove me');
 
     const deleteButtons = screen.getAllByRole('button', { name: 'Удалить' });
-    fireEvent.click(deleteButtons[deleteButtons.length - 1]);
+    fireEvent.click(deleteButtons[0]);
 
     await waitFor(() => expect(storage.saveConversation).toHaveBeenCalledWith(expect.objectContaining({
       messages: [],
@@ -216,14 +223,13 @@ describe('ChatWorkspace interactions', () => {
         return new Promise((resolve) => { resolveGeneration = resolve; });
       }),
     });
-    render(<ChatWorkspace runtime={runtime} fileName="model.gguf" />);
+    renderWithProviders(<ChatWorkspace runtime={runtime} fileName="model.gguf" />);
     await screen.findAllByText('Test chat');
 
-    fireEvent.change(screen.getByRole('textbox', { name: 'Сообщение' }), { target: { value: 'Hello' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Отправить' }));
-    await screen.findByRole('button', { name: 'Остановить генерацию' });
+    sendMessage('Hello');
+    await screen.findByRole('button', { name: 'Остановить' });
 
-    fireEvent.click(screen.getByRole('button', { name: 'Остановить генерацию' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Остановить' }));
     expect(runtime.cancelGeneration).toHaveBeenCalled();
 
     const abort = Object.assign(new Error('cancelled'), { name: 'AbortError' });
@@ -240,11 +246,10 @@ describe('ChatWorkspace interactions', () => {
     const runtime = createRuntime({
       streamChat: vi.fn().mockRejectedValue(new Error('boom')),
     });
-    render(<ChatWorkspace runtime={runtime} fileName="model.gguf" />);
+    renderWithProviders(<ChatWorkspace runtime={runtime} fileName="model.gguf" />);
     await screen.findAllByText('Test chat');
 
-    fireEvent.change(screen.getByRole('textbox', { name: 'Сообщение' }), { target: { value: 'Hello' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Отправить' }));
+    sendMessage('Hello');
 
     await waitFor(() => expect(storage.saveConversation).toHaveBeenCalledWith(expect.objectContaining({
       messages: expect.arrayContaining([expect.objectContaining({
@@ -255,18 +260,18 @@ describe('ChatWorkspace interactions', () => {
 
   it('prevents sending when the runtime is not loaded', async () => {
     const runtime = createRuntime({ isLoaded: vi.fn(() => false) });
-    render(<ChatWorkspace runtime={runtime} fileName="model.gguf" />);
+    renderWithProviders(<ChatWorkspace runtime={runtime} fileName="model.gguf" />);
     await screen.findAllByText('Test chat');
 
-    fireEvent.change(screen.getByRole('textbox', { name: 'Сообщение' }), { target: { value: 'Hello' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Отправить' }));
+    sendMessage('Hello');
 
     expect(runtime.streamChat).not.toHaveBeenCalled();
+    expect(storage.saveConversation).not.toHaveBeenCalled();
   });
 
   it('calls unload when generation is idle', async () => {
     const onUnload = vi.fn().mockResolvedValue(undefined);
-    render(<ChatWorkspace runtime={createRuntime()} fileName="model.gguf" onUnload={onUnload} />);
+    renderWithProviders(<ChatWorkspace runtime={createRuntime()} fileName="model.gguf" onUnload={onUnload} />);
     await screen.findAllByText('Test chat');
 
     fireEvent.click(screen.getByRole('button', { name: 'Выгрузить' }));

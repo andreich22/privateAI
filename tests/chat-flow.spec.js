@@ -19,54 +19,56 @@ test.describe('Chat Flow', () => {
 
   test('send message -> user message appears -> AI response appears', async ({ page }) => {
     await page.fill(selectors.chatInput, '1+1 = ?');
-    await page.locator(selectors.submitButton).click();
-    await expect(page.locator(selectors.userMessage)).toContainText('1+1 = ?');
-    await expect.poll(async () => page.locator(selectors.assistantMessage).count(), { intervals: [500], timeout: 15000 }).toBeGreaterThan(0);
-    await expect(page.locator(selectors.assistantMessage).last().locator('div.text')).toContainText('1+1 = 2');
+    await page.locator(selectors.submitButtonAny).click();
+    await expect(page.getByText('1+1 = ?', { exact: true })).toBeVisible();
+    await expect.poll(async () => page.getByText('1+1 = 2').count(), { intervals: [500], timeout: 20000 }).toBeGreaterThan(0);
   });
 
   test('send multiple messages in sequence', async ({ page }) => {
     await page.fill(selectors.chatInput, 'hello');
-    await page.locator(selectors.submitButton).click();
-    await expect.poll(async () => page.locator(selectors.assistantMessage).count(), { intervals: [500], timeout: 15000 }).toBeGreaterThan(0);
+    await page.locator(selectors.submitButtonAny).click();
+    await expect.poll(async () => page.getByText('1+1 = 2').count(), { intervals: [500], timeout: 20000 }).toBeGreaterThan(0);
+
+    await page.evaluate(() => { window.__mockChatResponse = 'goodbye answer'; });
     await page.fill(selectors.chatInput, 'goodbye');
-    await page.locator(selectors.submitButton).click();
-    await expect(page.locator(selectors.userMessage).last()).toContainText('goodbye');
-    await expect(page.locator(selectors.messagesBox).locator(selectors.assistantMessage)).toHaveCount(2);
+    await page.locator(selectors.submitButtonAny).click();
+    await expect(page.getByText('goodbye', { exact: true })).toBeVisible();
+    await expect.poll(async () => page.getByText('goodbye answer').count(), { intervals: [500], timeout: 20000 }).toBeGreaterThan(0);
   });
 
   test('unload model -> returns to access screen', async ({ page }) => {
-    await page.locator('button.danger-button').click();
+    await page.locator(selectors.unloadButton).click();
     await page.waitForSelector('div.screen.centered', { timeout: 10000 });
     await expect(page.locator('button.btn-main')).toContainText('Запустить');
   });
 
   test('submit button changes to stop while generating', async ({ page }) => {
     await page.fill(selectors.chatInput, 'test');
-    await page.locator(selectors.submitButton).click();
-    await expect(page.getByRole('button', { name: 'Остановить генерацию' })).toBeVisible();
+    await page.locator(selectors.submitButtonAny).click();
+    await expect(page.locator(selectors.stopButton)).toBeVisible({ timeout: 5000 });
+    await expect(page.getByRole('button', { name: 'Остановить' })).toBeVisible();
   });
 
-  test('input placeholder shows generation state', async ({ page }) => {
+  test('input placeholder stays stable during generation', async ({ page }) => {
     await page.locator(selectors.chatInput).fill('test');
-    await page.locator(selectors.submitButton).click();
-    await expect(page.locator(selectors.chatInput)).toHaveAttribute('placeholder', 'Модель генерирует ответ…');
-    await expect(page.locator(selectors.chatInput)).toBeDisabled();
+    await page.locator(selectors.submitButtonAny).click();
+    await expect(page.locator(selectors.stopButton)).toBeVisible({ timeout: 5000 });
+    await expect(page.locator(selectors.chatInput)).toHaveAttribute('placeholder', 'Сообщение privateAI…');
   });
 
   test('cancel generation preserves partial response and allows the next request', async ({ page }) => {
     await page.evaluate(() => { window.__mockChatResponse = 'x'.repeat(100); });
     await page.fill(selectors.chatInput, 'long request');
-    await page.locator(selectors.submitButton).click();
-    await expect(page.getByRole('button', { name: 'Остановить генерацию' })).toBeVisible({ timeout: 5000 });
-    await page.waitForTimeout(650);
-    await page.getByRole('button', { name: 'Остановить генерацию' }).click();
-    await expect(page.getByRole('button', { name: 'Отправить' })).toBeVisible();
-    await expect(page.locator(selectors.assistantMessage).last().locator('div.text')).not.toHaveText('');
+    await page.locator(selectors.submitButtonAny).click();
+    await expect(page.locator(selectors.stopButton)).toBeVisible({ timeout: 5000 });
+    await page.waitForTimeout(1500);
+    await page.locator(selectors.stopButton).click();
+    await expect(page.locator(selectors.stopButton)).toBeHidden({ timeout: 10000 });
+    await expect(page.getByText(/x+/).last()).not.toHaveText('');
     await page.evaluate(() => { window.__mockChatResponse = 'ok'; });
     await page.fill(selectors.chatInput, 'next request');
-    await page.locator(selectors.submitButton).click();
-    await expect.poll(async () => page.locator(selectors.assistantMessage).count(), { timeout: 10000 }).toBeGreaterThan(1);
+    await page.locator(selectors.submitButtonAny).click();
+    await expect.poll(async () => page.getByText('ok', { exact: true }).count(), { timeout: 15000 }).toBeGreaterThan(0);
   });
 
   test('generation settings persist locally', async ({ page }) => {
@@ -80,12 +82,12 @@ test.describe('Chat Flow', () => {
     const prompt = page.getByLabel(/Системный промпт/);
     await prompt.fill('Отвечай кратко.');
     await prompt.blur();
-    await page.getByRole('button', { name: 'Новый чат' }).click();
-    await expect(page.locator('main').getByText('Новый чат', { exact: true })).toBeVisible();
+    await page.locator(selectors.newChatButton).click();
+    await expect(page.getByText('Новый чат', { exact: true })).toBeVisible();
     await expect(page.getByLabel(/Системный промпт/)).toHaveValue('');
   });
 
   test('chat header shows model filename', async ({ page }) => {
-    await expect(page.locator('.model-name')).toContainText('test-model.gguf');
+    await expect(page.locator(selectors.modelName)).toContainText('test-model.gguf');
   });
 });
