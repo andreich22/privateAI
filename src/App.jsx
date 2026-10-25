@@ -1,14 +1,17 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { getSavedFileHandle, verifyPermission, selectAndSaveFile, saveFilePicker, saveFileHandle } from './services/fileStorage';
 import { AIRuntime } from './services/AIRuntime';
 import { loadExecutionSettings } from './services/executionSettings';
 import { APP_VERSION } from './version';
+import LanguageSelector from './components/LanguageSelector';
 import WelcomeScreen from './components/WelcomeScreen';
 import AccessScreen from './components/AccessScreen';
 import LoadingScreen from './components/LoadingScreen';
 import ChatWorkspace from './components/ChatWorkspace';
 
 export default function App() {
+  const { t } = useTranslation();
   const runtimeRef = useRef(null);
   const [status, setStatus] = useState('checking');
   const [fileHandle, setFileHandle] = useState(null);
@@ -42,7 +45,7 @@ export default function App() {
         }
       } catch (err) {
         if (cancelled) return;
-        console.warn('Не удалось восстановить сохранённый файл:', err);
+        console.warn('Could not restore the saved model file:', err);
         setFileHandle(null);
         setFileName('');
         setStatus('welcome');
@@ -95,7 +98,7 @@ export default function App() {
         setProgress(0);
         setError('');
       } else {
-        setError('HF ошибка: ' + err.message);
+        setError({ key: 'app.errors.hfLoad', details: err.message });
         setStatus(returnStatus);
       }
     } finally {
@@ -109,7 +112,7 @@ export default function App() {
     try {
       const hasPermission = await verifyPermission(handle);
       if (!hasPermission) {
-        setError('Доступ к файлу отклонен');
+        setError({ key: 'app.errors.fileAccess' });
         return;
       }
       setStatus('loading');
@@ -122,7 +125,7 @@ export default function App() {
         setProgress(0);
         setError('');
       } else {
-        setError('Ошибка: ' + err.message);
+        setError({ key: 'app.errors.modelLoad', details: err.message });
         setStatus(returnStatus);
       }
     } finally {
@@ -136,8 +139,8 @@ export default function App() {
   };
 
   const handleApplyExecutionSettings = async (settings) => {
-    if (!fileHandle) throw new Error('Файл модели недоступен для перезагрузки');
-    if (runtime.isGenerationPending?.() || runtime.isLoadPending?.()) throw new Error('Дождитесь завершения текущей операции');
+    if (!fileHandle) throw new Error(t('app.errors.fileUnavailable'));
+    if (runtime.isGenerationPending?.() || runtime.isLoadPending?.()) throw new Error(t('app.errors.operationPending'));
     await runtime.unloadModel();
     await handleStartModel(fileHandle, settings, 'chat');
   };
@@ -154,17 +157,18 @@ export default function App() {
       background: envInfo.gpu ? '#1a3a1a' : '#3a1a1a',
       color: envInfo.gpu ? '#a6e3a1' : '#f38ba8',
       padding: '6px 16px', fontSize: 12, fontFamily: 'monospace',
-      display: 'flex', gap: 16, justifyContent: 'center', flexWrap: 'wrap'
+      display: 'flex', gap: 16, justifyContent: 'center', alignItems: 'center', flexWrap: 'wrap'
     }}>
-      <span>App: v{APP_VERSION}</span>
-      <span>B: {envInfo.browser}</span>
-      <span>WebGPU: {envInfo.gpu ? '✓ available' : '✗ unavailable'}</span>
-      <span>COOP: {envInfo.coop ? '✓' : '✗'}</span>
-      <span>Cores: {envInfo.cores}</span>
+      <span>{t('app.environment.appVersion', { version: APP_VERSION })}</span>
+      <span>{t('app.environment.browser', { browser: envInfo.browser })}</span>
+      <span>{envInfo.gpu ? t('app.environment.gpuAvailable') : t('app.environment.gpuUnavailable')}</span>
+      <span>{t('app.environment.coop', { status: envInfo.coop ? '✓' : '✗' })}</span>
+      <span>{t('app.environment.cores', { count: envInfo.cores })}</span>
+      <LanguageSelector />
     </div>
   );
 
-  if (status === 'checking') return <div className="centered">Проверка среды...</div>;
+  if (status === 'checking') return <div className="centered">{t('app.checkingEnvironment')}<LanguageSelector /></div>;
   if (status === 'welcome') return <div>{envBanner}<WelcomeScreen onSelect={handleSelectFile} onHF={handleLoadFromHF} onSkip={handleSkipModel} error={error} /></div>;
   if (status === 'access') return <div>{envBanner}<AccessScreen fileName={fileName} onConfirm={() => handleStartModel()} onReset={handleSelectFile} onHF={handleLoadFromHF} onSkip={handleSkipModel} error={error} /></div>;
   if (status === 'loading') return <div>{envBanner}<LoadingScreen progress={progress} fileName={fileName} error={error} onCancel={isCancelling ? undefined : handleCancel} /></div>;

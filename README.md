@@ -11,6 +11,7 @@ A privacy-first local AI chat application that runs entirely in your browser. Mo
 - **WebAssembly/WebGPU acceleration** through [wllama](https://github.com/ngxson/wllama)
 - **Hugging Face model downloads** directly from the application
 - **Streaming responses** for an interactive chat experience
+- **Russian and English interface**, with a locally saved language preference
 - **Persistent model access** using IndexedDB and the File System Access API
 - **CPU/GPU environment information**, including WebGPU availability, COOP/COEP status, CPU core count, and browser details
 - **Model lifecycle controls**, including unloading a model to release browser memory

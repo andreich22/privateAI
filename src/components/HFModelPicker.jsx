@@ -1,14 +1,16 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import HuggingFaceModelSearch from './HuggingFaceModelSearch';
 
 export default function HFModelPicker({ onSelect }) {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
 
   return (
     <div className="hf-picker">
       {!open ? (
         <button type="button" className="btn-sub hf-picker-open" onClick={() => setOpen(true)}>
-          Выбрать другую модель из HF
+          {t('modelSearch.chooseAnother')}
         </button>
       ) : (
         <div>
@@ -20,7 +22,7 @@ export default function HFModelPicker({ onSelect }) {
             }}
           />
           <button type="button" className="btn-sub hf-picker-cancel" onClick={() => setOpen(false)}>
-            Отмена
+            {t('common.cancel')}
           </button>
         </div>
       )}

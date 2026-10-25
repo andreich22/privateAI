@@ -1,9 +1,12 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
+import UserError from './UserError';
 
 export default function LoadingScreen({ progress, fileName, error, onCancel }) {
+  const { t } = useTranslation();
   return (
     <div className="screen centered">
-      <h1>Загрузка модели в оперативную память</h1>
+      <h1>{t('loading.title')}</h1>
       {fileName && <p>{fileName}</p>}
       <div className="progress-bar-container">
         <div className="progress-bar-fill" style={{ width: `${progress}%` }}></div>
@@ -11,10 +14,10 @@ export default function LoadingScreen({ progress, fileName, error, onCancel }) {
       <div className="progress-text">{progress}%</div>
       {onCancel && (
         <button className="btn-danger" onClick={onCancel} style={{ marginTop: 15 }}>
-          Отмена
+          {t('common.cancel')}
         </button>
       )}
-      {error && <p style={{ color: '#f38ba8', marginTop: 15, fontSize: 14 }}>{error}</p>}
+      <UserError error={error} className="screen-error" />
     </div>
   );
 }
