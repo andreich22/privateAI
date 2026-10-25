@@ -1,0 +1,135 @@
+{
+  "common": {
+    "language": "Language",
+    "languages": {
+      "ru": "Russian",
+      "en": "English"
+    },
+    "cancel": "Cancel",
+    "close": "Close",
+    "chooseGguf": "Choose GGUF file",
+    "downloadModel": "Download model (HF)",
+    "skipModel": "Continue without a model",
+    "errors": {
+      "details": "Technical details",
+      "operationFailed": "The operation could not be completed.",
+      "unknown": "An error occurred."
+    }
+  },
+  "app": {
+    "checkingEnvironment": "Checking environment...",
+    "environment": {
+      "appVersion": "App: v{{version}}",
+      "gpuAvailable": "WebGPU: ✓ available",
+      "gpuUnavailable": "WebGPU: ✗ unavailable",
+      "browser": "Browser: {{browser}}",
+      "coop": "COOP: {{status}}",
+      "cores": "Cores: {{count}}"
+    },
+    "errors": {
+      "hfLoad": "Could not load the model from Hugging Face.",
+      "modelLoad": "Could not load the model.",
+      "fileAccess": "Access to the file was denied.",
+      "fileUnavailable": "The model file is unavailable for reloading.",
+      "operationPending": "Wait for the current operation to finish."
+    }
+  },
+  "welcome": {
+    "title": "Local AI Chat",
+    "description": "Load a GGUF model from your computer or the internet.",
+    "downloadQwen": "Download Qwen3.8-2B (HF)",
+    "selectedModelLabel": "Model selected:",
+    "selectedModelDetail": "Open the model page to choose a suitable GGUF file."
+  },
+  "access": {
+    "title": "Model found",
+    "start": "Start",
+    "huggingFace": "HF",
+    "otherFile": "Another file",
+    "selectHfModel": "Selected HF model:",
+    "openModelPage": "Open model page"
+  },
+  "loading": {
+    "title": "Loading model into memory"
+  },
+  "modelSearch": {
+    "sectionLabel": "Choose a model from Hugging Face",
+    "searchButton": "Choose a model from HF",
+    "chooseAnother": "Choose another model from HF",
+    "title": "Choose a model from HF",
+    "searchLabel": "Search Hugging Face models",
+    "placeholder": "For example, Qwen, Llama, Mistral",
+    "searching": "Searching…",
+    "search": "Search",
+    "loadingResults": "Loading results…",
+    "notFound": "No models found.",
+    "author": "Author: {{author}}",
+    "downloads": "Downloads: {{count}}",
+    "likes": "Likes: {{count}}",
+    "updated": "Updated: {{date}}",
+    "task": "Task: {{task}}",
+    "open": "Open",
+    "select": "Select",
+    "rateLimited": "Hugging Face is temporarily rate limiting requests. Please try again later.",
+    "searchFailed": "Could not search Hugging Face models."
+  },
+  "chat": {
+    "modelNotSelected": "No model selected",
+    "modelNotLoaded": "Model not loaded",
+    "modelNotLoadedDetail": "The file {{name}} is selected but not loaded. Load it again or choose another model.",
+    "chooseModelDetail": "Choose a local GGUF file or download a model to start chatting.",
+    "local": "Local",
+    "notLoaded": "Not loaded",
+    "rename": "Rename",
+    "delete": "Delete",
+    "unload": "Unload",
+    "newChat": "New chat",
+    "yourChats": "Your chats",
+    "loading": "Loading...",
+    "tokenStats": "Token statistics",
+    "tokens": "Tokens",
+    "cache": "Cache",
+    "total": "Total",
+    "user": "You",
+    "edit": "Edit",
+    "messageDelete": "Delete",
+    "editing": "Editing message",
+    "cancelEdit": "Cancel",
+    "editPlaceholder": "Edit your message…",
+    "generatingPlaceholder": "The model is generating a response…",
+    "messagePlaceholder": "Message privateAI…",
+    "messageLabel": "Message",
+    "stopGeneration": "Stop generation",
+    "send": "Send",
+    "composerHintReady": "Enter to send · Shift + Enter for a new line · Data stays on your device",
+    "composerHintNoModel": "No model selected · choose a model to send messages",
+    "settings": "Settings",
+    "settingsDescription": "Current model and generation settings",
+    "renamePrompt": "Chat name:",
+    "deleteConversationConfirm": "Delete chat “{{title}}”?",
+    "deleteMessageConfirm": "Delete this message?",
+    "sendWithoutModel": "No model selected. Choose a local GGUF file or download a model to send a message.",
+    "generationFailed": "Could not get a response from the model. Check its status and try again."
+  },
+  "settings": {
+    "generation": "Generation",
+    "systemPrompt": "System prompt",
+    "chatOnly": "this chat only",
+    "systemPromptPlaceholder": "Describe the model's role and rules…",
+    "maxTokens": "Maximum tokens",
+    "unsupported": "Generation settings are not supported by the current runtime.",
+    "resetDefaults": "Restore defaults",
+    "performance": "Performance",
+    "gpuLayers": "Layers on GPU",
+    "cpu": "CPU",
+    "gpu": "GPU",
+    "layersAfterLoad": "The model's layer count will appear after loading.",
+    "reloadHint": "Changes take effect after reloading the model.",
+    "reloading": "Reloading…",
+    "applyAndReload": "Apply and reload",
+    "default": "Default",
+    "validationError": "Check the values entered in settings.",
+    "operationFailed": "Could not update settings.",
+    "language": "Interface language"
+  }
+}

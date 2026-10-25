@@ -248,9 +248,10 @@ describe('ChatWorkspace interactions', () => {
 
     await waitFor(() => expect(storage.saveConversation).toHaveBeenCalledWith(expect.objectContaining({
       messages: expect.arrayContaining([expect.objectContaining({
-        content: '[Ошибка чата: boom]',
+        content: 'Не удалось получить ответ от модели. Проверьте её состояние и попробуйте ещё раз.',
       })]),
     })));
+    expect(screen.getByText(/CHAT ERROR: boom/)).toBeInTheDocument();
   });
 
   it('prevents sending when the runtime is not loaded', async () => {

@@ -28,14 +28,14 @@ test.describe('Error Handling', () => {
 
     await page.locator('button.btn-main').click();
 
-    await page.waitForSelector(selectors.errorText, { timeout: 10000 });
+    await page.waitForSelector('.screen-error', { timeout: 10000 });
 
     await expect.poll(async () => {
-      const count = await page.locator(selectors.errorText).count();
+      const count = await page.locator('.screen-error').count();
       return count;
     }, { intervals: [100], timeout: 5000 }).toBeGreaterThan(0);
 
-    await expect(page.locator('p[style*="color"]')).toContainText('Доступ к файлу отклонен');
+    await expect(page.locator('.screen-error')).toContainText('Доступ к файлу отклонён.');
 
     await expect(page.locator('button.btn-main')).toContainText('Выбрать GGUF файл');
   });

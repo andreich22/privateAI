@@ -1,5 +1,10 @@
-import { afterEach } from 'vitest';
+import { afterEach, beforeEach } from 'vitest';
 import '@testing-library/jest-dom/vitest';
+import { changeAppLanguage } from '../src/i18n';
+
+beforeEach(async () => {
+  await changeAppLanguage('ru');
+});
 
 function createWllamaMock() {
   return {

@@ -1,7 +1,7 @@
 {
   "name": "local-react-ai",
   "private": true,
-  "version": "0.0.26",
+  "version": "0.0.27",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -20,9 +20,11 @@
   },
   "dependencies": {
     "@wllama/wllama": "^3.6.0",
+    "i18next": "^26.5.11",
     "idb": "^8.0.0",
     "react": "^19.1.0",
-    "react-dom": "^19.1.0"
+    "react-dom": "^19.1.0",
+    "react-i18next": "^17.1.9"
   },
   "devDependencies": {
     "@playwright/test": "^1.62.1",

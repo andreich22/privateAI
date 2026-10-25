@@ -1,7 +1,10 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import HuggingFaceModelSearch from './HuggingFaceModelSearch';
+import UserError from './UserError';
 
 export default function WelcomeScreen({ onSelect, onHF, onSkip, error }) {
+  const { t } = useTranslation();
   const [selectedModel, setSelectedModel] = useState(null);
 
   const handleSelect = (model) => {
@@ -10,19 +13,19 @@ export default function WelcomeScreen({ onSelect, onHF, onSkip, error }) {
 
   return (
     <div className="screen centered">
-      <h1>Локальный ИИ Чат</h1>
-      <p>Загрузите GGUF модель с компьютера или из интернета.</p>
+      <h1>{t('welcome.title')}</h1>
+      <p>{t('welcome.description')}</p>
       <div className="btn-group">
-        <button onClick={onSelect} className="btn-main">Выбрать GGUF файл</button>
-        <button onClick={onHF} className="btn-sub">Скачать Qwen3.8-2B (HF)</button>
-        {onSkip && <button onClick={onSkip} className="btn-sub">Перейти в чат без модели</button>}
+        <button onClick={onSelect} className="btn-main">{t('common.chooseGguf')}</button>
+        <button onClick={onHF} className="btn-sub">{t('welcome.downloadQwen')}</button>
+        {onSkip && <button onClick={onSkip} className="btn-sub">{t('common.skipModel')}</button>}
       </div>
       {selectedModel && (
         <p className="hf-selected" role="status">
-          Выбрана модель: <strong>{selectedModel.id}</strong>. Откройте страницу модели, чтобы выбрать подходящий GGUF-файл.
+          {t('welcome.selectedModelLabel')} <strong>{selectedModel.id}</strong>. {t('welcome.selectedModelDetail')}
         </p>
       )}
-      {error && <p style={{ color: '#f38ba8', marginTop: 15, fontSize: 14 }}>{error}</p>}
+      <UserError error={error} className="screen-error" />
       <HuggingFaceModelSearch onSelect={handleSelect} />
     </div>
   );

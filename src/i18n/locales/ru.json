@@ -1,0 +1,135 @@
+{
+  "common": {
+    "language": "Язык",
+    "languages": {
+      "ru": "Русский",
+      "en": "Английский"
+    },
+    "cancel": "Отмена",
+    "close": "Закрыть",
+    "chooseGguf": "Выбрать GGUF файл",
+    "downloadModel": "Скачать модель (HF)",
+    "skipModel": "Перейти в чат без модели",
+    "errors": {
+      "details": "Технические подробности",
+      "operationFailed": "Не удалось выполнить операцию.",
+      "unknown": "Произошла ошибка."
+    }
+  },
+  "app": {
+    "checkingEnvironment": "Проверка среды...",
+    "environment": {
+      "appVersion": "Приложение: v{{version}}",
+      "gpuAvailable": "WebGPU: ✓ доступен",
+      "gpuUnavailable": "WebGPU: ✗ недоступен",
+      "browser": "Браузер: {{browser}}",
+      "coop": "COOP: {{status}}",
+      "cores": "Ядер: {{count}}"
+    },
+    "errors": {
+      "hfLoad": "Не удалось загрузить модель с Hugging Face.",
+      "modelLoad": "Не удалось загрузить модель.",
+      "fileAccess": "Доступ к файлу отклонён.",
+      "fileUnavailable": "Файл модели недоступен для перезагрузки.",
+      "operationPending": "Дождитесь завершения текущей операции."
+    }
+  },
+  "welcome": {
+    "title": "Локальный ИИ Чат",
+    "description": "Загрузите GGUF-модель с компьютера или из интернета.",
+    "downloadQwen": "Скачать Qwen3.8-2B (HF)",
+    "selectedModelLabel": "Выбрана модель:",
+    "selectedModelDetail": "Откройте страницу модели, чтобы выбрать подходящий GGUF-файл."
+  },
+  "access": {
+    "title": "Обнаружена модель",
+    "start": "Запустить",
+    "huggingFace": "HF",
+    "otherFile": "Другой файл",
+    "selectHfModel": "Выбрана модель HF:",
+    "openModelPage": "Открыть страницу модели"
+  },
+  "loading": {
+    "title": "Загрузка модели в оперативную память"
+  },
+  "modelSearch": {
+    "sectionLabel": "Выбор модели из Hugging Face",
+    "searchButton": "Выбрать модель из HF",
+    "chooseAnother": "Выбрать другую модель из HF",
+    "title": "Выбрать модель из HF",
+    "searchLabel": "Поиск моделей Hugging Face",
+    "placeholder": "Например, Qwen, Llama, Mistral",
+    "searching": "Поиск…",
+    "search": "Найти",
+    "loadingResults": "Загрузка результатов…",
+    "notFound": "Модели не найдены.",
+    "author": "Автор: {{author}}",
+    "downloads": "Загрузки: {{count}}",
+    "likes": "Лайки: {{count}}",
+    "updated": "Обновлено: {{date}}",
+    "task": "Задача: {{task}}",
+    "open": "Открыть",
+    "select": "Выбрать",
+    "rateLimited": "Hugging Face временно ограничил запросы. Попробуйте позже.",
+    "searchFailed": "Не удалось выполнить поиск моделей Hugging Face."
+  },
+  "chat": {
+    "modelNotSelected": "Модель не выбрана",
+    "modelNotLoaded": "Модель не загружена",
+    "modelNotLoadedDetail": "Файл {{name}} выбран, но не загружен. Загрузите его снова или выберите другую модель.",
+    "chooseModelDetail": "Выберите локальный GGUF-файл или скачайте модель, чтобы начать общение.",
+    "local": "Локально",
+    "notLoaded": "Не загружена",
+    "rename": "Переименовать",
+    "delete": "Удалить",
+    "unload": "Выгрузить",
+    "newChat": "Новый чат",
+    "yourChats": "Ваши чаты",
+    "loading": "Загрузка...",
+    "tokenStats": "Статистика токенов",
+    "tokens": "Токены",
+    "cache": "Кэш",
+    "total": "Всего",
+    "user": "Вы",
+    "edit": "Изменить",
+    "messageDelete": "Удалить",
+    "editing": "Редактирование сообщения",
+    "cancelEdit": "Отмена",
+    "editPlaceholder": "Измените сообщение…",
+    "generatingPlaceholder": "Модель генерирует ответ…",
+    "messagePlaceholder": "Сообщение privateAI…",
+    "messageLabel": "Сообщение",
+    "stopGeneration": "Остановить генерацию",
+    "send": "Отправить",
+    "composerHintReady": "Enter — отправить · Shift + Enter — новая строка · Данные остаются на устройстве",
+    "composerHintNoModel": "Модель не выбрана · выберите модель, чтобы отправлять сообщения",
+    "settings": "Настройки",
+    "settingsDescription": "Параметры текущей модели и генерации",
+    "renamePrompt": "Название чата:",
+    "deleteConversationConfirm": "Удалить чат «{{title}}»?",
+    "deleteMessageConfirm": "Удалить это сообщение?",
+    "sendWithoutModel": "Модель не выбрана. Выберите локальный GGUF-файл или скачайте модель, чтобы отправить сообщение.",
+    "generationFailed": "Не удалось получить ответ от модели. Проверьте её состояние и попробуйте ещё раз."
+  },
+  "settings": {
+    "generation": "Генерация",
+    "systemPrompt": "Системный промпт",
+    "chatOnly": "только этот чат",
+    "systemPromptPlaceholder": "Опишите роль и правила для модели…",
+    "maxTokens": "Максимум токенов",
+    "unsupported": "Параметры генерации не поддерживаются текущим runtime.",
+    "resetDefaults": "Восстановить defaults",
+    "performance": "Производительность",
+    "gpuLayers": "Слоёв на GPU",
+    "cpu": "CPU",
+    "gpu": "GPU",
+    "layersAfterLoad": "Количество слоёв модели появится после загрузки.",
+    "reloadHint": "Изменение применяется после перезагрузки модели.",
+    "reloading": "Перезагрузка…",
+    "applyAndReload": "Применить и перезагрузить",
+    "default": "По умолчанию",
+    "validationError": "Проверьте введённые значения настроек.",
+    "operationFailed": "Не удалось обновить настройки.",
+    "language": "Язык интерфейса"
+  }
+}

@@ -1,12 +1,15 @@
 import React, { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   loadExecutionSettings,
   resetExecutionSettings,
   saveExecutionSettings,
   validateExecutionSettings,
 } from '../services/executionSettings';
+import UserError from './UserError';
 
 export default function ExecutionSettings({ runtime, disabled, onApply }) {
+  const { t } = useTranslation();
   const [settings, setSettings] = useState(loadExecutionSettings());
   const [layerCount, setLayerCount] = useState(null);
   const [error, setError] = useState('');
@@ -18,7 +21,7 @@ export default function ExecutionSettings({ runtime, disabled, onApply }) {
       const count = Number.isInteger(context?.n_layer) ? context.n_layer : null;
       setLayerCount(count);
       try { setSettings(loadExecutionSettings(count)); }
-      catch (err) { setError(err.message); }
+      catch (err) { setError({ key: 'settings.validationError', details: err.message }); }
     };
     refresh();
     return runtime?.subscribe?.(() => refresh());
@@ -33,14 +36,14 @@ export default function ExecutionSettings({ runtime, disabled, onApply }) {
       setSettings(next);
       saveExecutionSettings(next, layerCount);
       setError('');
-    } catch (err) { setError(err.message); }
+    } catch (err) { setError({ key: 'settings.validationError', details: err.message }); }
   };
 
   const handleApply = async () => {
     if (!onApply) return;
     setPending(true);
     try { await onApply(settings); setError(''); }
-    catch (err) { setError(err.message); }
+    catch (err) { setError({ key: 'settings.operationFailed', details: err.message }); }
     finally { setPending(false); }
   };
 
@@ -52,27 +55,27 @@ export default function ExecutionSettings({ runtime, disabled, onApply }) {
 
   return (
     <section className="settings-section">
-      <div className="settings-section-title">Производительность</div>
+      <div className="settings-section-title">{t('settings.performance')}</div>
       {layerCount !== null ? (
         <>
           <label className="settings-field">
-            <span>Слоёв на GPU <strong>{gpuLayers} / {layerCount}</strong></span>
-            <input aria-label="Слоёв на GPU" type="range" min="0" max={layerCount} step="1"
+            <span>{t('settings.gpuLayers')} <strong>{gpuLayers} / {layerCount}</strong></span>
+            <input aria-label={t('settings.gpuLayers')} type="range" min="0" max={layerCount} step="1"
               value={settings.n_gpu_layers === -1 ? layerCount : settings.n_gpu_layers}
               onChange={(e) => updateGpuLayers(e.target.value)} disabled={disabled || pending} />
           </label>
-          <div className="layer-summary"><span>CPU <strong>{cpuLayers}</strong></span><span>GPU <strong>{gpuLayers}</strong></span></div>
+          <div className="layer-summary"><span>{t('settings.cpu')} <strong>{cpuLayers}</strong></span><span>{t('settings.gpu')} <strong>{gpuLayers}</strong></span></div>
         </>
       ) : (
-        <div className="settings-muted">Количество слоёв модели появится после загрузки.</div>
+        <div className="settings-muted">{t('settings.layersAfterLoad')}</div>
       )}
-      <div className="settings-hint">Изменение применяется после перезагрузки модели.</div>
-      {error && <div className="settings-error" role="alert">{error}</div>}
+      <div className="settings-hint">{t('settings.reloadHint')}</div>
+      <UserError error={error} className="settings-error" />
       <div className="settings-actions">
         <button className="settings-primary" type="button" onClick={handleApply} disabled={disabled || pending || layerCount === null}>
-          {pending ? 'Перезагрузка…' : 'Применить и перезагрузить'}
+          {pending ? t('settings.reloading') : t('settings.applyAndReload')}
         </button>
-        <button className="settings-reset" type="button" onClick={handleReset} disabled={disabled || pending}>По умолчанию</button>
+        <button className="settings-reset" type="button" onClick={handleReset} disabled={disabled || pending}>{t('settings.default')}</button>
       </div>
     </section>
   );
