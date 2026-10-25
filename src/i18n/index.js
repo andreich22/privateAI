@@ -19,7 +19,7 @@ export function getInitialLanguage(storedLanguage, browserLanguages) {
   return normalizeLanguage(storedLanguage) || supportedBrowserLanguage || DEFAULT_LANGUAGE;
 }
 
-function readStoredLanguage() {
+export function readStoredLanguage() {
   if (typeof window === 'undefined') return null;
   try {
     return window.localStorage.getItem(LANGUAGE_STORAGE_KEY);

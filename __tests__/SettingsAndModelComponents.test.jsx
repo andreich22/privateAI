@@ -93,6 +93,7 @@ describe('settings and model selection components', () => {
     await waitFor(() => expect(onApply).toHaveBeenCalledWith({ n_gpu_layers: -1 }));
 
     onApply.mockRejectedValueOnce(new Error('reload failed'));
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Применить и перезагрузить' })).toBeEnabled());
     fireEvent.click(screen.getByRole('button', { name: 'Применить и перезагрузить' }));
     await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent('reload failed'));
   });
